@@ -1,0 +1,44 @@
+2025-07-24 00:49:42.173 -07:00 [DBG] Hosting starting
+2025-07-24 00:49:42.211 -07:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-07-24 00:49:42.212 -07:00 [INF] Hosting environment: Production
+2025-07-24 00:49:42.212 -07:00 [INF] Content root path: C:\Users\koki\ezark\standard-image\Standard-image
+2025-07-24 00:49:42.212 -07:00 [DBG] Hosting started
+2025-07-24 00:49:42.610 -07:00 [DBG] Magick.NET already initialized
+2025-07-24 00:49:57.567 -07:00 [DBG] Hosting stopping
+2025-07-24 00:49:57.568 -07:00 [INF] Application is shutting down...
+2025-07-24 00:49:57.570 -07:00 [DBG] Hosting stopped
+2025-07-24 00:50:09.225 -07:00 [DBG] Hosting starting
+2025-07-24 00:50:09.266 -07:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-07-24 00:50:09.266 -07:00 [INF] Hosting environment: Production
+2025-07-24 00:50:09.267 -07:00 [INF] Content root path: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\release
+2025-07-24 00:50:09.267 -07:00 [DBG] Hosting started
+2025-07-24 00:50:09.650 -07:00 [DBG] Magick.NET already initialized
+2025-07-24 00:50:12.729 -07:00 [DBG] Hosting stopping
+2025-07-24 00:50:12.733 -07:00 [INF] Application is shutting down...
+2025-07-24 00:50:12.733 -07:00 [DBG] Hosting stopped
+2025-07-24 00:57:59.418 -07:00 [DBG] Hosting starting
+2025-07-24 00:57:59.454 -07:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-07-24 00:57:59.455 -07:00 [INF] Hosting environment: Production
+2025-07-24 00:57:59.455 -07:00 [INF] Content root path: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer
+2025-07-24 00:57:59.455 -07:00 [DBG] Hosting started
+2025-07-24 00:57:59.955 -07:00 [DBG] Magick.NET already initialized
+2025-07-24 00:58:10.412 -07:00 [DBG] Hosting stopping
+2025-07-24 00:58:10.415 -07:00 [INF] Application is shutting down...
+2025-07-24 00:58:10.416 -07:00 [DBG] Hosting stopped
+2025-07-24 00:58:22.109 -07:00 [DBG] Hosting starting
+2025-07-24 00:58:22.149 -07:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-07-24 00:58:22.150 -07:00 [INF] Hosting environment: Production
+2025-07-24 00:58:22.150 -07:00 [INF] Content root path: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\release
+2025-07-24 00:58:22.150 -07:00 [DBG] Hosting started
+2025-07-24 00:58:22.588 -07:00 [DBG] Magick.NET already initialized
+2025-07-24 00:58:29.724 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\HEIC\IMG_5335.HEIC
+2025-07-24 00:58:29.771 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\HEIC\IMG_5335.HEIC
+2025-07-24 00:58:29.773 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\HEIC\IMG_5335.HEIC
+2025-07-24 00:58:31.815 -07:00 [DBG] HEIC validation result: True (3024x4032)
+2025-07-24 00:58:31.832 -07:00 [DBG] HEIC validation result: True (3024x4032)
+2025-07-24 00:58:31.879 -07:00 [DBG] HEIC validation result: True (3024x4032)
+2025-07-24 00:58:31.899 -07:00 [INF] Getting page preview for page 0 at scale 1.5
+2025-07-24 00:58:31.902 -07:00 [DBG] Extracting preview for page 0 at scale 1.5
+2025-07-24 01:09:21.236 -07:00 [DBG] Hosting stopping
+2025-07-24 01:09:21.246 -07:00 [INF] Application is shutting down...
+2025-07-24 01:09:21.250 -07:00 [DBG] Hosting stopped

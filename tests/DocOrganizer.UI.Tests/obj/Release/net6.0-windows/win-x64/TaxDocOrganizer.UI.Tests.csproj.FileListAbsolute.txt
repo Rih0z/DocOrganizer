@@ -1,0 +1,5 @@
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\tests\TaxDocOrganizer.UI.Tests\obj\Release\net6.0-windows\win-x64\TaxDocOrganizer.UI.Tests.csproj.AssemblyReference.cache
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\tests\TaxDocOrganizer.UI.Tests\obj\Release\net6.0-windows\win-x64\TaxDocOrganizer.UI.Tests.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\tests\TaxDocOrganizer.UI.Tests\obj\Release\net6.0-windows\win-x64\TaxDocOrganizer.UI.Tests.AssemblyInfoInputs.cache
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\tests\TaxDocOrganizer.UI.Tests\obj\Release\net6.0-windows\win-x64\TaxDocOrganizer.UI.Tests.AssemblyInfo.cs
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\tests\TaxDocOrganizer.UI.Tests\obj\Release\net6.0-windows\win-x64\TaxDocOrganizer.UI.Tests.csproj.CoreCompileInputs.cache

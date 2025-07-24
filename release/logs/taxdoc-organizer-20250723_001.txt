@@ -1,0 +1,353 @@
+2025-07-23 09:40:12.519 -07:00 [DBG] Hosting stopping
+2025-07-23 09:40:12.569 -07:00 [INF] Application is shutting down...
+2025-07-23 09:40:12.572 -07:00 [DBG] Hosting stopped
+2025-07-23 09:40:40.568 -07:00 [DBG] Hosting starting
+2025-07-23 09:40:40.599 -07:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-07-23 09:40:40.600 -07:00 [INF] Hosting environment: Production
+2025-07-23 09:40:40.600 -07:00 [INF] Content root path: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\release
+2025-07-23 09:40:40.600 -07:00 [DBG] Hosting started
+2025-07-23 09:40:40.918 -07:00 [DBG] Magick.NET already initialized
+2025-07-23 09:40:58.015 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-23 09:40:58.016 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-23 09:40:58.032 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-23 09:40:58.068 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-23 09:40:58.069 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-23 09:40:58.069 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-23 09:40:58.073 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-23 09:40:58.074 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-23 09:40:58.082 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-23 09:40:58.108 -07:00 [DBG] Standard image validation result: True (943x652)
+2025-07-23 09:40:58.109 -07:00 [DBG] Standard image validation result: True (943x652)
+2025-07-23 09:40:58.109 -07:00 [DBG] Standard image validation result: True (943x652)
+2025-07-23 09:40:58.111 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-23 09:40:58.112 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-23 09:40:58.112 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-23 09:40:58.113 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-23 09:40:58.113 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-23 09:40:58.113 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-23 09:40:58.230 -07:00 [INF] Creating PDF from image C:\Users\koki\AppData\Local\Temp\tmp83EF.tmp.jpg
+2025-07-23 09:40:58.253 -07:00 [INF] Creating PDF from image C:\Users\koki\AppData\Local\Temp\tmp841E.tmp.jpg
+2025-07-23 09:40:58.278 -07:00 [ERR] Error creating PDF from image C:\Users\koki\AppData\Local\Temp\tmp83EF.tmp.jpg
+System.MissingMethodException: Attempted to access a missing method.
+   at PdfSharpCore.Utils.ImageSharpImageSource`1.FromFileImpl(String path, Nullable`1 quality)
+   at PdfSharpCore.Drawing.XImage..ctor(String path)
+   at PdfSharpCore.Drawing.XImage.FromFile(String path, PdfReadAccuracy accuracy)
+   at PdfSharpCore.Drawing.XImage.FromFile(String path)
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.<>c__DisplayClass11_0.<CreatePdfFromImageAsync>b__0()
+2025-07-23 09:40:58.278 -07:00 [ERR] Error creating PDF from image C:\Users\koki\AppData\Local\Temp\tmp841E.tmp.jpg
+System.MissingMethodException: Attempted to access a missing method.
+   at PdfSharpCore.Utils.ImageSharpImageSource`1.FromFileImpl(String path, Nullable`1 quality)
+   at PdfSharpCore.Drawing.XImage..ctor(String path)
+   at PdfSharpCore.Drawing.XImage.FromFile(String path, PdfReadAccuracy accuracy)
+   at PdfSharpCore.Drawing.XImage.FromFile(String path)
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.<>c__DisplayClass11_0.<CreatePdfFromImageAsync>b__0()
+2025-07-23 09:40:58.286 -07:00 [INF] Creating PDF from image C:\Users\koki\AppData\Local\Temp\tmp843F.tmp.jpg
+2025-07-23 09:40:58.289 -07:00 [ERR] Failed to convert image to PDF: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+System.MissingMethodException: Attempted to access a missing method.
+   at PdfSharpCore.Utils.ImageSharpImageSource`1.FromFileImpl(String path, Nullable`1 quality)
+   at PdfSharpCore.Drawing.XImage..ctor(String path)
+   at PdfSharpCore.Drawing.XImage.FromFile(String path, PdfReadAccuracy accuracy)
+   at PdfSharpCore.Drawing.XImage.FromFile(String path)
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.<>c__DisplayClass11_0.<CreatePdfFromImageAsync>b__0()
+   at System.Threading.Tasks.Task`1.InnerInvoke()
+   at System.Threading.Tasks.Task.<>c.<.cctor>b__272_0(Object obj)
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.CreatePdfFromImageAsync(String imagePath, String outputPath)
+   at TaxDocOrganizer.Infrastructure.Services.ImageProcessingService.ConvertImageToPdfAsync(String imagePath)
+2025-07-23 09:40:58.291 -07:00 [ERR] Failed to convert image to PDF: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+System.MissingMethodException: Attempted to access a missing method.
+   at PdfSharpCore.Utils.ImageSharpImageSource`1.FromFileImpl(String path, Nullable`1 quality)
+   at PdfSharpCore.Drawing.XImage..ctor(String path)
+   at PdfSharpCore.Drawing.XImage.FromFile(String path, PdfReadAccuracy accuracy)
+   at PdfSharpCore.Drawing.XImage.FromFile(String path)
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.<>c__DisplayClass11_0.<CreatePdfFromImageAsync>b__0()
+   at System.Threading.Tasks.Task`1.InnerInvoke()
+   at System.Threading.Tasks.Task.<>c.<.cctor>b__272_0(Object obj)
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.CreatePdfFromImageAsync(String imagePath, String outputPath)
+   at TaxDocOrganizer.Infrastructure.Services.ImageProcessingService.ConvertImageToPdfAsync(String imagePath)
+2025-07-23 09:40:58.298 -07:00 [ERR] Error creating PDF from image C:\Users\koki\AppData\Local\Temp\tmp843F.tmp.jpg
+System.MissingMethodException: Attempted to access a missing method.
+   at PdfSharpCore.Utils.ImageSharpImageSource`1.FromFileImpl(String path, Nullable`1 quality)
+   at PdfSharpCore.Drawing.XImage..ctor(String path)
+   at PdfSharpCore.Drawing.XImage.FromFile(String path, PdfReadAccuracy accuracy)
+   at PdfSharpCore.Drawing.XImage.FromFile(String path)
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.<>c__DisplayClass11_0.<CreatePdfFromImageAsync>b__0()
+2025-07-23 09:40:58.412 -07:00 [ERR] Failed to convert image to PDF: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+System.MissingMethodException: Attempted to access a missing method.
+   at PdfSharpCore.Utils.ImageSharpImageSource`1.FromFileImpl(String path, Nullable`1 quality)
+   at PdfSharpCore.Drawing.XImage..ctor(String path)
+   at PdfSharpCore.Drawing.XImage.FromFile(String path, PdfReadAccuracy accuracy)
+   at PdfSharpCore.Drawing.XImage.FromFile(String path)
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.<>c__DisplayClass11_0.<CreatePdfFromImageAsync>b__0()
+   at System.Threading.Tasks.Task`1.InnerInvoke()
+   at System.Threading.Tasks.Task.<>c.<.cctor>b__272_0(Object obj)
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.CreatePdfFromImageAsync(String imagePath, String outputPath)
+   at TaxDocOrganizer.Infrastructure.Services.ImageProcessingService.ConvertImageToPdfAsync(String imagePath)
+2025-07-23 09:56:27.076 -07:00 [DBG] Hosting starting
+2025-07-23 09:56:27.106 -07:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-07-23 09:56:27.107 -07:00 [INF] Hosting environment: Production
+2025-07-23 09:56:27.108 -07:00 [INF] Content root path: C:\Users\koki\ezark\standard-image\Standard-image
+2025-07-23 09:56:27.108 -07:00 [DBG] Hosting started
+2025-07-23 09:56:27.439 -07:00 [DBG] Magick.NET already initialized
+2025-07-23 10:00:14.160 -07:00 [DBG] Hosting starting
+2025-07-23 10:00:14.192 -07:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-07-23 10:00:14.193 -07:00 [INF] Hosting environment: Production
+2025-07-23 10:00:14.194 -07:00 [INF] Content root path: C:\Users\koki\ezark\standard-image\Standard-image
+2025-07-23 10:00:14.194 -07:00 [DBG] Hosting started
+2025-07-23 10:00:14.586 -07:00 [DBG] Magick.NET already initialized
+2025-07-23 10:20:35.192 -07:00 [DBG] Hosting stopping
+2025-07-23 10:20:35.194 -07:00 [INF] Application is shutting down...
+2025-07-23 10:20:35.195 -07:00 [DBG] Hosting stopped
+2025-07-23 10:20:41.568 -07:00 [DBG] Hosting starting
+2025-07-23 10:20:41.604 -07:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-07-23 10:20:41.604 -07:00 [INF] Hosting environment: Production
+2025-07-23 10:20:41.604 -07:00 [INF] Content root path: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\release
+2025-07-23 10:20:41.605 -07:00 [DBG] Hosting started
+2025-07-23 10:20:42.041 -07:00 [DBG] Magick.NET already initialized
+2025-07-23 10:20:57.667 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\スクリーンショット 2024-10-25 000731.png
+2025-07-23 10:20:57.668 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\スクリーンショット 2024-10-25 000731.png
+2025-07-23 10:20:57.700 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\スクリーンショット 2024-10-25 000731.png
+2025-07-23 10:20:57.733 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\スクリーンショット 2024-10-25 000731.png
+2025-07-23 10:20:57.734 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\スクリーンショット 2024-10-25 000731.png
+2025-07-23 10:20:57.735 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\スクリーンショット 2024-10-25 000731.png
+2025-07-23 10:20:57.741 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\スクリーンショット 2024-10-25 000731.png
+2025-07-23 10:20:57.741 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\スクリーンショット 2024-10-25 000731.png
+2025-07-23 10:20:57.746 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\スクリーンショット 2024-10-25 000731.png
+2025-07-23 10:20:57.792 -07:00 [DBG] Standard image validation result: True (579x367)
+2025-07-23 10:20:57.792 -07:00 [DBG] Standard image validation result: True (579x367)
+2025-07-23 10:20:57.792 -07:00 [DBG] Standard image validation result: True (579x367)
+2025-07-23 10:20:57.794 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\スクリーンショット 2024-10-25 000731.png
+2025-07-23 10:20:57.794 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\スクリーンショット 2024-10-25 000731.png
+2025-07-23 10:20:57.795 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\スクリーンショット 2024-10-25 000731.png
+2025-07-23 10:20:57.795 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\スクリーンショット 2024-10-25 000731.png
+2025-07-23 10:20:57.796 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\スクリーンショット 2024-10-25 000731.png
+2025-07-23 10:20:57.796 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\スクリーンショット 2024-10-25 000731.png
+2025-07-23 10:20:57.854 -07:00 [INF] Creating PDF from image using SkiaSharp: C:\Users\koki\AppData\Local\Temp\tmp2187.tmp.jpg
+2025-07-23 10:20:57.865 -07:00 [INF] Creating PDF from image using SkiaSharp: C:\Users\koki\AppData\Local\Temp\tmp21A7.tmp.jpg
+2025-07-23 10:20:57.871 -07:00 [INF] Creating PDF from image using SkiaSharp: C:\Users\koki\AppData\Local\Temp\tmp21A8.tmp.jpg
+2025-07-23 10:20:57.944 -07:00 [ERR] Failed to convert image to PDF: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\スクリーンショット 2024-10-25 000731.png
+System.IO.FileNotFoundException: 
+File name: 'PdfSharpCore, Version=1.3.67.0, Culture=neutral, PublicKeyToken=null'
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.<>c__DisplayClass13_0.<CreatePdfFromImageSkiaSharpAsync>b__0()
+   at System.Threading.Tasks.Task`1.InnerInvoke()
+   at System.Threading.Tasks.Task.<>c.<.cctor>b__272_0(Object obj)
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.CreatePdfFromImageSkiaSharpAsync(String imagePath, String outputPath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\PdfServiceSkiaSharp.cs:line 27
+   at TaxDocOrganizer.Infrastructure.Services.ImageProcessingService.ConvertImageToPdfAsync(String imagePath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\ImageProcessingService.cs:line 85
+2025-07-23 10:20:57.946 -07:00 [ERR] Failed to convert image to PDF: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\スクリーンショット 2024-10-25 000731.png
+System.IO.FileNotFoundException: 
+File name: 'PdfSharpCore, Version=1.3.67.0, Culture=neutral, PublicKeyToken=null'
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.<>c__DisplayClass13_0.<CreatePdfFromImageSkiaSharpAsync>b__0()
+   at System.Threading.Tasks.Task`1.InnerInvoke()
+   at System.Threading.Tasks.Task.<>c.<.cctor>b__272_0(Object obj)
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.CreatePdfFromImageSkiaSharpAsync(String imagePath, String outputPath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\PdfServiceSkiaSharp.cs:line 27
+   at TaxDocOrganizer.Infrastructure.Services.ImageProcessingService.ConvertImageToPdfAsync(String imagePath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\ImageProcessingService.cs:line 85
+2025-07-23 10:20:57.948 -07:00 [ERR] Failed to convert image to PDF: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\スクリーンショット 2024-10-25 000731.png
+System.IO.FileNotFoundException: 
+File name: 'PdfSharpCore, Version=1.3.67.0, Culture=neutral, PublicKeyToken=null'
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.<>c__DisplayClass13_0.<CreatePdfFromImageSkiaSharpAsync>b__0()
+   at System.Threading.Tasks.Task`1.InnerInvoke()
+   at System.Threading.Tasks.Task.<>c.<.cctor>b__272_0(Object obj)
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.CreatePdfFromImageSkiaSharpAsync(String imagePath, String outputPath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\PdfServiceSkiaSharp.cs:line 27
+   at TaxDocOrganizer.Infrastructure.Services.ImageProcessingService.ConvertImageToPdfAsync(String imagePath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\ImageProcessingService.cs:line 85
+2025-07-23 10:21:01.186 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\ダウンロード (2).png
+2025-07-23 10:21:01.186 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\ダウンロード (2).png
+2025-07-23 10:21:01.206 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\ダウンロード (2).png
+2025-07-23 10:21:01.448 -07:00 [DBG] Standard image validation result: True (3508x2479)
+2025-07-23 10:21:01.448 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\ダウンロード (2).png
+2025-07-23 10:21:01.449 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\ダウンロード (2).png
+2025-07-23 10:21:01.711 -07:00 [INF] Creating PDF from image using SkiaSharp: C:\Users\koki\AppData\Local\Temp\tmp30AD.tmp.jpg
+2025-07-23 10:21:01.713 -07:00 [ERR] Failed to convert image to PDF: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\ダウンロード (2).png
+System.IO.FileNotFoundException: 
+File name: 'PdfSharpCore, Version=1.3.67.0, Culture=neutral, PublicKeyToken=null'
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.<>c__DisplayClass13_0.<CreatePdfFromImageSkiaSharpAsync>b__0()
+   at System.Threading.Tasks.Task`1.InnerInvoke()
+   at System.Threading.Tasks.Task.<>c.<.cctor>b__272_0(Object obj)
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.CreatePdfFromImageSkiaSharpAsync(String imagePath, String outputPath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\PdfServiceSkiaSharp.cs:line 27
+   at TaxDocOrganizer.Infrastructure.Services.ImageProcessingService.ConvertImageToPdfAsync(String imagePath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\ImageProcessingService.cs:line 85
+2025-07-23 10:21:03.600 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\ダウンロード (3).png
+2025-07-23 10:21:03.600 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\ダウンロード (3).png
+2025-07-23 10:21:03.617 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\ダウンロード (3).png
+2025-07-23 10:21:03.810 -07:00 [DBG] Standard image validation result: True (3508x2479)
+2025-07-23 10:21:03.810 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\ダウンロード (3).png
+2025-07-23 10:21:03.811 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\ダウンロード (3).png
+2025-07-23 10:21:04.035 -07:00 [INF] Creating PDF from image using SkiaSharp: C:\Users\koki\AppData\Local\Temp\tmp39C6.tmp.jpg
+2025-07-23 10:21:04.038 -07:00 [ERR] Failed to convert image to PDF: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\PNG\ダウンロード (3).png
+System.IO.FileNotFoundException: 
+File name: 'PdfSharpCore, Version=1.3.67.0, Culture=neutral, PublicKeyToken=null'
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.<>c__DisplayClass13_0.<CreatePdfFromImageSkiaSharpAsync>b__0()
+   at System.Threading.Tasks.Task`1.InnerInvoke()
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.CreatePdfFromImageSkiaSharpAsync(String imagePath, String outputPath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\PdfServiceSkiaSharp.cs:line 27
+   at TaxDocOrganizer.Infrastructure.Services.ImageProcessingService.ConvertImageToPdfAsync(String imagePath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\ImageProcessingService.cs:line 85
+2025-07-23 10:45:13.937 -07:00 [DBG] Hosting stopping
+2025-07-23 10:45:13.951 -07:00 [INF] Application is shutting down...
+2025-07-23 10:45:13.958 -07:00 [DBG] Hosting stopped
+2025-07-23 11:03:10.679 -07:00 [DBG] Hosting starting
+2025-07-23 11:03:10.721 -07:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-07-23 11:03:10.721 -07:00 [INF] Hosting environment: Production
+2025-07-23 11:03:10.721 -07:00 [INF] Content root path: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\release
+2025-07-23 11:03:10.721 -07:00 [DBG] Hosting started
+2025-07-23 11:03:11.199 -07:00 [DBG] Magick.NET already initialized
+2025-07-23 11:03:23.590 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\jpeg\Image_20250210_235730_150 (1).jpeg
+2025-07-23 11:03:23.592 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\jpeg\Image_20250210_235730_150 (1).jpeg
+2025-07-23 11:03:23.612 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\jpeg\Image_20250210_235730_150 (1).jpeg
+2025-07-23 11:03:23.660 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\jpeg\Image_20250210_235730_150 (1).jpeg
+2025-07-23 11:03:23.661 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\jpeg\Image_20250210_235730_150 (1).jpeg
+2025-07-23 11:03:23.662 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\jpeg\Image_20250210_235730_150 (1).jpeg
+2025-07-23 11:03:23.674 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\jpeg\Image_20250210_235730_150 (1).jpeg
+2025-07-23 11:03:23.675 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\jpeg\Image_20250210_235730_150 (1).jpeg
+2025-07-23 11:03:23.676 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\jpeg\Image_20250210_235730_150 (1).jpeg
+2025-07-23 11:03:24.998 -07:00 [DBG] Standard image validation result: True (5712x4284)
+2025-07-23 11:03:25.000 -07:00 [DBG] Standard image validation result: True (5712x4284)
+2025-07-23 11:03:25.001 -07:00 [DBG] Standard image validation result: True (5712x4284)
+2025-07-23 11:03:25.007 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\jpeg\Image_20250210_235730_150 (1).jpeg
+2025-07-23 11:03:25.015 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\jpeg\Image_20250210_235730_150 (1).jpeg
+2025-07-23 11:03:25.016 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\jpeg\Image_20250210_235730_150 (1).jpeg
+2025-07-23 11:03:25.020 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\jpeg\Image_20250210_235730_150 (1).jpeg
+2025-07-23 11:03:25.020 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\jpeg\Image_20250210_235730_150 (1).jpeg
+2025-07-23 11:03:25.021 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\jpeg\Image_20250210_235730_150 (1).jpeg
+2025-07-23 11:03:26.245 -07:00 [INF] Creating PDF from image using SkiaSharp: C:\Users\koki\AppData\Local\Temp\tmp41E.tmp.jpg
+2025-07-23 11:03:26.619 -07:00 [INF] Creating PDF from image using SkiaSharp: C:\Users\koki\AppData\Local\Temp\tmp5B5.tmp.jpg
+2025-07-23 11:03:26.959 -07:00 [INF] Creating PDF from image using SkiaSharp: C:\Users\koki\AppData\Local\Temp\tmp70E.tmp.jpg
+2025-07-23 11:03:27.226 -07:00 [ERR] Failed to convert image to PDF: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\jpeg\Image_20250210_235730_150 (1).jpeg
+System.IO.FileNotFoundException: 
+File name: 'PdfSharpCore, Version=1.3.67.0, Culture=neutral, PublicKeyToken=null'
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.<>c__DisplayClass13_0.<CreatePdfFromImageSkiaSharpAsync>b__0()
+   at System.Threading.Tasks.Task`1.InnerInvoke()
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.CreatePdfFromImageSkiaSharpAsync(String imagePath, String outputPath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\PdfServiceSkiaSharp.cs:line 27
+   at TaxDocOrganizer.Infrastructure.Services.ImageProcessingService.ConvertImageToPdfAsync(String imagePath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\ImageProcessingService.cs:line 85
+2025-07-23 11:03:27.238 -07:00 [ERR] Failed to convert image to PDF: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\jpeg\Image_20250210_235730_150 (1).jpeg
+System.IO.FileNotFoundException: 
+File name: 'PdfSharpCore, Version=1.3.67.0, Culture=neutral, PublicKeyToken=null'
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.<>c__DisplayClass13_0.<CreatePdfFromImageSkiaSharpAsync>b__0()
+   at System.Threading.Tasks.Task`1.InnerInvoke()
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.CreatePdfFromImageSkiaSharpAsync(String imagePath, String outputPath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\PdfServiceSkiaSharp.cs:line 27
+   at TaxDocOrganizer.Infrastructure.Services.ImageProcessingService.ConvertImageToPdfAsync(String imagePath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\ImageProcessingService.cs:line 85
+2025-07-23 11:03:27.241 -07:00 [ERR] Failed to convert image to PDF: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\jpeg\Image_20250210_235730_150 (1).jpeg
+System.IO.FileNotFoundException: 
+File name: 'PdfSharpCore, Version=1.3.67.0, Culture=neutral, PublicKeyToken=null'
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.<>c__DisplayClass13_0.<CreatePdfFromImageSkiaSharpAsync>b__0()
+   at System.Threading.Tasks.Task`1.InnerInvoke()
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.CreatePdfFromImageSkiaSharpAsync(String imagePath, String outputPath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\PdfServiceSkiaSharp.cs:line 27
+   at TaxDocOrganizer.Infrastructure.Services.ImageProcessingService.ConvertImageToPdfAsync(String imagePath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\ImageProcessingService.cs:line 85
+2025-07-23 11:03:29.163 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-23 11:03:29.163 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-23 11:03:29.175 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-23 11:03:29.176 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-23 11:03:29.186 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-23 11:03:29.187 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-23 11:03:29.188 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-23 11:03:29.188 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-23 11:03:29.188 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-23 11:03:29.248 -07:00 [DBG] Standard image validation result: True (943x652)
+2025-07-23 11:03:29.249 -07:00 [DBG] Standard image validation result: True (943x652)
+2025-07-23 11:03:29.249 -07:00 [DBG] Standard image validation result: True (943x652)
+2025-07-23 11:03:29.249 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-23 11:03:29.251 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-23 11:03:29.252 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-23 11:03:29.253 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-23 11:03:29.254 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-23 11:03:29.254 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-23 11:03:29.332 -07:00 [INF] Creating PDF from image using SkiaSharp: C:\Users\koki\AppData\Local\Temp\tmp1047.tmp.jpg
+2025-07-23 11:03:29.353 -07:00 [INF] Creating PDF from image using SkiaSharp: C:\Users\koki\AppData\Local\Temp\tmp1067.tmp.jpg
+2025-07-23 11:03:29.372 -07:00 [INF] Creating PDF from image using SkiaSharp: C:\Users\koki\AppData\Local\Temp\tmp1077.tmp.jpg
+2025-07-23 11:03:29.374 -07:00 [ERR] Failed to convert image to PDF: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+System.IO.FileNotFoundException: 
+File name: 'PdfSharpCore, Version=1.3.67.0, Culture=neutral, PublicKeyToken=null'
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.<>c__DisplayClass13_0.<CreatePdfFromImageSkiaSharpAsync>b__0()
+   at System.Threading.Tasks.Task`1.InnerInvoke()
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.CreatePdfFromImageSkiaSharpAsync(String imagePath, String outputPath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\PdfServiceSkiaSharp.cs:line 27
+   at TaxDocOrganizer.Infrastructure.Services.ImageProcessingService.ConvertImageToPdfAsync(String imagePath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\ImageProcessingService.cs:line 85
+2025-07-23 11:03:29.376 -07:00 [ERR] Failed to convert image to PDF: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+System.IO.FileNotFoundException: 
+File name: 'PdfSharpCore, Version=1.3.67.0, Culture=neutral, PublicKeyToken=null'
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.<>c__DisplayClass13_0.<CreatePdfFromImageSkiaSharpAsync>b__0()
+   at System.Threading.Tasks.Task`1.InnerInvoke()
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.CreatePdfFromImageSkiaSharpAsync(String imagePath, String outputPath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\PdfServiceSkiaSharp.cs:line 27
+   at TaxDocOrganizer.Infrastructure.Services.ImageProcessingService.ConvertImageToPdfAsync(String imagePath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\ImageProcessingService.cs:line 85
+2025-07-23 11:03:29.405 -07:00 [ERR] Failed to convert image to PDF: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+System.IO.FileNotFoundException: 
+File name: 'PdfSharpCore, Version=1.3.67.0, Culture=neutral, PublicKeyToken=null'
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.<>c__DisplayClass13_0.<CreatePdfFromImageSkiaSharpAsync>b__0()
+   at System.Threading.Tasks.Task`1.InnerInvoke()
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.CreatePdfFromImageSkiaSharpAsync(String imagePath, String outputPath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\PdfServiceSkiaSharp.cs:line 27
+   at TaxDocOrganizer.Infrastructure.Services.ImageProcessingService.ConvertImageToPdfAsync(String imagePath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\ImageProcessingService.cs:line 85
+2025-07-23 11:26:53.465 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- tate-png.png
+2025-07-23 11:26:55.132 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- tate-png.png
+2025-07-23 11:27:01.251 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- tate-png.png
+2025-07-23 11:27:08.044 -07:00 [DBG] Standard image validation result: True (652x943)
+2025-07-23 11:27:14.922 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- tate-png.png
+2025-07-23 11:27:14.923 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- tate-png.png
+2025-07-23 11:27:25.810 -07:00 [INF] Creating PDF from image using SkiaSharp: C:\Users\koki\AppData\Local\Temp\tmpE007.tmp.jpg
+2025-07-23 11:27:27.444 -07:00 [ERR] Failed to convert image to PDF: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- tate-png.png
+System.IO.FileNotFoundException: 
+File name: 'PdfSharpCore, Version=1.3.67.0, Culture=neutral, PublicKeyToken=null'
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.<>c__DisplayClass13_0.<CreatePdfFromImageSkiaSharpAsync>b__0()
+   at System.Threading.Tasks.Task`1.InnerInvoke()
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at TaxDocOrganizer.Infrastructure.Services.PdfService.CreatePdfFromImageSkiaSharpAsync(String imagePath, String outputPath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\PdfServiceSkiaSharp.cs:line 27
+   at TaxDocOrganizer.Infrastructure.Services.ImageProcessingService.ConvertImageToPdfAsync(String imagePath) in C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Infrastructure\Services\ImageProcessingService.cs:line 85

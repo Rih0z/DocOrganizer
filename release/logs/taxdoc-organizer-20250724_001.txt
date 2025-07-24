@@ -1,0 +1,68 @@
+2025-07-24 00:42:51.446 -07:00 [DBG] Hosting starting
+2025-07-24 00:42:51.488 -07:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-07-24 00:42:51.489 -07:00 [INF] Hosting environment: Production
+2025-07-24 00:42:51.489 -07:00 [INF] Content root path: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\release
+2025-07-24 00:42:51.489 -07:00 [DBG] Hosting started
+2025-07-24 00:42:51.855 -07:00 [DBG] Magick.NET already initialized
+2025-07-24 00:43:04.017 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-24 00:43:04.160 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-24 00:43:04.191 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-24 00:43:04.192 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-24 00:43:04.195 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-24 00:43:04.195 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-24 00:43:04.199 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-24 00:43:04.229 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-24 00:43:04.230 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- hidari-ping.png
+2025-07-24 00:43:04.293 -07:00 [DBG] Standard image validation result: True (943x652)
+2025-07-24 00:43:04.293 -07:00 [DBG] Standard image validation result: True (943x652)
+2025-07-24 00:43:04.293 -07:00 [DBG] Standard image validation result: True (943x652)
+2025-07-24 00:43:04.294 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-24 00:43:04.294 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-24 00:43:04.295 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-24 00:43:04.295 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-24 00:43:04.295 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-24 00:43:04.296 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-24 00:43:04.297 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-24 00:43:04.298 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-24 00:43:04.299 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- migi-png.png
+2025-07-24 00:43:04.307 -07:00 [DBG] Standard image validation result: True (943x652)
+2025-07-24 00:43:04.307 -07:00 [DBG] Standard image validation result: True (943x652)
+2025-07-24 00:43:04.307 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- tate-png.png
+2025-07-24 00:43:04.308 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- tate-png.png
+2025-07-24 00:43:04.309 -07:00 [DBG] Standard image validation result: True (943x652)
+2025-07-24 00:43:04.309 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- tate-png.png
+2025-07-24 00:43:04.309 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- tate-png.png
+2025-07-24 00:43:04.310 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- tate-png.png
+2025-07-24 00:43:04.310 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- tate-png.png
+2025-07-24 00:43:04.311 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- tate-png.png
+2025-07-24 00:43:04.312 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- tate-png.png
+2025-07-24 00:43:04.312 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- tate-png.png
+2025-07-24 00:43:04.320 -07:00 [DBG] Standard image validation result: True (652x943)
+2025-07-24 00:43:04.320 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- ura-png.png
+2025-07-24 00:43:04.321 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- ura-png.png
+2025-07-24 00:43:04.321 -07:00 [DBG] Standard image validation result: True (652x943)
+2025-07-24 00:43:04.321 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- ura-png.png
+2025-07-24 00:43:04.321 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- ura-png.png
+2025-07-24 00:43:04.322 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- ura-png.png
+2025-07-24 00:43:04.323 -07:00 [DBG] Standard image validation result: True (652x943)
+2025-07-24 00:43:04.323 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- ura-png.png
+2025-07-24 00:43:04.323 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- ura-png.png
+2025-07-24 00:43:04.323 -07:00 [DBG] Starting safe image load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- ura-png.png
+2025-07-24 00:43:04.324 -07:00 [DBG] Attempting basic ImageSharp load for: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\1- ura-png.png
+2025-07-24 00:43:04.329 -07:00 [DBG] Standard image validation result: True (652x943)
+2025-07-24 00:43:04.358 -07:00 [INF] Getting page preview for page 0 at scale 1.5
+2025-07-24 00:43:04.359 -07:00 [DBG] Extracting preview for page 0 at scale 1.5
+2025-07-24 00:43:04.364 -07:00 [DBG] Standard image validation result: True (652x943)
+2025-07-24 00:43:04.364 -07:00 [DBG] Standard image validation result: True (652x943)
+2025-07-24 00:43:19.482 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\HEIC\IMG_5331.HEIC
+2025-07-24 00:43:19.503 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\HEIC\IMG_5331.HEIC
+2025-07-24 00:43:19.504 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\HEIC\IMG_5331.HEIC
+2025-07-24 00:43:21.399 -07:00 [DBG] HEIC validation result: True (3024x4032)
+2025-07-24 00:43:21.423 -07:00 [DBG] HEIC validation result: True (3024x4032)
+2025-07-24 00:43:21.492 -07:00 [DBG] HEIC validation result: True (3024x4032)
+2025-07-24 00:43:28.919 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\HEIC\IMG_5331.HEIC
+2025-07-24 00:43:28.923 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\HEIC\IMG_5331.HEIC
+2025-07-24 00:43:28.925 -07:00 [DBG] Validating image: C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\sample\HEIC\IMG_5331.HEIC
+2025-07-24 00:43:31.082 -07:00 [DBG] HEIC validation result: True (3024x4032)
+2025-07-24 00:43:31.115 -07:00 [DBG] HEIC validation result: True (3024x4032)
+2025-07-24 00:43:31.128 -07:00 [DBG] HEIC validation result: True (3024x4032)

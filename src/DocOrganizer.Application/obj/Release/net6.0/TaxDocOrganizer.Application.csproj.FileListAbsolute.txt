@@ -1,0 +1,15 @@
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Application\bin\Release\net6.0\TaxDocOrganizer.Application.deps.json
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Application\bin\Release\net6.0\TaxDocOrganizer.Application.dll
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Application\bin\Release\net6.0\TaxDocOrganizer.Application.pdb
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Application\bin\Release\net6.0\TaxDocOrganizer.Core.dll
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Application\bin\Release\net6.0\TaxDocOrganizer.Core.pdb
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Application\obj\Release\net6.0\TaxDocOrganizer.Application.csproj.AssemblyReference.cache
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Application\obj\Release\net6.0\TaxDocOrganizer.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Application\obj\Release\net6.0\TaxDocOrganizer.Application.AssemblyInfoInputs.cache
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Application\obj\Release\net6.0\TaxDocOrganizer.Application.AssemblyInfo.cs
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Application\obj\Release\net6.0\TaxDocOrganizer.Application.csproj.CoreCompileInputs.cache
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Application\obj\Release\net6.0\TaxDocOrganizer.Application.csproj.CopyComplete
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Application\obj\Release\net6.0\TaxDocOrganizer.Application.dll
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Application\obj\Release\net6.0\refint\TaxDocOrganizer.Application.dll
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Application\obj\Release\net6.0\TaxDocOrganizer.Application.pdb
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Application\obj\Release\net6.0\ref\TaxDocOrganizer.Application.dll

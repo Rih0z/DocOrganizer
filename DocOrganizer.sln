@@ -1,0 +1,71 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{8A3C1B42-5D6E-4F89-B123-456789ABCDEF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocOrganizer.Core", "src\DocOrganizer.Core\DocOrganizer.Core.csproj", "{123A4567-89AB-CDEF-0123-456789ABCDEF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocOrganizer.Application", "src\DocOrganizer.Application\DocOrganizer.Application.csproj", "{234B5678-9ABC-DEF0-1234-567890ABCDEF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocOrganizer.Infrastructure", "src\DocOrganizer.Infrastructure\DocOrganizer.Infrastructure.csproj", "{345C6789-ABCD-EF01-2345-678901ABCDEF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocOrganizer.UI", "src\DocOrganizer.UI\DocOrganizer.UI.csproj", "{456D7890-BCDE-F012-3456-789012ABCDEF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{9B4D2E53-6F7A-8C90-DE12-345678FEDCBA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocOrganizer.Core.Tests", "tests\DocOrganizer.Core.Tests\DocOrganizer.Core.Tests.csproj", "{567E8901-CDEF-0123-4567-890123ABCDEF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocOrganizer.UI.Tests", "tests\DocOrganizer.UI.Tests\DocOrganizer.UI.Tests.csproj", "{678F9012-DEF0-1234-5678-901234ABCDEF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocOrganizer.Application.Tests", "tests\DocOrganizer.Application.Tests\DocOrganizer.Application.Tests.csproj", "{789A0123-EF01-2345-6789-012345ABCDEF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{123A4567-89AB-CDEF-0123-456789ABCDEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{123A4567-89AB-CDEF-0123-456789ABCDEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{123A4567-89AB-CDEF-0123-456789ABCDEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{123A4567-89AB-CDEF-0123-456789ABCDEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{234B5678-9ABC-DEF0-1234-567890ABCDEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{234B5678-9ABC-DEF0-1234-567890ABCDEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{234B5678-9ABC-DEF0-1234-567890ABCDEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{234B5678-9ABC-DEF0-1234-567890ABCDEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{345C6789-ABCD-EF01-2345-678901ABCDEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{345C6789-ABCD-EF01-2345-678901ABCDEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{345C6789-ABCD-EF01-2345-678901ABCDEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{345C6789-ABCD-EF01-2345-678901ABCDEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{456D7890-BCDE-F012-3456-789012ABCDEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{456D7890-BCDE-F012-3456-789012ABCDEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{456D7890-BCDE-F012-3456-789012ABCDEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{456D7890-BCDE-F012-3456-789012ABCDEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{567E8901-CDEF-0123-4567-890123ABCDEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{567E8901-CDEF-0123-4567-890123ABCDEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{567E8901-CDEF-0123-4567-890123ABCDEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{567E8901-CDEF-0123-4567-890123ABCDEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{678F9012-DEF0-1234-5678-901234ABCDEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{678F9012-DEF0-1234-5678-901234ABCDEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{678F9012-DEF0-1234-5678-901234ABCDEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{678F9012-DEF0-1234-5678-901234ABCDEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{789A0123-EF01-2345-6789-012345ABCDEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{789A0123-EF01-2345-6789-012345ABCDEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{789A0123-EF01-2345-6789-012345ABCDEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{789A0123-EF01-2345-6789-012345ABCDEF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{123A4567-89AB-CDEF-0123-456789ABCDEF} = {8A3C1B42-5D6E-4F89-B123-456789ABCDEF}
+		{234B5678-9ABC-DEF0-1234-567890ABCDEF} = {8A3C1B42-5D6E-4F89-B123-456789ABCDEF}
+		{345C6789-ABCD-EF01-2345-678901ABCDEF} = {8A3C1B42-5D6E-4F89-B123-456789ABCDEF}
+		{456D7890-BCDE-F012-3456-789012ABCDEF} = {8A3C1B42-5D6E-4F89-B123-456789ABCDEF}
+		{567E8901-CDEF-0123-4567-890123ABCDEF} = {9B4D2E53-6F7A-8C90-DE12-345678FEDCBA}
+		{678F9012-DEF0-1234-5678-901234ABCDEF} = {9B4D2E53-6F7A-8C90-DE12-345678FEDCBA}
+		{789A0123-EF01-2345-6789-012345ABCDEF} = {9B4D2E53-6F7A-8C90-DE12-345678FEDCBA}
+	EndGlobalSection
+EndGlobal

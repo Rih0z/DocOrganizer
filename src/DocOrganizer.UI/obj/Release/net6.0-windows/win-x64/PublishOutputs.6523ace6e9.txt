@@ -1,0 +1,5 @@
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.UI\....release\TaxDocOrganizer.UI.pdb
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.UI\....release\TaxDocOrganizer.Application.pdb
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.UI\....release\TaxDocOrganizer.Core.pdb
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.UI\....release\TaxDocOrganizer.Infrastructure.pdb
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.UI\....release\TaxDocOrganizer.UI.exe

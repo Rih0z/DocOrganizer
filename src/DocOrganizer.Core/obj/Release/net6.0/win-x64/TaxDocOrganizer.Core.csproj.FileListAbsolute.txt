@@ -1,0 +1,12 @@
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Core\bin\Release\net6.0\win-x64\TaxDocOrganizer.Core.deps.json
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Core\bin\Release\net6.0\win-x64\TaxDocOrganizer.Core.dll
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Core\bin\Release\net6.0\win-x64\TaxDocOrganizer.Core.pdb
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Core\obj\Release\net6.0\win-x64\TaxDocOrganizer.Core.csproj.AssemblyReference.cache
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Core\obj\Release\net6.0\win-x64\TaxDocOrganizer.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Core\obj\Release\net6.0\win-x64\TaxDocOrganizer.Core.AssemblyInfoInputs.cache
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Core\obj\Release\net6.0\win-x64\TaxDocOrganizer.Core.AssemblyInfo.cs
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Core\obj\Release\net6.0\win-x64\TaxDocOrganizer.Core.csproj.CoreCompileInputs.cache
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Core\obj\Release\net6.0\win-x64\TaxDocOrganizer.Core.dll
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Core\obj\Release\net6.0\win-x64\refint\TaxDocOrganizer.Core.dll
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Core\obj\Release\net6.0\win-x64\TaxDocOrganizer.Core.pdb
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\TaxDocOrganizer.Core\obj\Release\net6.0\win-x64\ref\TaxDocOrganizer.Core.dll
