@@ -9,6 +9,7 @@
     <!-- <ApplicationIcon>icon.ico</ApplicationIcon> -->
     <Company>DocOrganizer Project</Company>
     <Product>DocOrganizer</Product>
+    <AssemblyName>DocOrganizer</AssemblyName>
     <Version>2.2.0</Version>
     <AssemblyVersion>2.2.0.0</AssemblyVersion>
     <FileVersion>2.2.0.0</FileVersion>

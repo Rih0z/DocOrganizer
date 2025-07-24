@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using TaxDocOrganizer.Core.Models;
+using DocOrganizer.Core.Models;
 
 namespace DocOrganizer.Application.Interfaces
 {

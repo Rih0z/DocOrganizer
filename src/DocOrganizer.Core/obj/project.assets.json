@@ -234,11 +234,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\TaxDocOrganizer.Core\\TaxDocOrganizer.Core.csproj",
-      "projectName": "TaxDocOrganizer.Core",
-      "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\TaxDocOrganizer.Core\\TaxDocOrganizer.Core.csproj",
+      "projectUniqueName": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Core\\DocOrganizer.Core.csproj",
+      "projectName": "DocOrganizer.Core",
+      "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Core\\DocOrganizer.Core.csproj",
       "packagesPath": "C:\\Users\\koki\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\TaxDocOrganizer.Core\\obj\\",
+      "outputPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Core\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\koki\\AppData\\Roaming\\NuGet\\NuGet.Config"

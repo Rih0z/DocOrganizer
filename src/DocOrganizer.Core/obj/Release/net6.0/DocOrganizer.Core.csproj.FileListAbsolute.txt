@@ -1,0 +1,12 @@
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Core\bin\Release\net6.0\DocOrganizer.Core.deps.json
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Core\bin\Release\net6.0\DocOrganizer.Core.dll
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Core\bin\Release\net6.0\DocOrganizer.Core.pdb
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Core\obj\Release\net6.0\DocOrganizer.Core.csproj.AssemblyReference.cache
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Core\obj\Release\net6.0\DocOrganizer.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Core\obj\Release\net6.0\DocOrganizer.Core.AssemblyInfoInputs.cache
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Core\obj\Release\net6.0\DocOrganizer.Core.AssemblyInfo.cs
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Core\obj\Release\net6.0\DocOrganizer.Core.csproj.CoreCompileInputs.cache
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Core\obj\Release\net6.0\DocOrganizer.Core.dll
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Core\obj\Release\net6.0\refint\DocOrganizer.Core.dll
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Core\obj\Release\net6.0\DocOrganizer.Core.pdb
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Core\obj\Release\net6.0\ref\DocOrganizer.Core.dll

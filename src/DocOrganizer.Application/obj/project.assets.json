@@ -57,17 +57,17 @@
           }
         }
       },
-      "TaxDocOrganizer.Core/1.0.0": {
+      "DocOrganizer.Core/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v6.0",
         "dependencies": {
           "SkiaSharp": "2.88.6"
         },
         "compile": {
-          "bin/placeholder/TaxDocOrganizer.Core.dll": {}
+          "bin/placeholder/DocOrganizer.Core.dll": {}
         },
         "runtime": {
-          "bin/placeholder/TaxDocOrganizer.Core.dll": {}
+          "bin/placeholder/DocOrganizer.Core.dll": {}
         }
       }
     },
@@ -110,17 +110,17 @@
           "runtimes/win-x64/native/libSkiaSharp.dll": {}
         }
       },
-      "TaxDocOrganizer.Core/1.0.0": {
+      "DocOrganizer.Core/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v6.0",
         "dependencies": {
           "SkiaSharp": "2.88.6"
         },
         "compile": {
-          "bin/placeholder/TaxDocOrganizer.Core.dll": {}
+          "bin/placeholder/DocOrganizer.Core.dll": {}
         },
         "runtime": {
-          "bin/placeholder/TaxDocOrganizer.Core.dll": {}
+          "bin/placeholder/DocOrganizer.Core.dll": {}
         }
       }
     }
@@ -248,16 +248,16 @@
         "skiasharp.nativeassets.win32.nuspec"
       ]
     },
-    "TaxDocOrganizer.Core/1.0.0": {
+    "DocOrganizer.Core/1.0.0": {
       "type": "project",
-      "path": "../TaxDocOrganizer.Core/TaxDocOrganizer.Core.csproj",
-      "msbuildProject": "../TaxDocOrganizer.Core/TaxDocOrganizer.Core.csproj"
+      "path": "../DocOrganizer.Core/DocOrganizer.Core.csproj",
+      "msbuildProject": "../DocOrganizer.Core/DocOrganizer.Core.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net6.0": [
-      "SkiaSharp >= 2.88.6",
-      "TaxDocOrganizer.Core >= 1.0.0"
+      "DocOrganizer.Core >= 1.0.0",
+      "SkiaSharp >= 2.88.6"
     ]
   },
   "packageFolders": {
@@ -266,11 +266,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\TaxDocOrganizer.Application\\TaxDocOrganizer.Application.csproj",
-      "projectName": "TaxDocOrganizer.Application",
-      "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\TaxDocOrganizer.Application\\TaxDocOrganizer.Application.csproj",
+      "projectUniqueName": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Application\\DocOrganizer.Application.csproj",
+      "projectName": "DocOrganizer.Application",
+      "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Application\\DocOrganizer.Application.csproj",
       "packagesPath": "C:\\Users\\koki\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\TaxDocOrganizer.Application\\obj\\",
+      "outputPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Application\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\koki\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -285,8 +285,8 @@
         "net6.0": {
           "targetAlias": "net6.0",
           "projectReferences": {
-            "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\TaxDocOrganizer.Core\\TaxDocOrganizer.Core.csproj": {
-              "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\TaxDocOrganizer.Core\\TaxDocOrganizer.Core.csproj"
+            "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Core\\DocOrganizer.Core.csproj": {
+              "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Core\\DocOrganizer.Core.csproj"
             }
           }
         }

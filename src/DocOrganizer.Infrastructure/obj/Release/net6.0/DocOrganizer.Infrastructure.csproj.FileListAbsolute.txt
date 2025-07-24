@@ -1,0 +1,17 @@
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Infrastructure\bin\Release\net6.0\DocOrganizer.Infrastructure.deps.json
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Infrastructure\bin\Release\net6.0\DocOrganizer.Infrastructure.dll
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Infrastructure\bin\Release\net6.0\DocOrganizer.Infrastructure.pdb
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Infrastructure\bin\Release\net6.0\DocOrganizer.Application.dll
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Infrastructure\bin\Release\net6.0\DocOrganizer.Core.dll
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Infrastructure\bin\Release\net6.0\DocOrganizer.Application.pdb
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Infrastructure\bin\Release\net6.0\DocOrganizer.Core.pdb
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Infrastructure\obj\Release\net6.0\DocOrganizer.Infrastructure.csproj.AssemblyReference.cache
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Infrastructure\obj\Release\net6.0\DocOrganizer.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Infrastructure\obj\Release\net6.0\DocOrganizer.Infrastructure.AssemblyInfoInputs.cache
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Infrastructure\obj\Release\net6.0\DocOrganizer.Infrastructure.AssemblyInfo.cs
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Infrastructure\obj\Release\net6.0\DocOrganizer.Infrastructure.csproj.CoreCompileInputs.cache
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Infrastructure\obj\Release\net6.0\DocOrganizer.Infrastructure.csproj.CopyComplete
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Infrastructure\obj\Release\net6.0\DocOrganizer.Infrastructure.dll
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Infrastructure\obj\Release\net6.0\refint\DocOrganizer.Infrastructure.dll
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Infrastructure\obj\Release\net6.0\DocOrganizer.Infrastructure.pdb
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Infrastructure\obj\Release\net6.0\ref\DocOrganizer.Infrastructure.dll

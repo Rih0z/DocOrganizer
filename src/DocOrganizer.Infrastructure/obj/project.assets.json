@@ -257,31 +257,31 @@
           }
         }
       },
-      "TaxDocOrganizer.Application/1.0.0": {
+      "DocOrganizer.Application/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v6.0",
         "dependencies": {
-          "SkiaSharp": "2.88.6",
-          "TaxDocOrganizer.Core": "1.0.0"
+          "DocOrganizer.Core": "1.0.0",
+          "SkiaSharp": "2.88.6"
         },
         "compile": {
-          "bin/placeholder/TaxDocOrganizer.Application.dll": {}
+          "bin/placeholder/DocOrganizer.Application.dll": {}
         },
         "runtime": {
-          "bin/placeholder/TaxDocOrganizer.Application.dll": {}
+          "bin/placeholder/DocOrganizer.Application.dll": {}
         }
       },
-      "TaxDocOrganizer.Core/1.0.0": {
+      "DocOrganizer.Core/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v6.0",
         "dependencies": {
           "SkiaSharp": "2.88.6"
         },
         "compile": {
-          "bin/placeholder/TaxDocOrganizer.Core.dll": {}
+          "bin/placeholder/DocOrganizer.Core.dll": {}
         },
         "runtime": {
-          "bin/placeholder/TaxDocOrganizer.Core.dll": {}
+          "bin/placeholder/DocOrganizer.Core.dll": {}
         }
       }
     },
@@ -487,31 +487,31 @@
           "buildTransitive/net6.0/_._": {}
         }
       },
-      "TaxDocOrganizer.Application/1.0.0": {
+      "DocOrganizer.Application/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v6.0",
         "dependencies": {
-          "SkiaSharp": "2.88.6",
-          "TaxDocOrganizer.Core": "1.0.0"
+          "DocOrganizer.Core": "1.0.0",
+          "SkiaSharp": "2.88.6"
         },
         "compile": {
-          "bin/placeholder/TaxDocOrganizer.Application.dll": {}
+          "bin/placeholder/DocOrganizer.Application.dll": {}
         },
         "runtime": {
-          "bin/placeholder/TaxDocOrganizer.Application.dll": {}
+          "bin/placeholder/DocOrganizer.Application.dll": {}
         }
       },
-      "TaxDocOrganizer.Core/1.0.0": {
+      "DocOrganizer.Core/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v6.0",
         "dependencies": {
           "SkiaSharp": "2.88.6"
         },
         "compile": {
-          "bin/placeholder/TaxDocOrganizer.Core.dll": {}
+          "bin/placeholder/DocOrganizer.Core.dll": {}
         },
         "runtime": {
-          "bin/placeholder/TaxDocOrganizer.Core.dll": {}
+          "bin/placeholder/DocOrganizer.Core.dll": {}
         }
       }
     }
@@ -948,27 +948,27 @@
         "useSharedDesignerContext.txt"
       ]
     },
-    "TaxDocOrganizer.Application/1.0.0": {
+    "DocOrganizer.Application/1.0.0": {
       "type": "project",
-      "path": "../TaxDocOrganizer.Application/TaxDocOrganizer.Application.csproj",
-      "msbuildProject": "../TaxDocOrganizer.Application/TaxDocOrganizer.Application.csproj"
+      "path": "../DocOrganizer.Application/DocOrganizer.Application.csproj",
+      "msbuildProject": "../DocOrganizer.Application/DocOrganizer.Application.csproj"
     },
-    "TaxDocOrganizer.Core/1.0.0": {
+    "DocOrganizer.Core/1.0.0": {
       "type": "project",
-      "path": "../TaxDocOrganizer.Core/TaxDocOrganizer.Core.csproj",
-      "msbuildProject": "../TaxDocOrganizer.Core/TaxDocOrganizer.Core.csproj"
+      "path": "../DocOrganizer.Core/DocOrganizer.Core.csproj",
+      "msbuildProject": "../DocOrganizer.Core/DocOrganizer.Core.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net6.0": [
+      "DocOrganizer.Application >= 1.0.0",
+      "DocOrganizer.Core >= 1.0.0",
       "Magick.NET-Q16-AnyCPU >= 14.0.0",
       "Microsoft.Extensions.Logging.Abstractions >= 8.0.1",
       "PDFsharpCore >= 1.3.67",
       "SixLabors.ImageSharp >= 1.0.4",
       "SkiaSharp >= 2.88.8",
-      "System.Text.Encoding.CodePages >= 8.0.0",
-      "TaxDocOrganizer.Application >= 1.0.0",
-      "TaxDocOrganizer.Core >= 1.0.0"
+      "System.Text.Encoding.CodePages >= 8.0.0"
     ]
   },
   "packageFolders": {
@@ -977,11 +977,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\TaxDocOrganizer.Infrastructure\\TaxDocOrganizer.Infrastructure.csproj",
-      "projectName": "TaxDocOrganizer.Infrastructure",
-      "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\TaxDocOrganizer.Infrastructure\\TaxDocOrganizer.Infrastructure.csproj",
+      "projectUniqueName": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Infrastructure\\DocOrganizer.Infrastructure.csproj",
+      "projectName": "DocOrganizer.Infrastructure",
+      "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Infrastructure\\DocOrganizer.Infrastructure.csproj",
       "packagesPath": "C:\\Users\\koki\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\TaxDocOrganizer.Infrastructure\\obj\\",
+      "outputPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Infrastructure\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\koki\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -996,11 +996,11 @@
         "net6.0": {
           "targetAlias": "net6.0",
           "projectReferences": {
-            "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\TaxDocOrganizer.Application\\TaxDocOrganizer.Application.csproj": {
-              "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\TaxDocOrganizer.Application\\TaxDocOrganizer.Application.csproj"
+            "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Application\\DocOrganizer.Application.csproj": {
+              "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Application\\DocOrganizer.Application.csproj"
             },
-            "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\TaxDocOrganizer.Core\\TaxDocOrganizer.Core.csproj": {
-              "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\TaxDocOrganizer.Core\\TaxDocOrganizer.Core.csproj"
+            "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Core\\DocOrganizer.Core.csproj": {
+              "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Core\\DocOrganizer.Core.csproj"
             }
           }
         }

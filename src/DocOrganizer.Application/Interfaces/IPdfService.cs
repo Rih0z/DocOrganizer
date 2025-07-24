@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using SkiaSharp;
-using TaxDocOrganizer.Core.Models;
+using DocOrganizer.Core.Models;
 
 namespace DocOrganizer.Application.Interfaces
 {

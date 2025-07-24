@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "MKgADNYbdMV27enkbsY9yr4BTIePY6IJX9oHqca7VO7eLZDBxIKhC+zIurz61TTbOi7+VfBUKksDU8UPRFmrHQ==",
+  "dgSpecHash": "wVDsqFpkri6d4vtZ0AWFbFy9+emklbZ40kybQwVezMeMx6HIgbkq9JNXZcFzRTe/gg64ek50GC34WXEIMZuXTQ==",
   "success": true,
-  "projectFilePath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\TaxDocOrganizer.Application\\TaxDocOrganizer.Application.csproj",
+  "projectFilePath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Application\\DocOrganizer.Application.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\koki\\.nuget\\packages\\skiasharp\\2.88.6\\skiasharp.2.88.6.nupkg.sha512",
     "C:\\Users\\koki\\.nuget\\packages\\skiasharp.nativeassets.macos\\2.88.6\\skiasharp.nativeassets.macos.2.88.6.nupkg.sha512",

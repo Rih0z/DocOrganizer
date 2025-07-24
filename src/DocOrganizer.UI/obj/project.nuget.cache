@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "40iMzNyLKOsK7MJIGc+kyhTg3cF+RZYLjGbsH0yDvtnotsT1mAkaA3lzkMLFTm7dnZ1M1KNIuTIKhzzf6d1sAg==",
+  "dgSpecHash": "MQddQOHy7W6+jgAh0PmuekTvdebiLURjz0TG99ciA0YtU84xrxOrTKqvb7EtVsuf+FzRCgreOQxFTwNnXW0Ubg==",
   "success": true,
-  "projectFilePath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\TaxDocOrganizer.UI\\TaxDocOrganizer.UI.csproj",
+  "projectFilePath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.UI\\DocOrganizer.UI.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\koki\\.nuget\\packages\\communitytoolkit.mvvm\\8.2.2\\communitytoolkit.mvvm.8.2.2.nupkg.sha512",
     "C:\\Users\\koki\\.nuget\\packages\\magick.net-q16-anycpu\\14.0.0\\magick.net-q16-anycpu.14.0.0.nupkg.sha512",
