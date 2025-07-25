@@ -1,90 +1,158 @@
-# DocOrganizer V2.2 - CubePDF互換版
+# DocOrganizer
 
-## 概要
+[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/Rih0z/DocOrganizer/releases)
+[![.NET](https://img.shields.io/badge/.NET-6.0-purple.svg)](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
+[![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-DocOrganizer V2.2は、CubePDF UtilityのUIデザインに準拠したPDF編集ツールです。
-V2.1のMaterial DesignからWindows標準UIに変更し、CubePDFユーザーに馴染みやすいインターフェースを提供します。
+DocOrganizer is a modern, CubePDF Utility-compatible PDF editing and document management tool designed for professional document organization and processing.
 
-## V2.2の主な変更点
+## 🚀 Features
 
-### UI/UXの変更
-- **Material Design → Windows標準UI**: CubePDF Utilityと同じ操作感
-- **シンプルな2ペインレイアウト**: 左側サムネイル、右側プレビュー
-- **標準的なツールバー**: Windowsアプリケーションの標準的な配置
-- **クラシックな色調**: グレー基調のWindows標準カラー
+### Core PDF Operations
+- **PDF Editing**: Merge, split, rotate, and delete pages
+- **Drag & Drop Interface**: Intuitive file handling with visual feedback
+- **Page Management**: Thumbnail view with easy reordering
+- **High-Quality Preview**: Real-time document preview with zoom support
 
-### 操作性の改善
-- **標準的な選択方式**: Ctrl+クリック、Shift+クリックでの複数選択
-- **Windows標準のドラッグ&ドロップ**: 視覚的にシンプルな操作
-- **右クリックメニュー**: コンテキストメニューの充実
+### Document Organization
+- **Image to PDF Conversion**: Support for HEIC, JPG, PNG, JPEG formats
+- **Orientation Detection**: Automatic correction of document orientation
+- **Batch Processing**: Handle multiple documents simultaneously
+- **Professional Output**: Optimized PDF generation with compression options
 
-## 技術仕様
+### Advanced Features
+- **Auto-Update**: Automatic updates via GitHub Releases
+- **Modern UI**: Clean, Windows 11-style interface
+- **Performance Optimized**: Fast processing of large documents
+- **Error Handling**: Robust file processing with detailed logging
 
-### システム要件
+## 📦 Installation
+
+### Requirements
 - Windows 10/11 (64-bit)
-- .NET 9.0 Runtime
-- 4GB以上のメモリ推奨
+- .NET 6.0 Runtime (included in self-contained build)
 
-### 使用技術
-- WPF (Windows Presentation Foundation)
-- Windows標準コントロール
-- iText7 (PDF処理)
-- MVVM パターン
+### Download
+1. Visit the [Releases Page](https://github.com/Rih0z/DocOrganizer/releases)
+2. Download the latest `DocOrganizer.exe`
+3. Run directly - no installation required!
 
-## 機能一覧
+### Important: Proper Startup
+⚠️ **Critical**: Always launch DocOrganizer from Windows Explorer by double-clicking the .exe file. **Never** run as administrator, as this will disable drag & drop functionality due to Windows security restrictions.
 
-### 基本機能（CubePDF Utility互換）
-- [ ] PDFファイルの開く/保存
-- [ ] ページサムネイル表示
-- [ ] ページの回転（90度単位）
-- [ ] ページの削除
-- [ ] ページの並び替え（ドラッグ&ドロップ）
-- [ ] PDF結合
-- [ ] PDF分割
-- [ ] セキュリティ設定
+## 🎯 Quick Start
 
-### 拡張機能（文書整理特化）
-- [ ] 高度なファイル名生成
-- [ ] 文書タイプ分類
-- [ ] 定型並び順テンプレート
-- [ ] 自動フォルダ整理
+1. **Launch**: Double-click `DocOrganizer.exe` from Windows Explorer
+2. **Add Files**: Drag & drop PDF files or images onto the application
+3. **Organize**: Use the thumbnail view to reorder, rotate, or delete pages
+4. **Save**: Click "Save PDF" to export your organized document
 
-## 開発ガイド
+## 🛠️ Development
 
-### ビルド手順
+### Building from Source
+
 ```bash
-# リポジトリのクローン
+# Clone the repository
 git clone https://github.com/Rih0z/DocOrganizer.git
 cd DocOrganizer
 
-# 依存関係の復元
+# Build the application
 dotnet restore
-
-# ビルド
 dotnet build --configuration Release
 
-# 実行
-dotnet run --project src/DocOrganizer.UI
+# Create single-file executable
+dotnet publish src/DocOrganizer.UI/DocOrganizer.UI.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o release
 ```
 
-### プロジェクト構造
+### Project Structure
 ```
 DocOrganizer/
-├── src/
-│   ├── DocOrganizer.Core/        # ドメインモデル
-│   ├── DocOrganizer.Application/ # アプリケーション層
-│   ├── DocOrganizer.Infrastructure/ # インフラ層
-│   └── DocOrganizer.UI/         # プレゼンテーション層
-├── tests/                        # テストプロジェクト
-├── docs/                         # ドキュメント
-└── samples/                      # サンプルファイル
+├── src/                     # Application source code
+│   ├── DocOrganizer.Core/   # Domain models and interfaces
+│   ├── DocOrganizer.Application/ # Business logic and services
+│   ├── DocOrganizer.Infrastructure/ # External integrations
+│   └── DocOrganizer.UI/     # WPF user interface
+├── tests/                   # Unit and integration tests
+├── scripts/                 # Build and utility scripts
+├── docs/                    # Documentation and guides
+├── sample/                  # Test files and examples
+└── release/                 # Build output
 ```
 
-## ライセンス
-MIT License
+### Architecture
+DocOrganizer follows Clean Architecture principles:
+- **Clean Architecture**: Separation of concerns with clear layer boundaries
+- **MVVM Pattern**: Model-View-ViewModel for WPF UI
+- **Dependency Injection**: Service registration and lifecycle management
+- **Async/Await**: Non-blocking operations for better UX
 
-## 貢献
-プルリクエストを歓迎します。大きな変更の場合は、まずissueを作成して変更内容を議論してください。
+## 🧪 Testing
 
-## 作者
-DocOrganizer Project Team
+Run the automated test suite:
+```bash
+dotnet test
+```
+
+For manual testing, use the provided scripts in `scripts/test/`:
+- `QuickAutoTest.ps1` - Basic functionality verification
+- `drag-drop-test.ps1` - Drag & drop feature testing
+- `test-orientation-correction.ps1` - Orientation detection testing
+
+## 📋 Troubleshooting
+
+### Drag & Drop Not Working
+**Problem**: Files cannot be dropped onto the application
+**Solution**: Ensure you're running DocOrganizer with normal user privileges (not as administrator)
+
+### Application Won't Start
+**Problem**: DocOrganizer.exe fails to launch
+**Solution**: 
+1. Check Windows Defender exclusions
+2. Verify .NET 6.0 runtime availability
+3. Run from a location with write permissions
+
+### Performance Issues
+**Problem**: Slow processing of large files
+**Solution**: 
+1. Ensure sufficient RAM (recommended 8GB+)
+2. Close other applications during processing
+3. Use SSD storage for better I/O performance
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+
+### Development Environment
+- Visual Studio 2022 or VS Code
+- .NET 6.0 SDK
+- Windows 10/11 for WPF development
+
+## 📈 Roadmap
+
+- [ ] Advanced OCR integration
+- [ ] Cloud storage integration
+- [ ] Template system for document organization
+- [ ] Multi-language support
+- [ ] Dark theme support
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+- **Issues**: [GitHub Issues](https://github.com/Rih0z/DocOrganizer/issues)
+- **Documentation**: Check the `docs/` folder for detailed guides
+- **Releases**: [GitHub Releases](https://github.com/Rih0z/DocOrganizer/releases)
+
+## 🙏 Acknowledgments
+
+- Inspired by CubePDF Utility for its excellent user experience
+- Built with .NET 6.0 and WPF
+- Uses PDFsharp for PDF processing
+- SkiaSharp for image handling
+
+---
+
+**DocOrganizer** - Professional Document Organization Made Simple

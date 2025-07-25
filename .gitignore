@@ -214,8 +214,16 @@ release/*.pdb
 release/*.exe
 release/*.dll
 
-# Exclude all executables
+# Exclude all executables everywhere
 *.exe
+**/*.exe
+
+# Exclude large binary files
+*.zip
+*.7z
+*.rar
+*.msi
+*.cab
 
 # Exclude large binary files
 *.zip
