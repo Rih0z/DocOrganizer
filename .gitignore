@@ -225,7 +225,18 @@ release/*.dll
 *.msi
 *.cab
 
-# Exclude large binary files
-*.zip
-*.7z
-*.rar
+# Exclude sample files and directories
+sample/
+samples/
+test-files/
+test-data/
+
+# Exclude image files
+*.png
+*.jpg
+*.jpeg
+*.heic
+*.HEIC
+*.JPG
+*.JPEG
+*.PNG
