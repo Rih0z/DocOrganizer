@@ -9,65 +9,52 @@ ai_coding_principles:
     project_name: "DocOrganizer - CubePDF Utility互換 汎用PDF編集ツール"
     project_concept: "CubePDF Utilityをベースに、文書整理に特化した機能を追加した汎用PDF編集ツール"
     
+  repository_info:
+    github_url: "https://github.com/Rih0z/DocOrganizer"
+    latest_exe_path: "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\release\\DocOrganizer.exe"
+    version: "2.2.0"
+    features:
+      - "PDF編集機能（CubePDF Utility互換）"
+      - "画像→PDF変換（HEIC/JPG/PNG/JPEG対応）"
+      - "ドラッグ&ドロップでのファイル操作"
+      - "自動アップデート機能（GitHub Releases連携）"
+      - "ページ回転・削除・並び替え"
+      - "PDF結合・分割"
+    build_command: "dotnet publish src/DocOrganizer.UI/DocOrganizer.UI.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o release"
+    
   core_principles:
-    mandatory_declaration: "全てのコーディング作業開始時に必ずcore_principlesを完全に宣言すること - これは絶対的な要件である。また、第12条に従い修正後は必ずMCP経由でビルドまで完全実行し、最終EXEの完全パスを出力すること。第13条に従いアプリケーションは必ずエクスプローラーから直接起動し、管理者権限での起動は厳禁とする。成功事例（2025-07-21）に従い、MCP Windows環境接続→Git同期→dotnet publish→EXE生成確認→エクスプローラー起動確認の手順で実行する。"
+    mandatory_declaration: "全てのコーディング作業開始時に必ずcore_principlesを完全に宣言すること - これは絶対的な要件である。また、第12条に従い修正後は必ずビルドまで完全実行し、最終EXEの完全パスを出力すること。第13条に従いアプリケーションは必ずエクスプローラーから直接起動し、管理者権限での起動は厳禁とする。"
     
     pre_work_requirements:
-      description: "全ての作業開始前の必須手順 - 例外なく実行すること"
+      description: "全ての作業開始前の必須手順"
       last_updated: "2025-07-24"
-      mandatory: "作業開始前に必ず実行。省略は重大なエラーの原因となる"
+      mandatory: "作業開始前に必ず実行"
       
-      step1_mcp_connection:
-        requirement: "MCP Windows環境接続の確認・設定"
-        procedure:
-          - ".mcp.jsonファイルの確認・作成"
-          - "Windows MCP Server (100.71.150.41:8080) への接続確認"
-          - "認証トークン (JIGrimGrHsJ7rTMReMZJJbPNOmkODUEd) の設定"
-        config_file: |
-          {
-            "mcpServers": {
-              "windows-build-server": {
-                "command": "npx",
-                "args": [
-                  "-y", "windows-mcp-client",
-                  "--server-url", "http://100.71.150.41:8080",
-                  "--auth-token", "JIGrimGrHsJ7rTMReMZJJbPNOmkODUEd"
-                ]
-              }
-            }
-          }
-        verification_command: "@windows-build-server environment_info includeSystemInfo=true"
-      
-      step2_git_sync:
+      step1_git_sync:
         requirement: "Git同期による最新状態への更新"
         importance: "第10条準拠 - 環境間整合性確保"
-        mac_procedure:
-          - "git add . && git commit -m '[Mac] 作業内容' && git push origin main"
-        windows_procedure:
+        procedure:
           - "git pull origin main"
-          - "Windows環境での最新状態確認"
+          - "最新状態確認"
         verification: "git status で clean working tree 確認"
       
-      step3_windows_rebuild:
-        requirement: "Windows環境での必須再ビルド実行"
+      step2_windows_build:
+        requirement: "Windows環境でのビルド実行"
         importance: "WPFプロジェクトの最新状態確保"
         mandatory_commands:
-          - "cd C:\\builds\\DocOrganizer-repo\\v2.2-doc-organizer"
-          - "git pull origin main"
+          - "cd C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer"
           - "dotnet clean"
           - "dotnet restore" 
           - "dotnet build --configuration Release"
           - "dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o release"
-        success_verification: "release\\DocOrganizer.UI.exe の生成確認"
+        success_verification: "release\\DocOrganizer.exe の生成確認"
         
       execution_order: 
-        1: "MCP Windows接続確認"
-        2: "Git同期実行"
-        3: "Windows環境再ビルド"
-        4: "作業開始"
+        1: "Git同期実行"
+        2: "Windows環境ビルド"
+        3: "作業開始"
       
       failure_handling:
-        mcp_connection_fail: "MCP設定ファイル確認、Windows MCP Server起動状況確認"
         git_sync_fail: "競合解決、手動同期実行"
         build_fail: "依存関係確認、.NET SDK状況確認"
     第1条: 
@@ -130,40 +117,38 @@ ai_coding_principles:
         - "他環境移行時: git pull origin main"
       related_sections: ["git_synchronization_standards", "version_control_workflow"]
     第11条:
-      rule: "全ての作業開始前にMCP Windows環境接続確認とWindows環境での再ビルドを必ず実行する。"
+      rule: "全ての作業開始前にWindows環境での再ビルドを必ず実行する。"
       importance: "WPFプロジェクト開発の前提条件"
       mandatory: "例外なく実行すること - WPFビルドには絶対必要"
       implementation:
-        step1: "MCP接続確認: @windows-build-server environment_info includeSystemInfo=true"
-        step2: "Git同期: git pull origin main (Windows環境)"
-        step3: "再ビルド: dotnet clean && dotnet restore && dotnet build --configuration Release"
-        step4: "EXE生成: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o release"
-        verification: "release\\DocOrganizer.UI.exe の存在と動作確認"
+        step1: "Git同期: git pull origin main"
+        step2: "再ビルド: dotnet clean && dotnet restore && dotnet build --configuration Release"
+        step3: "EXE生成: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o release"
+        verification: "release\\DocOrganizer.exe の存在と動作確認"
       failure_response:
-        mcp_fail: ".mcp.jsonファイル確認、Windows MCP Server状況確認"
         sync_fail: "手動Git同期、競合解決"
         build_fail: ".NET SDK確認、依存関係修正"
-      related_sections: ["pre_work_requirements", "mcp_environment_requirements", "第10条"]
+      related_sections: ["pre_work_requirements", "第10条"]
     第12条:
-      rule: "修正を行ったら必ずMCP経由でビルドまで完全実行し、最終的なEXEの完全パスを出力する。"
+      rule: "修正を行ったら必ずビルドまで完全実行し、最終的なEXEの完全パスを出力する。"
       importance: "修正→ビルド→テスト→EXE確定の完全サイクル実行"
       mandatory: "例外なく実行すること - 修正のみで終了は厳禁"
       implementation:
         complete_workflow:
           step1: "修正実行（コード・設定・ドキュメント等）"
           step2: "Git同期: git add . && git commit -m '修正内容' && git push origin main"
-          step3: "MCP Windows環境ビルド実行: @windows-build-server でビルド"
+          step3: "ビルド実行: dotnet clean, restore, build, publish実行"
           step4: "EXE生成確認とテスト実行"
           step5: "問題があれば即座に修正して step1 に戻る"
           step6: "問題がなくなった時点で最終EXEの完全パスを出力"
-        mcp_build_commands:
-          connection_test: "@windows-build-server environment_info includeSystemInfo=true"
-          git_sync: "@windows-build-server でWindows環境の git pull origin main"
-          build_execute: "@windows-build-server でdotnet clean, restore, build, publish実行"
-          exe_test: "@windows-build-server でEXE起動テストと機能確認"
+        build_commands:
+          git_sync: "git pull origin main"
+          build_execute: "dotnet clean && dotnet restore && dotnet build --configuration Release"
+          publish_execute: "dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o release"
+          exe_test: "エクスプローラーからEXE起動テストと機能確認"
         final_output_requirement:
-          format: "C:\\builds\\DocOrganizer-repo\\v2.2-doc-organizer\\release\\DocOrganizer.UI.exe"
-          verification: "EXEファイル存在、サイズ（100-150MB）、作成日時（当日）"
+          format: "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\release\\DocOrganizer.exe"
+          verification: "EXEファイル存在、サイズ（200MB前後）、作成日時（当日）"
           test_results: "起動成功、UI表示確認、ドラッグ&ドロップ動作確認"
           success_message: "✅ DocOrganizer V2.2 完成: [完全パス] - [ファイルサイズ]MB - [作成日時]"
         error_handling:
@@ -770,18 +755,16 @@ ai_coding_principles:
       latest_only: "過去のビルドは無視し、最新版のみをテスト対象とする"
       verification_steps:
         - "最新ビルドのパスを特定"
-        - "MCPを使用した起動テスト"
+        - "エクスプローラーから起動テスト"
         - "プロセス確認とメモリ使用量チェック"
         - "正常終了の確認"
     current_latest_exe:
-      v1: "C:\\builds\\DocOrganizer-repo\\v1-image-to-pdf\\release\\DocOrganizer.UI.exe"
-      v22: "C:\\builds\\DocOrganizer-repo\\v2.2-doc-organizer\\release\\DocOrganizer.exe"
-      v22_build_location: "C:\\builds\\DocOrganizer-repo\\v2.2-doc-organizer\\"
-      v22_status: "実装中 - 本質的なPDF機能を含む実アプリケーション"
-    mcp_test_command: |
-      # 最新版EXEの起動テスト
-      cd C:/builds/DocOrganizer-repo/v1-image-to-pdf/release
-      $proc = Start-Process -FilePath "DocOrganizer.UI.exe" -PassThru
+      v22: "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\release\\DocOrganizer.exe"
+      v22_status: "完成版 - 自動アップデート機能付きPDF編集ツール"
+    test_command: |
+      # 最新版EXEの起動テスト（PowerShellで実行）
+      cd C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\release
+      $proc = Start-Process -FilePath "DocOrganizer.exe" -PassThru
       Write-Host "Process ID: $($proc.Id)"
       Start-Sleep -Seconds 5
       if (-not $proc.HasExited) {
@@ -789,54 +772,32 @@ ai_coding_principles:
         Stop-Process -Id $proc.Id -Force
       }
 
-  mcp_environment_requirements:
-    description: "MCP環境接続要件 - WPFプロジェクト必須設定"
-    last_updated: "2025-07-24"
-    mandatory: "WPFプロジェクトビルドには必ずWindows環境接続が必要"
+  windows_build_requirements:
+    description: "Windows環境でのビルド要件"
+    last_updated: "2025-01-24"
+    mandatory: "WPFプロジェクトビルドにはWindows環境が必要"
     
-    required_connection:
-      target_ip: "100.71.150.41"
-      target_os: "Windows 10/11"
-      connection_type: "Windows環境専用MCP接続"
-      mandatory: "例外なくWindows環境に接続すること"
-      
     technical_requirements:
       dotnet_sdk: ".NET 6.0以上 + Windows Desktop SDK"
       build_tools: "Visual Studio Build Tools 2022以上"
       frameworks:
         - "Microsoft.NET.Sdk.WindowsDesktop対応"
         - "WPF (Windows Presentation Foundation)対応"
-        - "Windows Forms対応"
       runtime_identifiers:
         - "win-x64 (Windows 64-bit)"
-        - "win-x86 (Windows 32-bit)"
     
-    connection_verification:
-      os_check: "uname -s でWindows確認必須"
-      sdk_check: "dotnet --info でWindows Desktop SDK確認"
-      build_test: "dotnet build で WPF プロジェクトビルド成功確認"
-      
-    failure_scenarios:
-      mac_connection:
-        problem: "Darwin環境ではWPFビルド不可"
-        solution: "Windows環境への切り替え必須"
-        error_message: "Microsoft.NET.Sdk.WindowsDesktop.targets not found"
-      linux_connection:
-        problem: "Linux環境ではWPFビルド不可"
-        solution: "Windows環境への切り替え必須"
-        
     build_commands:
       windows_build_sequence:
-        - "cd C:\\builds\\DocOrganizer-repo\\v2.2-doc-organizer"
+        - "cd C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer"
         - "git pull origin main"
         - "dotnet clean"
         - "dotnet restore"
         - "dotnet build --configuration Release"
         - "dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o release"
-      verification_command: "if exist release\\DocOrganizer.UI.exe echo SUCCESS"
+      verification_command: "if exist release\\DocOrganizer.exe echo SUCCESS"
       
     priority: "最高優先度 - WPFプロジェクト完成に必須"
-    related_sections: ["第4条", "第8条", "第10条", "v22_status", "exe_verification"]
+    related_sections: ["第4条", "第8条", "第10条", "exe_verification"]
 
 # 以下、既存のセクションは変更なし（省略）
 ```
