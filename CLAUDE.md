@@ -23,7 +23,24 @@ ai_coding_principles:
     build_command: "dotnet publish src/DocOrganizer.UI/DocOrganizer.UI.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o release"
     
   core_principles:
-    mandatory_declaration: "全てのコーディング作業開始時に必ずcore_principlesを完全に宣言すること - これは絶対的な要件である。また、第12条に従い修正後は必ずビルドまで完全実行し、最終EXEの完全パスを出力すること。第13条に従いアプリケーションは必ずエクスプローラーから直接起動し、管理者権限での起動は厳禁とする。"
+    mandatory_declaration: |
+      全てのコーディング作業開始時に必ず以下の宣言を完全に実行すること - これは絶対的な要件である：
+      
+      【必須宣言事項】
+      第1条: 常に思考開始前にClaude.mdの第一条から第五条のAIコーディング原則を全て宣言してから実施する
+      第2条: 常にプロの世界最高エンジニアとして対応する
+      第3条: モックや仮のコード、ハードコードを一切禁止する
+      第4条: エンタープライズレベルの実装を実施し、修正は表面的ではなく、全体のアーキテクチャを意識して実施する
+      第5条: 問題に詰まったら、まずCLAUDE.mdやプロジェクトドキュメント内に解決策がないか確認する
+      第6条: 不要なスクリプトは増やさない。スクリプト作成時は常に既存のスクリプトで使用可能なものがないかscript_managementセクションを確認する
+      第7条: 段階的実装を徹底する。完璧を求めず、動作する最小限の機能から始めて、継続的に改善する
+      第8条: デザインはhttps://atlassian.design/components を読み込み、これに準拠する
+      第9条: ビルドの度に新しいフォルダを作成しない。既存のプロジェクトフォルダを更新し続ける
+      第10条: Mac・Windows両環境でプロフェッショナルなファイル構造を維持する
+      第11条: 修正を行ったら必ずgit pullでディレクトリを同期する
+      第12条: 全ての作業開始前にWindows環境での再ビルドを必ず実行する
+      第13条: 修正を行ったら必ずビルドまで完全実行し、最終的なEXEの完全パスを出力する
+      第14条: Windowsアプリケーションはエクスプローラーから直接起動する。管理者権限での起動は厳禁
     
     pre_work_requirements:
       description: "全ての作業開始前の必須手順"
@@ -82,7 +99,11 @@ ai_coding_principles:
       rule: "段階的実装を徹底する。完璧を求めず、動作する最小限の機能から始めて、継続的に改善する。"
       importance: "V2.0の失敗から学んだ最重要原則"
       related_sections: ["v2_reflection", "v21_implementation_plan"]
-    第8条:
+    第8条: 
+      rule: "デザインはhttps://atlassian.design/components を読み込み、これに準拠する。"
+      importance: "一貫性のあるプロフェッショナルなUIデザインの実現"
+      related_sections: "https://atlassian.design/components"
+    第9条:
       rule: "ビルドの度に新しいフォルダを作成しない。既存のプロジェクトフォルダを更新し続ける。不要なファイルは削除して整理する。"
       importance: "プロジェクト管理の効率化とディスク容量の節約"
       implementation:
@@ -91,7 +112,7 @@ ai_coding_principles:
         - "release/に最新のEXEを配置"
         - "不要な一時ファイルは削除"
       related_sections: ["project_structure", "artifact_management"]
-    第9条:
+    第10条:
       rule: "Mac・Windows両環境でプロフェッショナルなファイル構造を維持する。誰に見せても恥ずかしくない整理整頓を徹底する。"
       importance: "クライアント・上司に見せても完全にプロフェッショナルな印象を与える"
       implementation:
@@ -100,7 +121,7 @@ ai_coding_principles:
         - "本番・開発・アーカイブの明確な分離"
         - "bin/obj等の開発用一時ファイルの定期削除"
       related_sections: ["file_organization_standards", "professional_standards", "git_synchronization_standards"]
-    第10条:
+    第11条:
       rule: "修正を行ったら必ずgit pullでディレクトリを同期する。環境間の整合性を常に保つ。"
       importance: "Mac・Windows環境の完全同期によるプロジェクト整合性確保"
       mandatory: "例外なく実行すること - 同期忘れは重大なエラーの原因"
@@ -116,7 +137,7 @@ ai_coding_principles:
         - "作業完了時: git push origin main"
         - "他環境移行時: git pull origin main"
       related_sections: ["git_synchronization_standards", "version_control_workflow"]
-    第11条:
+    第12条:
       rule: "全ての作業開始前にWindows環境での再ビルドを必ず実行する。"
       importance: "WPFプロジェクト開発の前提条件"
       mandatory: "例外なく実行すること - WPFビルドには絶対必要"
@@ -128,8 +149,8 @@ ai_coding_principles:
       failure_response:
         sync_fail: "手動Git同期、競合解決"
         build_fail: ".NET SDK確認、依存関係修正"
-      related_sections: ["pre_work_requirements", "第10条"]
-    第12条:
+      related_sections: ["pre_work_requirements", "第11条"]
+    第13条:
       rule: "修正を行ったら必ずビルドまで完全実行し、最終的なEXEの完全パスを出力する。"
       importance: "修正→ビルド→テスト→EXE確定の完全サイクル実行"
       mandatory: "例外なく実行すること - 修正のみで終了は厳禁"
@@ -185,8 +206,8 @@ ai_coding_principles:
             architecture: "win-x64"
             features: "CubePDF互換UI + 文書整理特化機能"
             startup_test: "成功（プロセスID: 17812）"
-      related_sections: ["第11条", "mcp_environment_requirements", "execution_checklist"]
-    第13条:
+      related_sections: ["第12条", "mcp_environment_requirements", "execution_checklist"]
+    第14条:
       rule: "Windowsアプリケーションはエクスプローラーから直接起動する。管理者権限での起動はドラッグ&ドロップ機能を無効化する。"
       importance: "ドラッグ&ドロップ機能の正常動作に必須 - Windowsセキュリティ制約の回避"
       mandatory: "例外なく守ること - 管理者権限起動は重大な機能制限を引き起こす"
@@ -275,7 +296,7 @@ ai_coding_principles:
           full_application_success: "DocOrganizer.UI.exe（本格版）で動作確認成功"
           consistent_behavior: "両方のアプリケーションで同じ現象と解決方法を確認"
         lesson_learned: "Windows WPFアプリケーションの権限レベル制約は回避不可能な設計制約"
-      related_sections: ["第12条", "exe_verification", "troubleshooting", "testing_verification"]
+      related_sections: ["第13条", "exe_verification", "troubleshooting", "testing_verification"]
     
     file_organization_standards:
       description: "Mac・Windows両環境でのプロフェッショナルファイル構造基準"
