@@ -422,7 +422,7 @@ namespace DocOrganizer.UI.ViewModels
         {
             System.Diagnostics.Debug.WriteLine("[RotateLeft] Command executed");
             System.Diagnostics.Debug.WriteLine($"[RotateLeft] HasSelectedPages: {HasSelectedPages}");
-            RotateSelectedPages(-90);
+            RotateSelectedPages(270); // 左回転 = 270度（反時計回り）
         }
 
         [RelayCommand(CanExecute = nameof(HasSelectedPages))]
@@ -430,7 +430,7 @@ namespace DocOrganizer.UI.ViewModels
         {
             System.Diagnostics.Debug.WriteLine("[RotateRight] Command executed");
             System.Diagnostics.Debug.WriteLine($"[RotateRight] HasSelectedPages: {HasSelectedPages}");
-            RotateSelectedPages(90);
+            RotateSelectedPages(90); // 右回転 = 90度（時計回り）
         }
 
         private void RotateSelectedPages(int degrees)

@@ -393,12 +393,21 @@ namespace DocOrganizer.Infrastructure.Services
 
             try
             {
-                page.Rotation = (page.Rotation + degrees) % 360;
+                int newRotation = (page.Rotation + degrees) % 360;
                 // 負の値を正の値に変換
-                if (page.Rotation < 0)
+                if (newRotation < 0)
                 {
-                    page.Rotation += 360;
+                    newRotation += 360;
                 }
+                
+                // 90度単位に正規化（0, 90, 180, 270のみ）
+                newRotation = ((newRotation + 45) / 90) * 90;
+                if (newRotation >= 360)
+                {
+                    newRotation = 0;
+                }
+                
+                page.Rotation = newRotation;
                 
                 // ドキュメントを変更済みとしてマーク
                 if (CurrentDocument != null)
