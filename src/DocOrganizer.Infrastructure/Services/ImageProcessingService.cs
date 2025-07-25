@@ -242,7 +242,7 @@ namespace DocOrganizer.Infrastructure.Services
                 }
                 else
                 {
-                    return await ValidateStandardImageAsync(imagePath);
+                    return await ValidateGenericImageAsync(imagePath);
                 }
             }
             catch (Exception ex)
@@ -270,18 +270,18 @@ namespace DocOrganizer.Infrastructure.Services
             }
         }
         
-        private async Task<bool> ValidateStandardImageAsync(string imagePath)
+        private async Task<bool> ValidateGenericImageAsync(string imagePath)
         {
             try
             {
                 using var image = await LoadImageSafelyAsync(imagePath);
                 var isValid = image.Width > 0 && image.Height > 0;
-                _logger.LogDebug($"Standard image validation result: {isValid} ({image.Width}x{image.Height})");
+                _logger.LogDebug($"Generic image validation result: {isValid} ({image.Width}x{image.Height})");
                 return isValid;
             }
             catch (Exception ex)
             {
-                _logger.LogDebug($"Standard image validation failed: {ex.Message}");
+                _logger.LogDebug($"Generic image validation failed: {ex.Message}");
                 return false;
             }
         }

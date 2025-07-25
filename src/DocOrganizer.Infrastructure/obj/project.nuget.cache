@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "Lry5Sz5h2D6HkGB7PjooF3vIm8OcxKBZ30DrhiYCS5TfjsfaEurGP5RG1pj09A0RMhlMO5Y5uZJk8tQgjN/2oQ==",
+  "dgSpecHash": "491/O2HqI17sxK4p2BSWIP85+syx/uDHJqwWMQOVbOtTOdsqSYTNYYK6VyYVQ19TNORuqkNZpGPr/6ZEcJ28+g==",
   "success": true,
   "projectFilePath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Infrastructure\\DocOrganizer.Infrastructure.csproj",
   "expectedPackageFiles": [
@@ -16,10 +16,7 @@
     "C:\\Users\\koki\\.nuget\\packages\\skiasharp.nativeassets.macos\\2.88.8\\skiasharp.nativeassets.macos.2.88.8.nupkg.sha512",
     "C:\\Users\\koki\\.nuget\\packages\\skiasharp.nativeassets.win32\\2.88.8\\skiasharp.nativeassets.win32.2.88.8.nupkg.sha512",
     "C:\\Users\\koki\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\6.0.0\\system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512",
-    "C:\\Users\\koki\\.nuget\\packages\\system.text.encoding.codepages\\8.0.0\\system.text.encoding.codepages.8.0.0.nupkg.sha512",
-    "C:\\Users\\koki\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\6.0.36\\microsoft.netcore.app.runtime.win-x64.6.0.36.nupkg.sha512",
-    "C:\\Users\\koki\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\6.0.36\\microsoft.windowsdesktop.app.runtime.win-x64.6.0.36.nupkg.sha512",
-    "C:\\Users\\koki\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\6.0.36\\microsoft.aspnetcore.app.runtime.win-x64.6.0.36.nupkg.sha512"
+    "C:\\Users\\koki\\.nuget\\packages\\system.text.encoding.codepages\\8.0.0\\system.text.encoding.codepages.8.0.0.nupkg.sha512"
   ],
   "logs": []
 }

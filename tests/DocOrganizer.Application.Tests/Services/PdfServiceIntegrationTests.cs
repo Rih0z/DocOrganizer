@@ -21,7 +21,7 @@ namespace DocOrganizer.Application.Tests.Services
         {
             var logger = new Mock<ILogger<PdfService>>();
             _pdfService = new PdfService(logger.Object);
-            _testDirectory = Path.Combine(Path.GetTempPath(), $"TaxDocTest_{Guid.NewGuid()}");
+            _testDirectory = Path.Combine(Path.GetTempPath(), $"DocOrganizerTest_{Guid.NewGuid()}");
             Directory.CreateDirectory(_testDirectory);
         }
 

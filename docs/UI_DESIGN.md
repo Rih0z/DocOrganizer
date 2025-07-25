@@ -1,12 +1,12 @@
 # UI Design Documentation
 
-This document contains UI design specifications and guidelines for the TaxDoc Organizer application.
+This document contains UI design specifications and guidelines for the DocOrganizer application.
 
 ## Design Principles
 
-- Clean, professional interface suitable for tax office environments
+- Clean, professional interface suitable for office environments
 - CubePDF Utility-inspired layout for familiarity
-- Efficient workflow for tax document processing
+- Efficient workflow for document processing
 
 ## Layout Structure
 

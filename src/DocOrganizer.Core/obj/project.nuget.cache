@@ -1,15 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "8nYW1XVZ7hQaC2FbPNoXCRLBumMja0PK70J+uU9+/Dat3PKlHqHh4PP/iqvDUl0b9o8pv1N0KhKUSkfEL5ep7Q==",
+  "dgSpecHash": "Lkp2cY/WJgLp+nmnNANF7gGK6R6GHEeVsg4sfu6NCouvTX/iXdN+luXE58gZR10evSRNa1AzxmG2T5XGmZXTCg==",
   "success": true,
   "projectFilePath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Core\\DocOrganizer.Core.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\koki\\.nuget\\packages\\skiasharp\\2.88.6\\skiasharp.2.88.6.nupkg.sha512",
     "C:\\Users\\koki\\.nuget\\packages\\skiasharp.nativeassets.macos\\2.88.6\\skiasharp.nativeassets.macos.2.88.6.nupkg.sha512",
-    "C:\\Users\\koki\\.nuget\\packages\\skiasharp.nativeassets.win32\\2.88.6\\skiasharp.nativeassets.win32.2.88.6.nupkg.sha512",
-    "C:\\Users\\koki\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\6.0.36\\microsoft.netcore.app.runtime.win-x64.6.0.36.nupkg.sha512",
-    "C:\\Users\\koki\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\6.0.36\\microsoft.windowsdesktop.app.runtime.win-x64.6.0.36.nupkg.sha512",
-    "C:\\Users\\koki\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\6.0.36\\microsoft.aspnetcore.app.runtime.win-x64.6.0.36.nupkg.sha512"
+    "C:\\Users\\koki\\.nuget\\packages\\skiasharp.nativeassets.win32\\2.88.6\\skiasharp.nativeassets.win32.2.88.6.nupkg.sha512"
   ],
   "logs": []
 }
