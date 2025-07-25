@@ -209,8 +209,15 @@ FodyWeavers.xsd
 # macOS
 .DS_Store
 
-# Exclude large PDB files from release
+# Exclude large files from release
 release/*.pdb
+release/*.exe
+release/*.dll
 
-# But keep the main executable
-!release/DocOrganizer.exe
+# Exclude all executables
+*.exe
+
+# Exclude large binary files
+*.zip
+*.7z
+*.rar
