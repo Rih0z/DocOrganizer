@@ -112,6 +112,12 @@
             <MenuItem Header="ヘルプ(_H)">
                 <MenuItem Header="ヘルプの表示(_H)" Command="{Binding ShowHelpCommand}" InputGestureText="F1"/>
                 <Separator/>
+                <MenuItem Header="アップデートの確認(_U)..." Command="{Binding CheckForUpdatesCommand}">
+                    <MenuItem.Icon>
+                        <TextBlock Text="🔄" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
                 <MenuItem Header="バージョン情報(_A)..." Command="{Binding AboutCommand}"/>
             </MenuItem>
         </Menu>

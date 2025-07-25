@@ -15,6 +15,7 @@
           "DocOrganizer.Infrastructure": "1.0.0",
           "Microsoft.Extensions.DependencyInjection": "8.0.0",
           "Microsoft.Extensions.Hosting": "8.0.0",
+          "Microsoft.Extensions.Http": "8.0.0",
           "Serilog": "3.1.1",
           "Serilog.Extensions.Hosting": "8.0.0",
           "Serilog.Sinks.File": "5.0.0",
@@ -1148,6 +1149,21 @@
           }
         }
       },
+      "Microsoft.Extensions.Http/8.0.0": {
+        "dependencies": {
+          "Microsoft.Extensions.Configuration.Abstractions": "8.0.0",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.1",
+          "Microsoft.Extensions.Logging": "8.0.0",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.1",
+          "Microsoft.Extensions.Options": "8.0.0"
+        },
+        "runtime": {
+          "lib/net6.0/Microsoft.Extensions.Http.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.23.53103"
+          }
+        }
+      },
       "Microsoft.Extensions.Logging/8.0.0": {
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection": "8.0.0",
@@ -1645,6 +1661,13 @@
       "sha512": "sha512-AG7HWwVRdCHlaA++1oKDxLsXIBxmDpMPb3VoyOoAghEWnkUvEAdYQUwnV4jJbAaa/nMYNiEh5ByoLauZBEiovg==",
       "path": "microsoft.extensions.hosting.abstractions/8.0.0",
       "hashPath": "microsoft.extensions.hosting.abstractions.8.0.0.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Http/8.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-cWz4caHwvx0emoYe7NkHPxII/KkTI8R/LC9qdqJqnKv2poTJ4e2qqPGQqvRoQ5kaSA4FU5IV3qFAuLuOhoqULQ==",
+      "path": "microsoft.extensions.http/8.0.0",
+      "hashPath": "microsoft.extensions.http.8.0.0.nupkg.sha512"
     },
     "Microsoft.Extensions.Logging/8.0.0": {
       "type": "package",

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "MQddQOHy7W6+jgAh0PmuekTvdebiLURjz0TG99ciA0YtU84xrxOrTKqvb7EtVsuf+FzRCgreOQxFTwNnXW0Ubg==",
+  "dgSpecHash": "AhM5Au4SpM60FyXHMGoq7Nnbx3lk56qzmJZc8N1ZvWlSJiMglyhPljsWerwGuqxgW7hVJlqflWB2CzgC1URynw==",
   "success": true,
   "projectFilePath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.UI\\DocOrganizer.UI.csproj",
   "expectedPackageFiles": [
@@ -24,6 +24,7 @@
     "C:\\Users\\koki\\.nuget\\packages\\microsoft.extensions.filesystemglobbing\\8.0.0\\microsoft.extensions.filesystemglobbing.8.0.0.nupkg.sha512",
     "C:\\Users\\koki\\.nuget\\packages\\microsoft.extensions.hosting\\8.0.0\\microsoft.extensions.hosting.8.0.0.nupkg.sha512",
     "C:\\Users\\koki\\.nuget\\packages\\microsoft.extensions.hosting.abstractions\\8.0.0\\microsoft.extensions.hosting.abstractions.8.0.0.nupkg.sha512",
+    "C:\\Users\\koki\\.nuget\\packages\\microsoft.extensions.http\\8.0.0\\microsoft.extensions.http.8.0.0.nupkg.sha512",
     "C:\\Users\\koki\\.nuget\\packages\\microsoft.extensions.logging\\8.0.0\\microsoft.extensions.logging.8.0.0.nupkg.sha512",
     "C:\\Users\\koki\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\8.0.1\\microsoft.extensions.logging.abstractions.8.0.1.nupkg.sha512",
     "C:\\Users\\koki\\.nuget\\packages\\microsoft.extensions.logging.configuration\\8.0.0\\microsoft.extensions.logging.configuration.8.0.0.nupkg.sha512",

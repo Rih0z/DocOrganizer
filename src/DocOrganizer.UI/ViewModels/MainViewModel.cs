@@ -18,6 +18,7 @@ namespace DocOrganizer.UI.ViewModels
         private readonly IPdfEditorService _pdfEditorService;
         private readonly IDialogService _dialogService;
         private readonly IImageProcessingService _imageProcessingService;
+        private readonly IUpdateService? _updateService;
         
         [ObservableProperty]
         private ObservableCollection<PageViewModel> pages = new();
@@ -68,11 +69,12 @@ namespace DocOrganizer.UI.ViewModels
         private readonly ObservableCollection<PdfDocument> _openDocuments = new();
         private PageViewModel? _selectedPage;
 
-        public MainViewModel(IPdfEditorService pdfEditorService, IDialogService dialogService, IImageProcessingService imageProcessingService)
+        public MainViewModel(IPdfEditorService pdfEditorService, IDialogService dialogService, IImageProcessingService imageProcessingService, IUpdateService? updateService = null)
         {
             _pdfEditorService = pdfEditorService;
             _dialogService = dialogService;
             _imageProcessingService = imageProcessingService;
+            _updateService = updateService;
             
             System.Diagnostics.Debug.WriteLine("[MainViewModel] Constructor called");
             
@@ -881,6 +883,98 @@ namespace DocOrganizer.UI.ViewModels
                    extension == ".heif" || extension == ".bmp" || 
                    extension == ".tiff" || extension == ".gif" || 
                    extension == ".webp";
+        }
+
+        [RelayCommand]
+        private async Task CheckForUpdatesAsync()
+        {
+            if (_updateService == null)
+            {
+                _dialogService.ShowInformation("アップデート機能は利用できません。");
+                return;
+            }
+
+            try
+            {
+                StatusMessage = "アップデートを確認中...";
+                ProgressVisibility = "Visible";
+
+                var updateInfo = await _updateService.CheckForUpdatesAsync();
+                
+                if (updateInfo != null)
+                {
+                    var message = $"新しいバージョン {updateInfo.Version} が利用可能です。\n\n" +
+                                  $"リリース日: {updateInfo.ReleaseDate:yyyy/MM/dd}\n" +
+                                  $"ファイルサイズ: {updateInfo.FileSize / 1024 / 1024:F1} MB\n\n" +
+                                  $"更新内容:\n{updateInfo.ReleaseNotes}\n\n" +
+                                  "今すぐダウンロードしますか？";
+
+                    if (_dialogService.ShowConfirmation(message))
+                    {
+                        await DownloadAndInstallUpdateAsync(updateInfo);
+                    }
+                }
+                else
+                {
+                    StatusMessage = "最新バージョンを使用しています。";
+                    _dialogService.ShowInformation($"DocOrganizer {_updateService.CurrentVersion} は最新バージョンです。");
+                }
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"アップデートの確認中にエラーが発生しました: {ex.Message}");
+                StatusMessage = "アップデート確認エラー";
+            }
+            finally
+            {
+                ProgressVisibility = "Collapsed";
+            }
+        }
+
+        private async Task DownloadAndInstallUpdateAsync(UpdateInfo updateInfo)
+        {
+            if (_updateService == null) return;
+
+            try
+            {
+                StatusMessage = $"アップデート {updateInfo.Version} をダウンロード中...";
+                ProgressVisibility = "Visible";
+                ProgressValue = 0;
+
+                var progress = new Progress<double>(percent =>
+                {
+                    ProgressValue = (int)percent;
+                    StatusMessage = $"ダウンロード中... {percent:F0}%";
+                });
+
+                var downloadPath = await _updateService.DownloadUpdateAsync(updateInfo, progress);
+                
+                if (!string.IsNullOrEmpty(downloadPath))
+                {
+                    StatusMessage = "アップデートを適用中...";
+                    
+                    var message = "アップデートを適用するには、アプリケーションを再起動する必要があります。\n" +
+                                  "今すぐ再起動しますか？";
+
+                    if (_dialogService.ShowConfirmation(message))
+                    {
+                        await _updateService.ApplyUpdateAsync(downloadPath);
+                    }
+                }
+                else
+                {
+                    _dialogService.ShowError("アップデートのダウンロードに失敗しました。");
+                }
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"アップデートの適用中にエラーが発生しました: {ex.Message}");
+            }
+            finally
+            {
+                ProgressVisibility = "Collapsed";
+                StatusMessage = "準備完了";
+            }
         }
     }
 }
