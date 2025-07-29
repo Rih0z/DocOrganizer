@@ -16,6 +16,7 @@
     
     <!-- キーボードショートカット -->
     <Window.InputBindings>
+        <KeyBinding Key="N" Modifiers="Ctrl" Command="{Binding NewCommand}"/>
         <KeyBinding Key="O" Modifiers="Ctrl" Command="{Binding OpenCommand}"/>
         <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SaveCommand}"/>
         <KeyBinding Key="A" Modifiers="Ctrl" Command="{Binding SelectAllCommand}"/>
@@ -38,6 +39,11 @@
         <!-- メニューバー -->
         <Menu Grid.Row="0" Background="White">
             <MenuItem Header="ファイル(_F)">
+                <MenuItem Header="新規作成(_N)" Command="{Binding NewCommand}" InputGestureText="Ctrl+N">
+                    <MenuItem.Icon>
+                        <TextBlock Text="📄" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </MenuItem.Icon>
+                </MenuItem>
                 <MenuItem Header="PDF・画像ファイルを開く(_O)..." Command="{Binding OpenCommand}" InputGestureText="Ctrl+O">
                     <MenuItem.Icon>
                         <TextBlock Text="📂" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -132,10 +138,6 @@
                 <Button Command="{Binding SaveCommand}" ToolTip="保存 (Ctrl+S)" Padding="4">
                     <TextBlock Text="💾" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
-                <!-- テスト用Clickイベントボタン -->
-                <Button Click="TestButton_Click" ToolTip="クリックテスト" Padding="4" Background="Yellow">
-                    <TextBlock Text="TEST" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Button>
                 <Separator/>
                 
                 <!-- ページ操作 -->
@@ -150,17 +152,6 @@
                 <Button Command="{Binding DeleteCommand}" ToolTip="削除 (Delete)" Padding="4"
                         IsEnabled="{Binding HasSelectedPages}">
                     <TextBlock Text="🗑" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Button>
-                <Separator/>
-                
-                <!-- PDF操作 -->
-                <Button Command="{Binding MergeCommand}" ToolTip="結合" Padding="4"
-                        IsEnabled="{Binding CanMerge}">
-                    <TextBlock Text="📋" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Button>
-                <Button Command="{Binding SplitCommand}" ToolTip="分割" Padding="4"
-                        IsEnabled="{Binding HasDocument}">
-                    <TextBlock Text="✂" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
                 <Separator/>
                 

@@ -214,7 +214,7 @@ namespace DocOrganizer.Infrastructure.Services
 
         public async Task<SKBitmap> ExtractPageThumbnailAsync(CorePdfDocument document, int pageIndex, int maxWidth)
         {
-            _logger.LogDebug("Extracting thumbnail for page {PageIndex}", pageIndex);
+            _logger.LogDebug("Extracting thumbnail for page {PageIndex} with rotation {Rotation}", pageIndex, document.Pages[pageIndex].Rotation);
 
             return await Task.Run(() =>
             {
@@ -222,13 +222,16 @@ namespace DocOrganizer.Infrastructure.Services
                 {
                     var page = document.Pages[pageIndex];
                     
-                    // すでにサムネイルが設定されている場合はそれを返す
+                    // すでにサムネイルが設定されている場合は、回転を適用して返す
                     if (page.ThumbnailImage != null)
                     {
-                        // 既存のサムネイルが指定サイズより大きい場合はリサイズ
-                        if (page.ThumbnailImage.Width > maxWidth)
+                        // 回転を適用
+                        var rotatedBitmap = RotateBitmap(page.ThumbnailImage, page.Rotation);
+                        
+                        // 回転後のサイズが指定サイズより大きい場合はリサイズ
+                        if (rotatedBitmap.Width > maxWidth)
                         {
-                            var aspectRatio = (float)page.ThumbnailImage.Height / page.ThumbnailImage.Width;
+                            var aspectRatio = (float)rotatedBitmap.Height / rotatedBitmap.Width;
                             var targetHeight = (int)(maxWidth * aspectRatio);
                             
                             var resizedBitmap = new SKBitmap(maxWidth, targetHeight);
@@ -240,24 +243,27 @@ namespace DocOrganizer.Infrastructure.Services
                                     paint.FilterQuality = SKFilterQuality.High;
                                     
                                     var destRect = SKRect.Create(0, 0, maxWidth, targetHeight);
-                                    canvas.DrawBitmap(page.ThumbnailImage, destRect, paint);
+                                    canvas.DrawBitmap(rotatedBitmap, destRect, paint);
                                 }
                             }
+                            rotatedBitmap.Dispose();
                             return resizedBitmap;
                         }
                         else
                         {
-                            // サイズが適切な場合はそのまま返す
-                            return page.ThumbnailImage.Copy();
+                            // サイズが適切な場合は回転したビットマップを返す
+                            return rotatedBitmap;
                         }
                     }
                     
                     // サムネイルがない場合はプレースホルダー画像を生成
-                    var placeholderAspectRatio = page.Height / page.Width;
+                    // 回転を考慮したサイズ計算
+                    var effectiveDimensions = page.GetEffectiveDimensions();
+                    var placeholderAspectRatio = effectiveDimensions.height / effectiveDimensions.width;
                     var placeholderHeight = (int)(maxWidth * placeholderAspectRatio);
 
-                    var bitmap = new SKBitmap(maxWidth, placeholderHeight);
-                    using (var canvas = new SKCanvas(bitmap))
+                    var placeholderBitmap = new SKBitmap(maxWidth, placeholderHeight);
+                    using (var canvas = new SKCanvas(placeholderBitmap))
                     {
                         // 白背景
                         canvas.Clear(SKColors.White);
@@ -276,10 +282,19 @@ namespace DocOrganizer.Infrastructure.Services
                             paint.TextSize = 24;
                             paint.TextAlign = SKTextAlign.Center;
                             canvas.DrawText($"Page {page.PageNumber}", maxWidth / 2, placeholderHeight / 2, paint);
+                            
+                            // 回転インジケーター（回転している場合のみ）
+                            if (page.Rotation != 0)
+                            {
+                                paint.Color = SKColors.DarkGray;
+                                paint.TextSize = 16;
+                                var rotationText = $"↻ {page.Rotation}°";
+                                canvas.DrawText(rotationText, maxWidth / 2, placeholderHeight / 2 + 30, paint);
+                            }
                         }
                     }
 
-                    return bitmap;
+                    return placeholderBitmap;
                 }
                 catch (Exception ex)
                 {

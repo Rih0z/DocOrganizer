@@ -236,11 +236,12 @@ namespace DocOrganizer.Infrastructure.Services
 
             var page = CurrentDocument.Pages[pageIndex];
             
-            // すでにサムネイルが存在する場合はスキップ
+            // 古いサムネイルがある場合は破棄（回転時などは再生成が必要）
             if (page.ThumbnailImage != null)
             {
-                _logger.LogDebug("Page {PageNumber} already has thumbnail", page.PageNumber);
-                return;
+                _logger.LogDebug("Regenerating thumbnail for page {PageNumber}", page.PageNumber);
+                page.ThumbnailImage.Dispose();
+                page.SetThumbnailImage(null);
             }
             
             var thumbnail = await _pdfService.ExtractPageThumbnailAsync(CurrentDocument, pageIndex, 120);
@@ -261,6 +262,26 @@ namespace DocOrganizer.Infrastructure.Services
             {
                 await UpdatePageThumbnailAsync(i);
             }
+        }
+        
+        public async Task ForceUpdatePageThumbnailAsync(int pageIndex)
+        {
+            if (CurrentDocument == null || pageIndex < 0 || pageIndex >= CurrentDocument.Pages.Count)
+            {
+                return;
+            }
+
+            var page = CurrentDocument.Pages[pageIndex];
+            
+            // 常に新しいサムネイルを生成（回転後用）
+            if (page.ThumbnailImage != null)
+            {
+                page.ThumbnailImage.Dispose();
+                page.SetThumbnailImage(null);
+            }
+            
+            var thumbnail = await _pdfService.ExtractPageThumbnailAsync(CurrentDocument, pageIndex, 120);
+            page.SetThumbnailImage(thumbnail);
         }
 
         public async Task UndoAsync()

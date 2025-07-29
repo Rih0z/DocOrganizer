@@ -93,6 +93,40 @@ namespace DocOrganizer.UI.ViewModels
         }
 
         [RelayCommand]
+        private void New()
+        {
+            try
+            {
+                // 現在のドキュメントがある場合は確認
+                if (_currentDocument != null && _currentDocument.IsModified)
+                {
+                    var result = _dialogService.ShowMessage(
+                        "現在のドキュメントは変更されています。保存しますか？",
+                        "確認",
+                        MessageBoxButtons.YesNoCancel,
+                        MessageBoxIcon.Question);
+                    
+                    if (result == DialogResult.Yes)
+                    {
+                        SaveAsync().Wait();
+                    }
+                    else if (result == DialogResult.Cancel)
+                    {
+                        return;
+                    }
+                }
+                
+                // 新規ドキュメントとして空のPDFを作成
+                Close();
+                StatusMessage = "新規ドキュメント";
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"新規作成エラー: {ex.Message}");
+            }
+        }
+
+        [RelayCommand]
         private async Task OpenAsync()
         {
             System.Diagnostics.Debug.WriteLine("[OpenAsync] Command executed!");
@@ -456,11 +490,39 @@ namespace DocOrganizer.UI.ViewModels
                     pageVm.UpdateRotation();
                 }
                 
+                // サムネイルを再生成（回転を反映）
+                _ = Task.Run(async () =>
+                {
+                    // 回転したページのサムネイルを強制的に再生成
+                    foreach (var pageVm in selectedPages)
+                    {
+                        var pageIndex = pageVm.PageNumber - 1;
+                        await _pdfEditorService.ForceUpdatePageThumbnailAsync(pageIndex);
+                    }
+                    
+                    // UIスレッドで各PageViewModelのサムネイルを更新
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        foreach (var pageVm in Pages)
+                        {
+                            pageVm.LoadThumbnail();
+                        }
+                    });
+                });
+                
                 // 単一ページが選択されている場合、プレビューも更新
                 if (selectedPages.Count == 1)
                 {
                     System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] Updating preview for single page");
-                    UpdateSelectedPage(selectedPages[0]);
+                    // 少し遅延を入れて、サムネイルの更新が完了してから
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(200); // サムネイル生成を待つために少し遅延を増やす
+                        await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                        {
+                            UpdateSelectedPage(selectedPages[0]);
+                        });
+                    });
                 }
                 
                 StatusMessage = $"{selectedPages.Count} ページを回転しました";
@@ -678,41 +740,8 @@ namespace DocOrganizer.UI.ViewModels
                 _selectedPage = selectedPage;
                 System.Diagnostics.Debug.WriteLine($"[UpdateSelectedPage] Selected page set to: {_selectedPage.PageNumber}");
                 
-                // 選択されたページの画像を拡大表示エリアに表示
-                CurrentPageImage = selectedPage.PreviewImage;
-                System.Diagnostics.Debug.WriteLine($"[UpdateSelectedPage] CurrentPageImage set: {CurrentPageImage != null}");
-                
-                // 必要に応じてプレビューサイズを更新
-                if (selectedPage.Page != null)
-                {
-                    // 画像の実際のサイズを取得
-                    var actualWidth = selectedPage.Page.Width;
-                    var actualHeight = selectedPage.Page.Height;
-                    
-                    // 最大表示サイズ（プレビューエリアに収まるサイズ）
-                    var maxDisplayWidth = 800.0;
-                    var maxDisplayHeight = 1000.0;
-                    
-                    // アスペクト比を維持しながら、表示エリアに収まるサイズを計算
-                    var widthScale = maxDisplayWidth / actualWidth;
-                    var heightScale = maxDisplayHeight / actualHeight;
-                    var scale = Math.Min(widthScale, heightScale);
-                    
-                    // スケールが1より大きい場合は、元のサイズを維持（拡大しない）
-                    if (scale > 1.0)
-                    {
-                        PreviewWidth = actualWidth;
-                        PreviewHeight = actualHeight;
-                    }
-                    else
-                    {
-                        PreviewWidth = actualWidth * scale;
-                        PreviewHeight = actualHeight * scale;
-                    }
-                    
-                    System.Diagnostics.Debug.WriteLine($"[UpdateSelectedPage] Original size: {actualWidth}x{actualHeight}");
-                    System.Diagnostics.Debug.WriteLine($"[UpdateSelectedPage] Preview size updated: {PreviewWidth}x{PreviewHeight}");
-                }
+                // 回転後の新しいプレビューを生成（UpdatePreviewメソッドを使用）
+                UpdatePreview(selectedPage);
                 
                 // ステータスバーに情報を表示
                 PageInfo = $"ページ {selectedPage.PageNumber}";

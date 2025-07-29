@@ -79,6 +79,11 @@ namespace DocOrganizer.Application.Interfaces
         /// すべてのページのサムネイルを更新します
         /// </summary>
         Task UpdateAllThumbnailsAsync();
+        
+        /// <summary>
+        /// 特定のページのサムネイルを強制的に更新します（回転後など）
+        /// </summary>
+        Task ForceUpdatePageThumbnailAsync(int pageIndex);
 
         /// <summary>
         /// 元に戻す操作が可能かどうか

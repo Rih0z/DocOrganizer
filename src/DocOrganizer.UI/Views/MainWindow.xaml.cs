@@ -523,47 +523,6 @@ namespace DocOrganizer.UI.Views
 
         #endregion
 
-        private void TestButton_Click(object sender, RoutedEventArgs e)
-        {
-            System.Diagnostics.Debug.WriteLine("[TestButton_Click] Button clicked!");
-            MessageBox.Show("テストボタンがクリックされました！\nClickイベントは正常に動作しています。", "クリックテスト", MessageBoxButton.OK, MessageBoxImage.Information);
-            
-            // ViewModelのコマンドを手動で実行してみる
-            try
-            {
-                if (ViewModel != null)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[TestButton_Click] ViewModel exists: {ViewModel.GetType().Name}");
-                    
-                    // OpenCommandを手動実行
-                    if (ViewModel.OpenCommand != null)
-                    {
-                        System.Diagnostics.Debug.WriteLine("[TestButton_Click] OpenCommand exists, trying to execute...");
-                        if (ViewModel.OpenCommand.CanExecute(null))
-                        {
-                            ViewModel.OpenCommand.Execute(null);
-                        }
-                        else
-                        {
-                            System.Diagnostics.Debug.WriteLine("[TestButton_Click] OpenCommand.CanExecute returned false");
-                        }
-                    }
-                    else
-                    {
-                        System.Diagnostics.Debug.WriteLine("[TestButton_Click] OpenCommand is null!");
-                    }
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine("[TestButton_Click] ViewModel is null!");
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[TestButton_Click] Error: {ex.Message}");
-                MessageBox.Show($"エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
 
         #region Helper Methods
 

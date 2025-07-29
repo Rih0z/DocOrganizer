@@ -196,7 +196,10 @@ namespace DocOrganizer.UI.ViewModels
             }
             else
             {
-                LoadThumbnail(); // 通常のPDFページ
+                // 通常のPDFページの場合、サムネイルが再生成されるまで一旦クリア
+                ThumbnailImage = null;
+                // MainViewModelのRotateSelectedPagesがForceUpdatePageThumbnailAsyncを呼び出すので、
+                // その後にLoadThumbnail()が呼ばれて新しいサムネイルが表示される
             }
         }
         
