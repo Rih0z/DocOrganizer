@@ -108,7 +108,7 @@ namespace DocOrganizer.Infrastructure.Services
                     // PDF品質設定（高品質）
                     outputDoc.Options.CompressContentStreams = true;
                     outputDoc.Options.NoCompression = false;
-                    outputDoc.Options.FlateEncodeMode = PdfSharpCore.Pdf.IO.PdfFlateEncodeMode.BestCompression;
+                    outputDoc.Options.FlateEncodeMode = PdfSharpCore.Pdf.PdfFlateEncodeMode.BestCompression;
 
                     // 元のPDFを読み込み
                     PdfSharpCore.Pdf.PdfDocument? sourceDoc = null;

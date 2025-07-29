@@ -402,25 +402,92 @@ namespace DocOrganizer.UI.ViewModels
             }));
         }
 
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(HasDocument))]
         private async Task SaveAsync()
         {
             if (_currentDocument == null) return;
             
             try
             {
-                StatusMessage = "保存中...";
-                ProgressVisibility = "Visible";
-                
-                var result = await _pdfEditorService.SavePdfAsync(_currentDocument, _currentDocument.FilePath);
-                
-                if (result)
+                // 既存ファイルの場合は上書き保存
+                if (!string.IsNullOrEmpty(_currentDocument.FilePath) && 
+                    File.Exists(_currentDocument.FilePath))
                 {
-                    StatusMessage = "保存完了";
+                    await SaveDocumentAsync(_currentDocument.FilePath);
                 }
                 else
                 {
-                    _dialogService.ShowError("保存に失敗しました");
+                    // 新規ファイルの場合は名前を付けて保存
+                    await SaveAsAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"保存エラー: {ex.Message}");
+            }
+        }
+
+        [RelayCommand(CanExecute = nameof(HasDocument))]
+        private async Task SaveAsAsync()
+        {
+            if (_currentDocument == null) return;
+            
+            try
+            {
+                // outputフォルダのパスを生成
+                var outputDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "output");
+                if (!Directory.Exists(outputDir))
+                {
+                    Directory.CreateDirectory(outputDir);
+                }
+                
+                var saveDialog = new SaveFileDialog
+                {
+                    Filter = "PDF files (*.pdf)|*.pdf",
+                    DefaultExt = "pdf",
+                    InitialDirectory = outputDir,
+                    FileName = $"document_{DateTime.Now:yyyyMMdd_HHmmss}.pdf"
+                };
+                
+                if (saveDialog.ShowDialog() == true)
+                {
+                    await SaveDocumentAsync(saveDialog.FileName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"保存エラー: {ex.Message}");
+            }
+        }
+        
+        private async Task SaveDocumentAsync(string filePath)
+        {
+            if (_currentDocument == null) return;
+            
+            try
+            {
+                StatusMessage = "PDF を保存中...";
+                ProgressVisibility = "Visible";
+                
+                // outputフォルダの作成
+                var outputDir = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
+                {
+                    Directory.CreateDirectory(outputDir);
+                }
+                
+                // PDF保存（品質設定適用）
+                var success = await _pdfEditorService.SavePdfAsync(_currentDocument, filePath);
+                
+                if (success)
+                {
+                    StatusMessage = $"保存完了: {Path.GetFileName(filePath)}";
+                    _currentDocument.FilePath = filePath;
+                    UpdateUI();
+                }
+                else
+                {
+                    _dialogService.ShowError("PDFの保存に失敗しました");
                 }
             }
             catch (Exception ex)
@@ -430,47 +497,6 @@ namespace DocOrganizer.UI.ViewModels
             finally
             {
                 ProgressVisibility = "Collapsed";
-            }
-        }
-
-        [RelayCommand(CanExecute = nameof(HasDocument))]
-        private async Task SaveAsAsync()
-        {
-            if (_currentDocument == null) return;
-            
-            var saveFileDialog = new Microsoft.Win32.SaveFileDialog
-            {
-                Filter = "PDF ファイル (*.pdf)|*.pdf",
-                Title = "名前を付けて保存",
-                FileName = Path.GetFileName(_currentDocument.FilePath)
-            };
-
-            if (saveFileDialog.ShowDialog() == true)
-            {
-                try
-                {
-                    StatusMessage = "保存中...";
-                    ProgressVisibility = "Visible";
-                    
-                    var result = await _pdfEditorService.SavePdfAsync(_currentDocument, saveFileDialog.FileName);
-                    
-                    if (result)
-                    {
-                        StatusMessage = $"保存完了: {Path.GetFileName(saveFileDialog.FileName)}";
-                    }
-                    else
-                    {
-                        _dialogService.ShowError("保存に失敗しました");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _dialogService.ShowError($"保存エラー: {ex.Message}");
-                }
-                finally
-                {
-                    ProgressVisibility = "Collapsed";
-                }
             }
         }
 
@@ -592,104 +618,6 @@ namespace DocOrganizer.UI.ViewModels
             catch (Exception ex)
             {
                 _dialogService.ShowError($"結合エラー: {ex.Message}");
-            }
-            finally
-            {
-                ProgressVisibility = "Collapsed";
-            }
-        }
-
-        [RelayCommand(CanExecute = nameof(HasDocument))]
-        private async Task SaveAsync()
-        {
-            if (_currentDocument == null) return;
-            
-            try
-            {
-                // 既存ファイルの場合は上書き保存
-                if (!string.IsNullOrEmpty(_currentDocument.FilePath) && 
-                    File.Exists(_currentDocument.FilePath))
-                {
-                    await SaveDocumentAsync(_currentDocument.FilePath);
-                }
-                else
-                {
-                    // 新規ファイルの場合は名前を付けて保存
-                    await SaveAsAsync();
-                }
-            }
-            catch (Exception ex)
-            {
-                _dialogService.ShowError($"保存エラー: {ex.Message}");
-            }
-        }
-
-        [RelayCommand(CanExecute = nameof(HasDocument))]
-        private async Task SaveAsAsync()
-        {
-            if (_currentDocument == null) return;
-            
-            try
-            {
-                // outputフォルダのパスを生成
-                var outputDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "output");
-                if (!Directory.Exists(outputDir))
-                {
-                    Directory.CreateDirectory(outputDir);
-                }
-                
-                var saveDialog = new SaveFileDialog
-                {
-                    Filter = "PDF files (*.pdf)|*.pdf",
-                    DefaultExt = "pdf",
-                    InitialDirectory = outputDir,
-                    FileName = $"document_{DateTime.Now:yyyyMMdd_HHmmss}.pdf"
-                };
-                
-                if (saveDialog.ShowDialog() == true)
-                {
-                    await SaveDocumentAsync(saveDialog.FileName);
-                }
-            }
-            catch (Exception ex)
-            {
-                _dialogService.ShowError($"保存エラー: {ex.Message}");
-            }
-        }
-        
-        private async Task SaveDocumentAsync(string filePath)
-        {
-            if (_currentDocument == null) return;
-            
-            try
-            {
-                StatusMessage = "PDF を保存中...";
-                ProgressVisibility = "Visible";
-                
-                // outputフォルダの作成
-                var outputDir = Path.GetDirectoryName(filePath);
-                if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
-                {
-                    Directory.CreateDirectory(outputDir);
-                }
-                
-                // PDF保存（品質設定適用）
-                var success = await _pdfEditorService.SavePdfAsync(_currentDocument, filePath);
-                
-                if (success)
-                {
-                    StatusMessage = $"保存完了: {Path.GetFileName(filePath)}";
-                    _currentDocument.FilePath = filePath;
-                    UpdateUI();
-                }
-                else
-                {
-                    _dialogService.ShowError("PDFの保存に失敗しました");
-                }
-            }
-            catch (Exception ex)
-            {
-                _dialogService.ShowError($"保存エラー: {ex.Message}");
             }
             finally
             {
