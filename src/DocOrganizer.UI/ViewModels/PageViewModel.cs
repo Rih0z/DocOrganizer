@@ -520,5 +520,121 @@ namespace DocOrganizer.UI.ViewModels
             
             return bitmap;
         }
+        
+        public void UpdateRotationSync()
+        {
+            System.Diagnostics.Debug.WriteLine($"[UpdateRotationSync] ページ {_page.PageNumber} - 回転値: {_page.Rotation}度");
+            
+            // 回転値を同期
+            Rotation = _page.Rotation;
+            
+            // プレースホルダーを再生成（PDFページの場合）
+            if (string.IsNullOrEmpty(_page.SourceImagePath))
+            {
+                System.Diagnostics.Debug.WriteLine($"[UpdateRotationSync] PDFページのプレースホルダー再生成");
+                GenerateRotatedPlaceholderCore();
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"[UpdateRotationSync] 画像ページのサムネイル・プレビュー同期更新");
+                // 画像ページの場合は同期的に更新
+                CreateRotatedImagesSync();
+            }
+            
+            // プロパティ変更通知
+            OnPropertyChanged(nameof(ThumbnailImage));
+            OnPropertyChanged(nameof(PreviewImage));
+            OnPropertyChanged(nameof(Rotation));
+        }
+        
+        private void CreateRotatedImagesSync()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(_page.SourceImagePath) || !System.IO.File.Exists(_page.SourceImagePath))
+                    return;
+                
+                using var originalBitmap = SkiaSharp.SKBitmap.Decode(_page.SourceImagePath);
+                if (originalBitmap == null) return;
+                
+                // 回転した画像を作成
+                var rotatedBitmap = RotateBitmap(originalBitmap, _page.Rotation);
+                
+                // サムネイル作成
+                var thumbnailSize = 150;
+                var aspectRatio = (float)rotatedBitmap.Height / rotatedBitmap.Width;
+                var thumbnailHeight = (int)(thumbnailSize * aspectRatio);
+                
+                var thumbnail = new SkiaSharp.SKBitmap(thumbnailSize, thumbnailHeight);
+                using (var canvas = new SkiaSharp.SKCanvas(thumbnail))
+                {
+                    using (var paint = new SkiaSharp.SKPaint())
+                    {
+                        paint.IsAntialias = true;
+                        paint.FilterQuality = SkiaSharp.SKFilterQuality.High;
+                        var destRect = SkiaSharp.SKRect.Create(0, 0, thumbnailSize, thumbnailHeight);
+                        canvas.DrawBitmap(rotatedBitmap, destRect, paint);
+                    }
+                }
+                
+                // プレビュー作成
+                var maxPreviewSize = 800;
+                var previewWidth = rotatedBitmap.Width > maxPreviewSize ? maxPreviewSize : rotatedBitmap.Width;
+                var previewHeight = (int)(previewWidth * aspectRatio);
+                
+                var preview = new SkiaSharp.SKBitmap(previewWidth, previewHeight);
+                using (var canvas = new SkiaSharp.SKCanvas(preview))
+                {
+                    using (var paint = new SkiaSharp.SKPaint())
+                    {
+                        paint.IsAntialias = true;
+                        paint.FilterQuality = SkiaSharp.SKFilterQuality.High;
+                        var destRect = SkiaSharp.SKRect.Create(0, 0, previewWidth, previewHeight);
+                        canvas.DrawBitmap(rotatedBitmap, destRect, paint);
+                    }
+                }
+                
+                // WPF画像に変換
+                // サムネイル
+                using (var data = thumbnail.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100))
+                {
+                    var stream = new System.IO.MemoryStream(data.ToArray());
+                    var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.StreamSource = stream;
+                    bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                    bitmap.EndInit();
+                    bitmap.Freeze();
+                    ThumbnailImage = bitmap;
+                }
+                
+                // プレビュー
+                using (var data = preview.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100))
+                {
+                    var stream = new System.IO.MemoryStream(data.ToArray());
+                    var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.StreamSource = stream;
+                    bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                    bitmap.EndInit();
+                    bitmap.Freeze();
+                    PreviewImage = bitmap;
+                }
+                
+                // メモリクリーンアップ
+                rotatedBitmap.Dispose();
+                thumbnail.Dispose();
+                preview.Dispose();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"画像同期更新エラー: {ex.Message}");
+            }
+        }
+        
+        public void ClearPreviewImage()
+        {
+            PreviewImage = null;
+        }
     }
 }

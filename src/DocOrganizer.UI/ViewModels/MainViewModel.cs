@@ -278,16 +278,16 @@ namespace DocOrganizer.UI.ViewModels
             }
         }
 
-        private async void UpdatePreview(PageViewModel pageViewModel)
+        private async void UpdatePreview(PageViewModel pageViewModel, bool forceUpdate = false)
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[UpdatePreview] ページ {pageViewModel?.PageNumber} のプレビュー更新開始");
+                System.Diagnostics.Debug.WriteLine($"[UpdatePreview] ページ {pageViewModel?.PageNumber} のプレビュー更新開始 (forceUpdate: {forceUpdate})");
                 
                 if (pageViewModel?.Page == null) return;
 
-                // まず、PageViewModelのPreviewImageを確認
-                if (pageViewModel.PreviewImage != null)
+                // forceUpdateまたはPreviewImageがnullの場合のみ更新
+                if (!forceUpdate && pageViewModel.PreviewImage != null)
                 {
                     System.Diagnostics.Debug.WriteLine($"[UpdatePreview] PageViewModelのPreviewImageを使用");
                     
@@ -505,47 +505,37 @@ namespace DocOrganizer.UI.ViewModels
                 var selectedPages = Pages.Where(p => p.IsSelected).ToList();
                 System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] Selected pages count: {selectedPages.Count}");
                 
-                foreach (var pageVm in selectedPages)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] Rotating page {pageVm.PageNumber}");
-                    var page = _currentDocument.Pages[pageVm.PageNumber - 1]; // PageNumberは1-based, indexは0-based
-                    _pdfEditorService.RotatePage(page, degrees);
-                    pageVm.UpdateRotation();
-                }
-                
-                // サムネイルを即座に更新（同期的に実行し、非同期の競合を回避）
+                // UIスレッドで同期的に実行
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
-                    System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] サムネイル更新開始 - {selectedPages.Count}ページ");
+                    System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] UI更新開始 - {selectedPages.Count}ページ");
                     
                     foreach (var pageVm in selectedPages)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] ページ {pageVm.PageNumber} のサムネイル再生成中...");
+                        System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] Rotating page {pageVm.PageNumber}");
                         
-                        // 直接PageViewModelの更新メソッドを呼び出し
-                        pageVm.UpdateRotation();
-                        pageVm.LoadThumbnail();
+                        // PdfEditorServiceを使わず、直接Core層のみを更新
+                        pageVm.Page.Rotation = (pageVm.Page.Rotation + degrees) % 360;
+                        if (pageVm.Page.Rotation < 0) pageVm.Page.Rotation += 360;
                         
-                        System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] ページ {pageVm.PageNumber} 更新完了 - 回転: {pageVm.Rotation}度");
+                        System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] ページ {pageVm.PageNumber} の回転値: {pageVm.Page.Rotation}度");
+                        
+                        // PageViewModelの更新（同期的に）
+                        pageVm.UpdateRotationSync();
+                        
+                        System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] ページ {pageVm.PageNumber} 更新完了");
+                    }
+                    
+                    // 選択中のページのプレビューを強制更新
+                    var selectedPage = selectedPages.FirstOrDefault();
+                    if (selectedPage != null)
+                    {
+                        System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] プレビュー強制更新");
+                        UpdatePreview(selectedPage, forceUpdate: true);
                     }
                     
                     System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] 全ページの更新完了");
                 });
-                
-                // 単一ページが選択されている場合、プレビューも更新
-                if (selectedPages.Count == 1)
-                {
-                    System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] Updating preview for single page");
-                    // 少し遅延を入れて、サムネイルの更新が完了してから
-                    _ = Task.Run(async () =>
-                    {
-                        await Task.Delay(200); // サムネイル生成を待つために少し遅延を増やす
-                        await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
-                        {
-                            UpdateSelectedPage(selectedPages[0]);
-                        });
-                    });
-                }
                 
                 StatusMessage = $"{selectedPages.Count} ページを回転しました";
                 System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] Completed successfully");
