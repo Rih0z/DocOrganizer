@@ -17,11 +17,16 @@ namespace DocOrganizer.Infrastructure.Services
     {
         public static async Task<PdfDocument> CreatePdfFromImageSimpleAsync(string imagePath, string outputPath, ILogger logger)
         {
+            return await CreatePdfFromImageSimpleAsync(imagePath, outputPath, 0, logger);
+        }
+        
+        public static async Task<PdfDocument> CreatePdfFromImageSimpleAsync(string imagePath, string outputPath, int rotation, ILogger logger)
+        {
             return await Task.Run(() =>
             {
                 try
                 {
-                    logger.LogInformation("Creating PDF using SkiaSharp only: {ImagePath}", imagePath);
+                    logger.LogInformation("Creating PDF using SkiaSharp only: {ImagePath}, Rotation: {Rotation}", imagePath, rotation);
 
                     // 画像を読み込み
                     using var bitmap = SKBitmap.Decode(imagePath);
@@ -41,28 +46,52 @@ namespace DocOrganizer.Infrastructure.Services
                     // ページを作成
                     using var canvas = document.BeginPage(pageWidth, pageHeight);
                     
-                    // 画像のアスペクト比を保持してスケール
-                    float imageAspect = (float)bitmap.Width / bitmap.Height;
+                    // 保存状態をプッシュ
+                    canvas.Save();
+                    
+                    // 回転を考慮した画像のアスペクト比計算
+                    float imageWidth = bitmap.Width;
+                    float imageHeight = bitmap.Height;
+                    
+                    // 90度または270度回転の場合、幅と高さを入れ替える
+                    if (rotation == 90 || rotation == 270)
+                    {
+                        imageWidth = bitmap.Height;
+                        imageHeight = bitmap.Width;
+                    }
+                    
+                    float imageAspect = imageWidth / imageHeight;
                     float pageAspect = pageWidth / pageHeight;
                     
                     float drawWidth, drawHeight;
                     if (imageAspect > pageAspect)
                     {
-                        drawWidth = pageWidth;
-                        drawHeight = pageWidth / imageAspect;
+                        drawWidth = pageWidth * 0.9f; // マージンを考慮
+                        drawHeight = drawWidth / imageAspect;
                     }
                     else
                     {
-                        drawHeight = pageHeight;
-                        drawWidth = pageHeight * imageAspect;
+                        drawHeight = pageHeight * 0.9f; // マージンを考慮
+                        drawWidth = drawHeight * imageAspect;
                     }
                     
                     float x = (pageWidth - drawWidth) / 2;
                     float y = (pageHeight - drawHeight) / 2;
                     
+                    // ページの中心に移動して回転
+                    if (rotation != 0)
+                    {
+                        canvas.Translate(pageWidth / 2, pageHeight / 2);
+                        canvas.RotateDegrees(rotation);
+                        canvas.Translate(-pageWidth / 2, -pageHeight / 2);
+                    }
+                    
                     // 画像を描画
                     var destRect = SKRect.Create(x, y, drawWidth, drawHeight);
                     canvas.DrawBitmap(bitmap, destRect);
+                    
+                    // 保存状態を復元
+                    canvas.Restore();
                     
                     document.EndPage();
                     document.Close();
@@ -173,6 +202,35 @@ namespace DocOrganizer.Infrastructure.Services
                         // 保存状態をプッシュ
                         canvas.Save();
                         
+                        // 回転を考慮した画像のアスペクト比計算
+                        float imageWidth = bitmap.Width;
+                        float imageHeight = bitmap.Height;
+                        
+                        // 90度または270度回転の場合、幅と高さを入れ替える
+                        if (rotation == 90 || rotation == 270)
+                        {
+                            imageWidth = bitmap.Height;
+                            imageHeight = bitmap.Width;
+                        }
+                        
+                        float imageAspect = imageWidth / imageHeight;
+                        float pageAspect = pageWidth / pageHeight;
+                        
+                        float drawWidth, drawHeight;
+                        if (imageAspect > pageAspect)
+                        {
+                            drawWidth = pageWidth * 0.9f; // マージンを考慮
+                            drawHeight = drawWidth / imageAspect;
+                        }
+                        else
+                        {
+                            drawHeight = pageHeight * 0.9f; // マージンを考慮
+                            drawWidth = drawHeight * imageAspect;
+                        }
+                        
+                        float x = (pageWidth - drawWidth) / 2;
+                        float y = (pageHeight - drawHeight) / 2;
+                        
                         // ページの中心に移動して回転
                         if (rotation != 0)
                         {
@@ -180,25 +238,6 @@ namespace DocOrganizer.Infrastructure.Services
                             canvas.RotateDegrees(rotation);
                             canvas.Translate(-pageWidth / 2, -pageHeight / 2);
                         }
-                        
-                        // 画像のアスペクト比を保持してスケール
-                        float imageAspect = (float)bitmap.Width / bitmap.Height;
-                        float pageAspect = pageWidth / pageHeight;
-                        
-                        float drawWidth, drawHeight;
-                        if (imageAspect > pageAspect)
-                        {
-                            drawWidth = pageWidth;
-                            drawHeight = pageWidth / imageAspect;
-                        }
-                        else
-                        {
-                            drawHeight = pageHeight;
-                            drawWidth = pageHeight * imageAspect;
-                        }
-                        
-                        float x = (pageWidth - drawWidth) / 2;
-                        float y = (pageHeight - drawHeight) / 2;
                         
                         // 画像を描画
                         var destRect = SKRect.Create(x, y, drawWidth, drawHeight);
