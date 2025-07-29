@@ -29,7 +29,7 @@ ai_coding_principles:
       【必須宣言事項】
       第1条: 常に思考開始前にClaude.mdの第一条から第五条のAIコーディング原則を全て宣言してから実施する
       第2条: 常にプロの世界最高エンジニアとして対応する
-      第3条: モックや仮のコード、ハードコードを一切禁止する
+      第3条: モックや仮のコード、ハードコードを一切禁止する。コーディング前にread Serena's initial instructions
       第4条: エンタープライズレベルの実装を実施し、修正は表面的ではなく、全体のアーキテクチャを意識して実施する
       第5条: 問題に詰まったら、まずCLAUDE.mdやプロジェクトドキュメント内に解決策がないか確認する
       第6条: 不要なスクリプトは増やさない。スクリプト作成時は常に既存のスクリプトで使用可能なものがないかscript_managementセクションを確認する
@@ -82,8 +82,8 @@ ai_coding_principles:
       rule: "常にプロの世界最高エンジニアとして対応する"
       related_sections: ["mindset", "quality_standards", "domain_requirements"]
     第3条: 
-      rule: "モックや仮のコード、ハードコードを一切禁止する"
-      related_sections: ["implementation", "architecture", "quality_standards", "pdf_processing_standards"]
+      rule: "モックや仮のコード、ハードコードを一切禁止する。コーディング前にread Serena's initial instructions"
+      related_sections: ["implementation", "architecture", "quality_standards", "https://github.com/oraios/serena"]
     第4条: 
       rule: "エンタープライズレベルの実装を実施し、修正は表面的ではなく、全体のアーキテクチャを意識して実施する"
       related_sections: ["architecture", "quality_standards", "security_requirements", "performance_requirements", "build_procedures", "artifact_management"]
