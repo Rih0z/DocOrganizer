@@ -257,13 +257,12 @@ namespace DocOrganizer.Infrastructure.Services
                     }
                     
                     // サムネイルがない場合はプレースホルダー画像を生成
-                    // 回転を考慮したサイズ計算
-                    var effectiveDimensions = page.GetEffectiveDimensions();
-                    var placeholderAspectRatio = effectiveDimensions.height / effectiveDimensions.width;
-                    var placeholderHeight = (int)(maxWidth * placeholderAspectRatio);
-
-                    var placeholderBitmap = new SKBitmap(maxWidth, placeholderHeight);
-                    using (var canvas = new SKCanvas(placeholderBitmap))
+                    // オリジナルのサイズで作成（回転前）
+                    var originalAspectRatio = page.Height / page.Width;
+                    var originalHeight = (int)(maxWidth * originalAspectRatio);
+                    
+                    var originalBitmap = new SKBitmap(maxWidth, originalHeight);
+                    using (var canvas = new SKCanvas(originalBitmap))
                     {
                         // 白背景
                         canvas.Clear(SKColors.White);
@@ -274,27 +273,52 @@ namespace DocOrganizer.Infrastructure.Services
                             paint.Color = SKColors.LightGray;
                             paint.Style = SKPaintStyle.Stroke;
                             paint.StrokeWidth = 2;
-                            canvas.DrawRect(1, 1, maxWidth - 2, placeholderHeight - 2, paint);
+                            canvas.DrawRect(1, 1, maxWidth - 2, originalHeight - 2, paint);
 
                             // ページ番号
                             paint.Color = SKColors.Gray;
                             paint.Style = SKPaintStyle.Fill;
                             paint.TextSize = 24;
                             paint.TextAlign = SKTextAlign.Center;
-                            canvas.DrawText($"Page {page.PageNumber}", maxWidth / 2, placeholderHeight / 2, paint);
+                            canvas.DrawText($"Page {page.PageNumber}", maxWidth / 2, originalHeight / 2, paint);
                             
-                            // 回転インジケーター（回転している場合のみ）
-                            if (page.Rotation != 0)
-                            {
-                                paint.Color = SKColors.DarkGray;
-                                paint.TextSize = 16;
-                                var rotationText = $"↻ {page.Rotation}°";
-                                canvas.DrawText(rotationText, maxWidth / 2, placeholderHeight / 2 + 30, paint);
-                            }
+                            // PDFページであることを示すアイコン
+                            paint.Color = SKColors.DarkGray;
+                            paint.TextSize = 16;
+                            canvas.DrawText("PDF", maxWidth / 2, originalHeight / 2 - 30, paint);
                         }
                     }
+                    
+                    // 回転を適用
+                    if (page.Rotation != 0)
+                    {
+                        var rotatedBitmap = RotateBitmap(originalBitmap, page.Rotation);
+                        originalBitmap.Dispose();
+                        
+                        // 回転後のサイズが大きすぎる場合はリサイズ
+                        if (rotatedBitmap.Width > maxWidth)
+                        {
+                            var scale = (float)maxWidth / rotatedBitmap.Width;
+                            var scaledHeight = (int)(rotatedBitmap.Height * scale);
+                            
+                            var scaledBitmap = new SKBitmap(maxWidth, scaledHeight);
+                            using (var canvas = new SKCanvas(scaledBitmap))
+                            {
+                                using (var paint = new SKPaint())
+                                {
+                                    paint.IsAntialias = true;
+                                    paint.FilterQuality = SKFilterQuality.High;
+                                    canvas.DrawBitmap(rotatedBitmap, SKRect.Create(0, 0, maxWidth, scaledHeight), paint);
+                                }
+                            }
+                            rotatedBitmap.Dispose();
+                            return scaledBitmap;
+                        }
+                        
+                        return rotatedBitmap;
+                    }
 
-                    return placeholderBitmap;
+                    return originalBitmap;
                 }
                 catch (Exception ex)
                 {

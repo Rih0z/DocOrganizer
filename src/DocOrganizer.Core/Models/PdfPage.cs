@@ -103,7 +103,7 @@ namespace DocOrganizer.Core.Models
         public void SetThumbnailImage(SKBitmap? bitmap)
         {
             _thumbnailImage?.Dispose();
-            _thumbnailImage = bitmap != null ? bitmap.Copy() : null;
+            _thumbnailImage = bitmap;
         }
 
         /// <summary>

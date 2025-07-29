@@ -9,6 +9,12 @@ namespace DocOrganizer.UI.ViewModels
     {
         private readonly PdfPage _page;
         
+        // プロパティ変更通知を外部から呼び出せるようにする
+        public new void OnPropertyChanged(string? propertyName)
+        {
+            base.OnPropertyChanged(propertyName);
+        }
+        
         /// <summary>
         /// 対応するPDFページ
         /// </summary>
@@ -43,37 +49,52 @@ namespace DocOrganizer.UI.ViewModels
         {
             try
             {
+                System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] ページ {_page.PageNumber} 開始 - Rotation: {_page.Rotation}");
+                
                 // 画像ファイルから直接サムネイルを生成
                 if (!string.IsNullOrEmpty(_page.SourceImagePath) && System.IO.File.Exists(_page.SourceImagePath))
                 {
+                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] 画像ファイルから生成: {_page.SourceImagePath}");
                     _ = Task.Run(() => LoadThumbnailFromImage());
                     _ = Task.Run(() => LoadPreviewFromImage());
                 }
                 // PdfPageからサムネイル画像を取得
                 else if (_page.ThumbnailImage != null)
                 {
+                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] PDFページのサムネイル変換 - Size: {_page.ThumbnailImage.Width}x{_page.ThumbnailImage.Height}");
+                    
                     // SkiaSharpのSKBitmapをWPFで表示可能な形式に変換
                     using var data = _page.ThumbnailImage.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+                    var stream = new System.IO.MemoryStream(data.ToArray());
+                    
                     var bitmap = new System.Windows.Media.Imaging.BitmapImage();
                     bitmap.BeginInit();
-                    bitmap.StreamSource = new System.IO.MemoryStream(data.ToArray());
+                    bitmap.StreamSource = stream;
                     bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
                     bitmap.EndInit();
                     bitmap.Freeze();
+                    
                     ThumbnailImage = bitmap;
                     PreviewImage = bitmap; // プレビューにも同じ画像を設定
+                    
+                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] サムネイル設定完了");
                 }
                 else
                 {
-                    // サムネイルがない場合はプレースホルダーを表示
-                    ThumbnailImage = null;
-                    PreviewImage = null;
+                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] サムネイルなし - プレースホルダー生成");
+                    // サムネイルがない場合はプレースホルダーを生成
+                    GenerateRotatedPlaceholder();
                 }
+                
+                // プロパティ変更通知を明示的に発火
+                OnPropertyChanged(nameof(ThumbnailImage));
+                OnPropertyChanged(nameof(PreviewImage));
             }
             catch (Exception ex)
             {
                 // サムネイル読み込みエラーをログに記録
-                System.Diagnostics.Debug.WriteLine($"サムネイル読み込みエラー Page {_page.PageNumber}: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] エラー Page {_page.PageNumber}: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] スタックトレース: {ex.StackTrace}");
                 ThumbnailImage = null;
                 PreviewImage = null;
             }
@@ -187,7 +208,11 @@ namespace DocOrganizer.UI.ViewModels
 
         public void UpdateRotation()
         {
+            System.Diagnostics.Debug.WriteLine($"[UpdateRotation] ページ {_page.PageNumber} - 回転前: {Rotation}度, 回転後: {_page.Rotation}度");
+            
+            // 回転値を更新（これによりUIが自動的に更新される）
             Rotation = _page.Rotation;
+            
             // 画像ベースのページの場合、回転したサムネイルとプレビューを再生成
             if (!string.IsNullOrEmpty(_page.SourceImagePath))
             {
@@ -196,10 +221,13 @@ namespace DocOrganizer.UI.ViewModels
             }
             else
             {
-                // 通常のPDFページの場合、サムネイルが再生成されるまで一旦クリア
-                ThumbnailImage = null;
-                // MainViewModelのRotateSelectedPagesがForceUpdatePageThumbnailAsyncを呼び出すので、
-                // その後にLoadThumbnail()が呼ばれて新しいサムネイルが表示される
+                // PDFページの場合、プレースホルダーを直接生成して表示
+                GenerateRotatedPlaceholder();
+                
+                // 強制的にプロパティ変更通知を発火
+                OnPropertyChanged(nameof(ThumbnailImage));
+                OnPropertyChanged(nameof(PreviewImage));
+                OnPropertyChanged(nameof(Rotation));
             }
         }
         
@@ -360,6 +388,137 @@ namespace DocOrganizer.UI.ViewModels
                 System.Diagnostics.Debug.WriteLine($"回転プレビュー生成エラー: {ex.Message}");
                 PreviewImage = null;
             }
+        }
+        
+        private void GenerateRotatedPlaceholder()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"[GenerateRotatedPlaceholder] ページ {_page.PageNumber} - 回転: {_page.Rotation}度");
+                
+                // UIスレッドで実行することを保証
+                if (System.Windows.Application.Current.Dispatcher.CheckAccess())
+                {
+                    GenerateRotatedPlaceholderCore();
+                }
+                else
+                {
+                    System.Windows.Application.Current.Dispatcher.Invoke(() => GenerateRotatedPlaceholderCore());
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[GenerateRotatedPlaceholder] エラー: {ex.Message}");
+                ThumbnailImage = null;
+                PreviewImage = null;
+            }
+        }
+        
+        private void GenerateRotatedPlaceholderCore()
+        {
+            // サムネイル用のプレースホルダーを作成
+            var thumbnailWidth = 120;
+            var originalAspectRatio = _page.Height / _page.Width;
+            var thumbnailHeight = (int)(thumbnailWidth * originalAspectRatio);
+            
+            // サムネイル用プレースホルダーを作成
+            var thumbnailBitmap = CreatePlaceholder(thumbnailWidth, thumbnailHeight);
+            
+            // プレビュー用のより大きなプレースホルダーを作成
+            var previewWidth = 400;
+            var previewHeight = (int)(previewWidth * originalAspectRatio);
+            var previewBitmap = CreatePlaceholder(previewWidth, previewHeight);
+            
+            // 回転を適用
+            SkiaSharp.SKBitmap finalThumbnail;
+            SkiaSharp.SKBitmap finalPreview;
+            
+            if (_page.Rotation != 0)
+            {
+                finalThumbnail = RotateBitmap(thumbnailBitmap, _page.Rotation);
+                finalPreview = RotateBitmap(previewBitmap, _page.Rotation);
+                thumbnailBitmap.Dispose();
+                previewBitmap.Dispose();
+            }
+            else
+            {
+                finalThumbnail = thumbnailBitmap;
+                finalPreview = previewBitmap;
+            }
+            
+            // サムネイル用WPF画像を作成
+            using (var data = finalThumbnail.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100))
+            {
+                var stream = new System.IO.MemoryStream(data.ToArray());
+                var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                bitmap.BeginInit();
+                bitmap.StreamSource = stream;
+                bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                bitmap.EndInit();
+                bitmap.Freeze();
+                
+                ThumbnailImage = bitmap;
+            }
+            
+            // プレビュー用WPF画像を作成
+            using (var data = finalPreview.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100))
+            {
+                var stream = new System.IO.MemoryStream(data.ToArray());
+                var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                bitmap.BeginInit();
+                bitmap.StreamSource = stream;
+                bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                bitmap.EndInit();
+                bitmap.Freeze();
+                
+                PreviewImage = bitmap;
+            }
+            
+            System.Diagnostics.Debug.WriteLine($"[GenerateRotatedPlaceholder] 完了 - サムネイル: {finalThumbnail.Width}x{finalThumbnail.Height}, プレビュー: {finalPreview.Width}x{finalPreview.Height}");
+            
+            finalThumbnail.Dispose();
+            finalPreview.Dispose();
+        }
+        
+        private SkiaSharp.SKBitmap CreatePlaceholder(int width, int height)
+        {
+            var bitmap = new SkiaSharp.SKBitmap(width, height);
+            using (var canvas = new SkiaSharp.SKCanvas(bitmap))
+            {
+                // 白背景
+                canvas.Clear(SkiaSharp.SKColors.White);
+
+                // 枠線
+                using (var paint = new SkiaSharp.SKPaint())
+                {
+                    paint.Color = SkiaSharp.SKColors.LightGray;
+                    paint.Style = SkiaSharp.SKPaintStyle.Stroke;
+                    paint.StrokeWidth = 2;
+                    canvas.DrawRect(1, 1, width - 2, height - 2, paint);
+
+                    // ページ番号
+                    paint.Color = SkiaSharp.SKColors.Gray;
+                    paint.Style = SkiaSharp.SKPaintStyle.Fill;
+                    paint.TextSize = Math.Min(width / 5, 24);
+                    paint.TextAlign = SkiaSharp.SKTextAlign.Center;
+                    canvas.DrawText($"Page {_page.PageNumber}", width / 2, height / 2, paint);
+                    
+                    // 回転角度を表示（デバッグ用）
+                    if (_page.Rotation != 0)
+                    {
+                        paint.Color = SkiaSharp.SKColors.Red;
+                        paint.TextSize = Math.Min(width / 8, 14);
+                        canvas.DrawText($"{_page.Rotation}°", width / 2, height / 2 + (height / 10), paint);
+                    }
+                    
+                    // PDFマーカー
+                    paint.Color = SkiaSharp.SKColors.DarkGray;
+                    paint.TextSize = Math.Min(width / 7, 16);
+                    canvas.DrawText("PDF", width / 2, height / 2 - (height / 8), paint);
+                }
+            }
+            
+            return bitmap;
         }
     }
 }

@@ -282,11 +282,34 @@ namespace DocOrganizer.UI.ViewModels
         {
             try
             {
+                System.Diagnostics.Debug.WriteLine($"[UpdatePreview] ページ {pageViewModel?.PageNumber} のプレビュー更新開始");
+                
                 if (pageViewModel?.Page == null) return;
 
-                // プレビュー用の大きな画像を生成
-                if (_currentDocument != null)
+                // まず、PageViewModelのPreviewImageを確認
+                if (pageViewModel.PreviewImage != null)
                 {
+                    System.Diagnostics.Debug.WriteLine($"[UpdatePreview] PageViewModelのPreviewImageを使用");
+                    
+                    // UIスレッドで実行
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        CurrentPageImage = pageViewModel.PreviewImage;
+                        
+                        // プレビューサイズを更新
+                        if (CurrentPageImage is System.Windows.Media.Imaging.BitmapImage bitmapImage)
+                        {
+                            PreviewWidth = bitmapImage.PixelWidth;
+                            PreviewHeight = bitmapImage.PixelHeight;
+                        }
+                        
+                        System.Diagnostics.Debug.WriteLine($"[UpdatePreview] CurrentPageImage設定完了");
+                    });
+                }
+                else if (_currentDocument != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[UpdatePreview] PreviewImageがないため新規生成");
+                    
                     var pageIndex = _currentDocument.Pages.ToList().IndexOf(pageViewModel.Page);
                     if (pageIndex >= 0)
                     {
@@ -490,24 +513,23 @@ namespace DocOrganizer.UI.ViewModels
                     pageVm.UpdateRotation();
                 }
                 
-                // サムネイルを再生成（回転を反映）
-                _ = Task.Run(async () =>
+                // サムネイルを即座に更新（同期的に実行し、非同期の競合を回避）
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
-                    // 回転したページのサムネイルを強制的に再生成
+                    System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] サムネイル更新開始 - {selectedPages.Count}ページ");
+                    
                     foreach (var pageVm in selectedPages)
                     {
-                        var pageIndex = pageVm.PageNumber - 1;
-                        await _pdfEditorService.ForceUpdatePageThumbnailAsync(pageIndex);
+                        System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] ページ {pageVm.PageNumber} のサムネイル再生成中...");
+                        
+                        // 直接PageViewModelの更新メソッドを呼び出し
+                        pageVm.UpdateRotation();
+                        pageVm.LoadThumbnail();
+                        
+                        System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] ページ {pageVm.PageNumber} 更新完了 - 回転: {pageVm.Rotation}度");
                     }
                     
-                    // UIスレッドで各PageViewModelのサムネイルを更新
-                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
-                    {
-                        foreach (var pageVm in Pages)
-                        {
-                            pageVm.LoadThumbnail();
-                        }
-                    });
+                    System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] 全ページの更新完了");
                 });
                 
                 // 単一ページが選択されている場合、プレビューも更新
