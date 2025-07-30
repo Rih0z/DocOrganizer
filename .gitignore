@@ -231,6 +231,10 @@ samples/
 test-files/
 test-data/
 
+# Exclude output directories
+output/
+release/output/
+
 # Exclude image files
 *.png
 *.jpg
