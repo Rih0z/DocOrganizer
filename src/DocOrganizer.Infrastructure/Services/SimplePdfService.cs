@@ -108,25 +108,18 @@ namespace DocOrganizer.Infrastructure.Services
                         canvas.RotateDegrees(rotation);
                         
                         // 回転時の描画矩形を作成
-                        // 90/270度回転の場合、元の画像の幅と高さを使用（回転前のサイズ）
-                        float rectWidth, rectHeight;
-                        if (rotation == 90 || rotation == 270)
-                        {
-                            // 90/270度回転：描画時は元の画像の向きで描画するので、幅と高さを入れ替える
-                            rectWidth = drawHeight;
-                            rectHeight = drawWidth;
-                        }
-                        else
-                        {
-                            // 0/180度回転：そのまま使用
-                            rectWidth = drawWidth;
-                            rectHeight = drawHeight;
-                        }
+                        // キャンバスが既に回転しているので、画像は元の向きのまま描画する
+                        float rectWidth = drawWidth;
+                        float rectHeight = drawHeight;
                         
-                        var rotatedRect = SKRect.Create(-rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight);
+                        // 画像の中心を原点(0,0)に配置するため、左上座標を計算
+                        float rectX = -drawWidth / 2;
+                        float rectY = -drawHeight / 2;
                         
-                        logger.LogDebug("CreatePdfFromImageSimpleAsync - Page center: ({CX}, {CY}), Image rect (before rotation): X={X}, Y={Y}, W={Width}, H={Height}, Rotation={Rotation}°", 
-                            centerX, centerY, -rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight, rotation);
+                        var rotatedRect = SKRect.Create(rectX, rectY, rectWidth, rectHeight);
+                        
+                        logger.LogDebug("CreatePdfFromImageSimpleAsync - Canvas rotated {Rotation}° at page center ({CX}, {CY}), Drawing image: X={X}, Y={Y}, W={Width}, H={Height}", 
+                            rotation, centerX, centerY, rectX, rectY, rectWidth, rectHeight);
                         
                         // 描画
                         canvas.DrawBitmap(bitmap, rotatedRect);
@@ -319,25 +312,18 @@ namespace DocOrganizer.Infrastructure.Services
                             canvas.RotateDegrees(rotation);
                             
                             // 回転時の描画矩形を作成
-                            // 90/270度回転の場合、元の画像の幅と高さを使用（回転前のサイズ）
-                            float rectWidth, rectHeight;
-                            if (rotation == 90 || rotation == 270)
-                            {
-                                // 90/270度回転：描画時は元の画像の向きで描画するので、幅と高さを入れ替える
-                                rectWidth = drawHeight;
-                                rectHeight = drawWidth;
-                            }
-                            else
-                            {
-                                // 0/180度回転：そのまま使用
-                                rectWidth = drawWidth;
-                                rectHeight = drawHeight;
-                            }
+                            // キャンバスが既に回転しているので、画像は元の向きのまま描画する
+                            float rectWidth = drawWidth;
+                            float rectHeight = drawHeight;
                             
-                            var rotatedRect = SKRect.Create(-rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight);
+                            // 画像の中心を原点(0,0)に配置するため、左上座標を計算
+                            float rectX = -drawWidth / 2;
+                            float rectY = -drawHeight / 2;
                             
-                            logger.LogDebug("Drawing rotated image - Page center: ({CX}, {CY}), Image rect (before rotation): X={X}, Y={Y}, W={Width}, H={Height}, Rotation={Rotation}°", 
-                                centerX, centerY, -rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight, rotation);
+                            var rotatedRect = SKRect.Create(rectX, rectY, rectWidth, rectHeight);
+                            
+                            logger.LogDebug("Drawing rotated image - Canvas rotated {Rotation}° at page center ({CX}, {CY}), Drawing image: X={X}, Y={Y}, W={Width}, H={Height}", 
+                                rotation, centerX, centerY, rectX, rectY, rectWidth, rectHeight);
                             
                             // 描画
                             canvas.DrawBitmap(bitmap, rotatedRect);
