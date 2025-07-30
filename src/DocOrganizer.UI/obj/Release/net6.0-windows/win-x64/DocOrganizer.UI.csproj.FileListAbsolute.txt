@@ -23,6 +23,7 @@ C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocO
 C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.UI\bin\Release\net6.0-windows\win-x64\Microsoft.Extensions.FileSystemGlobbing.dll
 C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.UI\bin\Release\net6.0-windows\win-x64\Microsoft.Extensions.Hosting.dll
 C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.UI\bin\Release\net6.0-windows\win-x64\Microsoft.Extensions.Hosting.Abstractions.dll
+C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.UI\bin\Release\net6.0-windows\win-x64\Microsoft.Extensions.Http.dll
 C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.UI\bin\Release\net6.0-windows\win-x64\Microsoft.Extensions.Logging.dll
 C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.UI\bin\Release\net6.0-windows\win-x64\Microsoft.Extensions.Logging.Abstractions.dll
 C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.UI\bin\Release\net6.0-windows\win-x64\Microsoft.Extensions.Logging.Configuration.dll
@@ -567,4 +568,3 @@ C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocO
 C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.UI\obj\Release\net6.0-windows\win-x64\DocOrganizer.pdb
 C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.UI\obj\Release\net6.0-windows\win-x64\DocOrganizer.UI.genruntimeconfig.cache
 C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.UI\obj\Release\net6.0-windows\win-x64\ref\DocOrganizer.dll
-C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.UI\bin\Release\net6.0-windows\win-x64\Microsoft.Extensions.Http.dll

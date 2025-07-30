@@ -49,46 +49,84 @@ namespace DocOrganizer.Infrastructure.Services
                     // 保存状態をプッシュ
                     canvas.Save();
                     
-                    // 回転を考慮した画像のアスペクト比計算
-                    float imageWidth = bitmap.Width;
-                    float imageHeight = bitmap.Height;
+                    // 元の画像のアスペクト比を計算（回転前）
+                    float originalAspect = (float)bitmap.Width / bitmap.Height;
+                    logger.LogInformation("CreatePdfFromImageSimpleAsync - Image original size: {Width}x{Height}, aspect ratio: {Aspect}, rotation: {Rotation}", 
+                        bitmap.Width, bitmap.Height, originalAspect, rotation);
                     
-                    // 90度または270度回転の場合、幅と高さを入れ替える
+                    // 回転を考慮した描画サイズの計算
+                    float drawWidth, drawHeight;
+                    
                     if (rotation == 90 || rotation == 270)
                     {
-                        imageWidth = bitmap.Height;
-                        imageHeight = bitmap.Width;
-                    }
-                    
-                    float imageAspect = imageWidth / imageHeight;
-                    float pageAspect = pageWidth / pageHeight;
-                    
-                    float drawWidth, drawHeight;
-                    if (imageAspect > pageAspect)
-                    {
-                        drawWidth = pageWidth * 0.9f; // マージンを考慮
-                        drawHeight = drawWidth / imageAspect;
+                        // 90/270度回転時：描画領域の幅と高さを考慮
+                        // 回転後の画像がページに収まるように計算
+                        float rotatedImageWidth = bitmap.Height;
+                        float rotatedImageHeight = bitmap.Width;
+                        float rotatedAspect = rotatedImageWidth / rotatedImageHeight;
+                        
+                        if (rotatedAspect > pageWidth / pageHeight)
+                        {
+                            drawWidth = pageWidth * 0.9f;
+                            drawHeight = drawWidth / rotatedAspect;
+                        }
+                        else
+                        {
+                            drawHeight = pageHeight * 0.9f;
+                            drawWidth = drawHeight * rotatedAspect;
+                        }
                     }
                     else
                     {
-                        drawHeight = pageHeight * 0.9f; // マージンを考慮
-                        drawWidth = drawHeight * imageAspect;
+                        // 0/180度回転時：通常の計算
+                        if (originalAspect > pageWidth / pageHeight)
+                        {
+                            drawWidth = pageWidth * 0.9f;
+                            drawHeight = drawWidth / originalAspect;
+                        }
+                        else
+                        {
+                            drawHeight = pageHeight * 0.9f;
+                            drawWidth = drawHeight * originalAspect;
+                        }
                     }
                     
-                    float x = (pageWidth - drawWidth) / 2;
-                    float y = (pageHeight - drawHeight) / 2;
+                    // ページの中心座標
+                    float centerX = pageWidth / 2;
+                    float centerY = pageHeight / 2;
                     
-                    // ページの中心に移動して回転
+                    // 回転処理と描画
                     if (rotation != 0)
                     {
-                        canvas.Translate(pageWidth / 2, pageHeight / 2);
+                        logger.LogInformation("CreatePdfFromImageSimpleAsync - Applying rotation: {Rotation} degrees", rotation);
+                        
+                        canvas.Save();
+                        
+                        // ページの中心に移動
+                        canvas.Translate(centerX, centerY);
+                        // 回転
                         canvas.RotateDegrees(rotation);
-                        canvas.Translate(-pageWidth / 2, -pageHeight / 2);
+                        
+                        // 回転後の描画矩形を作成（中心基準）
+                        var rotatedRect = SKRect.Create(-drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+                        
+                        logger.LogDebug("CreatePdfFromImageSimpleAsync - Drawing rotated image at page center ({CX}, {CY}), rect: X={X}, Y={Y}, W={Width}, H={Height}, rotation={Rotation}", 
+                            centerX, centerY, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight, rotation);
+                        
+                        // 描画
+                        canvas.DrawBitmap(bitmap, rotatedRect);
+                        canvas.Restore();
                     }
-                    
-                    // 画像を描画
-                    var destRect = SKRect.Create(x, y, drawWidth, drawHeight);
-                    canvas.DrawBitmap(bitmap, destRect);
+                    else
+                    {
+                        // 回転なしの場合は通常描画
+                        float x = centerX - drawWidth / 2;
+                        float y = centerY - drawHeight / 2;
+                        var destRect = SKRect.Create(x, y, drawWidth, drawHeight);
+                        logger.LogDebug("CreatePdfFromImageSimpleAsync - Drawing non-rotated image at: X={X}, Y={Y}, W={Width}, H={Height}", 
+                            x, y, drawWidth, drawHeight);
+                        canvas.DrawBitmap(bitmap, destRect);
+                    }
                     
                     // 保存状態を復元
                     canvas.Restore();
@@ -195,6 +233,7 @@ namespace DocOrganizer.Infrastructure.Services
 
                         // 回転角度を取得
                         int rotation = (rotationList != null && index < rotationList.Count) ? rotationList[index] : 0;
+                        logger.LogInformation("Processing image {Index}: {ImagePath}, Rotation: {Rotation} degrees", index, Path.GetFileName(imagePath), rotation);
                         
                         // ページを作成
                         using var canvas = document.BeginPage(pageWidth, pageHeight);
@@ -202,46 +241,88 @@ namespace DocOrganizer.Infrastructure.Services
                         // 保存状態をプッシュ
                         canvas.Save();
                         
-                        // 回転を考慮した画像のアスペクト比計算
-                        float imageWidth = bitmap.Width;
-                        float imageHeight = bitmap.Height;
+                        // 元の画像のアスペクト比を計算（回転前）
+                        float originalAspect = (float)bitmap.Width / bitmap.Height;
+                        logger.LogInformation("Image {Index} original size: {Width}x{Height}, aspect ratio: {Aspect}", 
+                            index, bitmap.Width, bitmap.Height, originalAspect);
                         
-                        // 90度または270度回転の場合、幅と高さを入れ替える
+                        // 回転を考慮した描画サイズの計算
+                        float drawWidth, drawHeight;
+                        
                         if (rotation == 90 || rotation == 270)
                         {
-                            imageWidth = bitmap.Height;
-                            imageHeight = bitmap.Width;
-                        }
-                        
-                        float imageAspect = imageWidth / imageHeight;
-                        float pageAspect = pageWidth / pageHeight;
-                        
-                        float drawWidth, drawHeight;
-                        if (imageAspect > pageAspect)
-                        {
-                            drawWidth = pageWidth * 0.9f; // マージンを考慮
-                            drawHeight = drawWidth / imageAspect;
+                            // 90/270度回転時：描画領域の幅と高さを考慮
+                            // 回転後の画像がページに収まるように計算
+                            float rotatedImageWidth = bitmap.Height;
+                            float rotatedImageHeight = bitmap.Width;
+                            float rotatedAspect = rotatedImageWidth / rotatedImageHeight;
+                            logger.LogInformation("Image {Index} after {Rotation}° rotation: {Width}x{Height}, aspect ratio: {Aspect}", 
+                                index, rotation, rotatedImageWidth, rotatedImageHeight, rotatedAspect);
+                            
+                            if (rotatedAspect > pageWidth / pageHeight)
+                            {
+                                drawWidth = pageWidth * 0.9f;
+                                drawHeight = drawWidth / rotatedAspect;
+                            }
+                            else
+                            {
+                                drawHeight = pageHeight * 0.9f;
+                                drawWidth = drawHeight * rotatedAspect;
+                            }
                         }
                         else
                         {
-                            drawHeight = pageHeight * 0.9f; // マージンを考慮
-                            drawWidth = drawHeight * imageAspect;
+                            // 0/180度回転時：通常の計算
+                            if (originalAspect > pageWidth / pageHeight)
+                            {
+                                drawWidth = pageWidth * 0.9f;
+                                drawHeight = drawWidth / originalAspect;
+                            }
+                            else
+                            {
+                                drawHeight = pageHeight * 0.9f;
+                                drawWidth = drawHeight * originalAspect;
+                            }
                         }
                         
-                        float x = (pageWidth - drawWidth) / 2;
-                        float y = (pageHeight - drawHeight) / 2;
+                        // ページの中心座標
+                        float centerX = pageWidth / 2;
+                        float centerY = pageHeight / 2;
+                        logger.LogInformation("Image {Index} final draw size: {Width}x{Height}, center: ({X}, {Y})", 
+                            index, drawWidth, drawHeight, centerX, centerY);
                         
-                        // ページの中心に移動して回転
+                        // 回転処理と描画
                         if (rotation != 0)
                         {
-                            canvas.Translate(pageWidth / 2, pageHeight / 2);
+                            logger.LogInformation("Applying rotation: {Rotation} degrees to page {Index}", rotation, index);
+                            
+                            canvas.Save();
+                            
+                            // ページの中心に移動
+                            canvas.Translate(centerX, centerY);
+                            // 回転
                             canvas.RotateDegrees(rotation);
-                            canvas.Translate(-pageWidth / 2, -pageHeight / 2);
+                            
+                            // 回転後の描画矩形を作成（中心基準）
+                            var rotatedRect = SKRect.Create(-drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+                            
+                            logger.LogDebug("Drawing rotated image at page center ({CX}, {CY}), rect: X={X}, Y={Y}, W={Width}, H={Height}, rotation={Rotation}", 
+                                centerX, centerY, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight, rotation);
+                            
+                            // 描画
+                            canvas.DrawBitmap(bitmap, rotatedRect);
+                            canvas.Restore();
                         }
-                        
-                        // 画像を描画
-                        var destRect = SKRect.Create(x, y, drawWidth, drawHeight);
-                        canvas.DrawBitmap(bitmap, destRect);
+                        else
+                        {
+                            // 回転なしの場合は通常描画
+                            float x = centerX - drawWidth / 2;
+                            float y = centerY - drawHeight / 2;
+                            var destRect = SKRect.Create(x, y, drawWidth, drawHeight);
+                            logger.LogDebug("Drawing non-rotated image at: X={X}, Y={Y}, W={Width}, H={Height}", 
+                                x, y, drawWidth, drawHeight);
+                            canvas.DrawBitmap(bitmap, destRect);
+                        }
                         
                         // 保存状態を復元
                         canvas.Restore();

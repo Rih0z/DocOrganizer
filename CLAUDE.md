@@ -297,6 +297,57 @@ ai_coding_principles:
           consistent_behavior: "両方のアプリケーションで同じ現象と解決方法を確認"
         lesson_learned: "Windows WPFアプリケーションの権限レベル制約は回避不可能な設計制約"
       related_sections: ["第13条", "exe_verification", "troubleshooting", "testing_verification"]
+    第15条:
+      rule: "バグを修正する場合は、まず原因の分析をしユーザーに原因について報告する。ユーザーが確認したら修正方法を提案する。修正方法が妥当か十分にレビューし、他の宣言に矛盾していないか確認した上でユーザーの確認をとり修正を実施する。"
+      importance: "品質の高い修正と、ユーザーとの適切なコミュニケーションを確保"
+      mandatory: "例外なく守ること - 即座の修正は予期しない副作用を引き起こす可能性がある"
+      implementation:
+        step1_analysis:
+          description: "バグの原因を徹底的に分析"
+          actions:
+            - "エラーメッセージ、ログ、実行結果を確認"
+            - "コードフローを追跡し、問題箇所を特定"
+            - "根本原因と影響範囲を明確化"
+        step2_report:
+          description: "ユーザーに原因を報告"
+          format: "## 原因分析結果\n1. 問題の症状\n2. 根本原因\n3. 影響範囲"
+          wait_for: "ユーザーの確認と理解"
+        step3_propose:
+          description: "修正方法を提案"
+          actions:
+            - "複数の修正アプローチを検討"
+            - "各アプローチのメリット・デメリットを明示"
+            - "推奨する修正方法を理由付きで提案"
+        step4_review:
+          description: "修正方法の妥当性レビュー"
+          checklist:
+            - "他のコンポーネントへの影響確認"
+            - "パフォーマンスへの影響評価"
+            - "セキュリティリスクの検討"
+            - "既存のCLAUDE.md原則との整合性確認"
+        step5_confirm:
+          description: "ユーザーの最終確認を取得"
+          requirement: "修正実施前に必ずユーザーの明示的な承認を得る"
+        step6_implement:
+          description: "修正を実施"
+          actions:
+            - "承認された方法で修正を実装"
+            - "テストを実施して動作確認"
+            - "修正結果をユーザーに報告"
+      example_workflow:
+        bug_report: "PDFの回転が保存時に反映されない"
+        analysis: "SavePdfAsyncで回転情報が渡されているが、ビルドが古い可能性を発見"
+        user_confirmation: "分析結果を報告し、ユーザーが理解したことを確認"
+        proposed_fix: "クリーンビルドと再パブリッシュを提案"
+        review_result: "既存コードへの影響なし、第12条のビルド手順に準拠"
+        user_approval: "ユーザーが修正方法を承認"
+        implementation: "クリーンビルドを実行し、新しいEXEを生成"
+      benefits:
+        quality: "思慮深い修正により品質向上"
+        communication: "ユーザーとの信頼関係構築"
+        learning: "問題の理解が深まり、将来の問題予防に貢献"
+        documentation: "修正履歴が明確になり、保守性向上"
+      related_sections: ["第5条", "第7条", "troubleshooting", "quality_standards"]
     
     file_organization_standards:
       description: "Mac・Windows両環境でのプロフェッショナルファイル構造基準"

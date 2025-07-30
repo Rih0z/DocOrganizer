@@ -91,6 +91,7 @@ namespace DocOrganizer.Infrastructure.Services
                 
                 if (imagePaths.Any())
                 {
+                    _logger.LogInformation("Converting {Count} images to PDF with rotations: {Rotations}", imagePaths.Count, string.Join(", ", rotations));
                     // SimplePdfServiceを使用して実際のPDFを生成（回転情報付き）
                     await SimplePdfService.CreatePdfFileFromImagesWithRotationAsync(imagePaths, rotations, filePath, _logger);
                     _logger.LogInformation("Successfully converted images to PDF with rotation: {FilePath}", filePath);
