@@ -3,6 +3,15 @@
     "serena": {
       "command": "uvx",
       "args": ["--from", "git+https://github.com/oraios/serena", "serena-mcp-server"]
+    },
+    "windows-build-server": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "windows-mcp-client",
+        "--server-url", "http://100.71.150.41:8080",
+        "--auth-token", "JIGrimGrHsJ7rTMReMZJJbPNOmkODUEd"
+      ]
     }
   }
 }

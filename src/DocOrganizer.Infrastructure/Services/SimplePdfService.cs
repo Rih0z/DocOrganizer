@@ -125,7 +125,7 @@ namespace DocOrganizer.Infrastructure.Services
                         
                         var rotatedRect = SKRect.Create(-rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight);
                         
-                        logger.LogDebug("CreatePdfFromImageSimpleAsync - Drawing rotated image at page center ({CX}, {CY}), rect: X={X}, Y={Y}, W={Width}, H={Height}, rotation={Rotation}", 
+                        logger.LogDebug("CreatePdfFromImageSimpleAsync - Page center: ({CX}, {CY}), Image rect (before rotation): X={X}, Y={Y}, W={Width}, H={Height}, Rotation={Rotation}°", 
                             centerX, centerY, -rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight, rotation);
                         
                         // 描画
@@ -336,7 +336,7 @@ namespace DocOrganizer.Infrastructure.Services
                             
                             var rotatedRect = SKRect.Create(-rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight);
                             
-                            logger.LogDebug("Drawing rotated image at page center ({CX}, {CY}), rect: X={X}, Y={Y}, W={Width}, H={Height}, rotation={Rotation}", 
+                            logger.LogDebug("Drawing rotated image - Page center: ({CX}, {CY}), Image rect (before rotation): X={X}, Y={Y}, W={Width}, H={Height}, Rotation={Rotation}°", 
                                 centerX, centerY, -rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight, rotation);
                             
                             // 描画
