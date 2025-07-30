@@ -107,11 +107,26 @@ namespace DocOrganizer.Infrastructure.Services
                         // 回転
                         canvas.RotateDegrees(rotation);
                         
-                        // 回転後の描画矩形を作成（中心基準）
-                        var rotatedRect = SKRect.Create(-drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+                        // 回転時の描画矩形を作成
+                        // 90/270度回転の場合、元の画像の幅と高さを使用（回転前のサイズ）
+                        float rectWidth, rectHeight;
+                        if (rotation == 90 || rotation == 270)
+                        {
+                            // 90/270度回転：描画時は元の画像の向きで描画するので、幅と高さを入れ替える
+                            rectWidth = drawHeight;
+                            rectHeight = drawWidth;
+                        }
+                        else
+                        {
+                            // 0/180度回転：そのまま使用
+                            rectWidth = drawWidth;
+                            rectHeight = drawHeight;
+                        }
+                        
+                        var rotatedRect = SKRect.Create(-rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight);
                         
                         logger.LogDebug("CreatePdfFromImageSimpleAsync - Drawing rotated image at page center ({CX}, {CY}), rect: X={X}, Y={Y}, W={Width}, H={Height}, rotation={Rotation}", 
-                            centerX, centerY, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight, rotation);
+                            centerX, centerY, -rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight, rotation);
                         
                         // 描画
                         canvas.DrawBitmap(bitmap, rotatedRect);
@@ -303,11 +318,26 @@ namespace DocOrganizer.Infrastructure.Services
                             // 回転
                             canvas.RotateDegrees(rotation);
                             
-                            // 回転後の描画矩形を作成（中心基準）
-                            var rotatedRect = SKRect.Create(-drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+                            // 回転時の描画矩形を作成
+                            // 90/270度回転の場合、元の画像の幅と高さを使用（回転前のサイズ）
+                            float rectWidth, rectHeight;
+                            if (rotation == 90 || rotation == 270)
+                            {
+                                // 90/270度回転：描画時は元の画像の向きで描画するので、幅と高さを入れ替える
+                                rectWidth = drawHeight;
+                                rectHeight = drawWidth;
+                            }
+                            else
+                            {
+                                // 0/180度回転：そのまま使用
+                                rectWidth = drawWidth;
+                                rectHeight = drawHeight;
+                            }
+                            
+                            var rotatedRect = SKRect.Create(-rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight);
                             
                             logger.LogDebug("Drawing rotated image at page center ({CX}, {CY}), rect: X={X}, Y={Y}, W={Width}, H={Height}, rotation={Rotation}", 
-                                centerX, centerY, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight, rotation);
+                                centerX, centerY, -rectWidth / 2, -rectHeight / 2, rectWidth, rectHeight, rotation);
                             
                             // 描画
                             canvas.DrawBitmap(bitmap, rotatedRect);
