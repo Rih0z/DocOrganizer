@@ -86,8 +86,8 @@ namespace DocOrganizer.Infrastructure.Services
                 pdfDocument.AddPage(page);
                 pdfDocument.ClearModifiedFlag();
 
-                _logger.LogInformation("Auto-corrected image orientation: {ImagePath}, rotation: {Rotation}", 
-                    Path.GetFileName(imagePath), correctedRotation);
+                _logger.LogInformation("Image loaded without auto-rotation: {ImagePath}", 
+                    Path.GetFileName(imagePath));
 
                 return pdfDocument;
             }
@@ -146,8 +146,8 @@ namespace DocOrganizer.Infrastructure.Services
                     
                     pdfDocument.AddPage(page);
                     
-                    _logger.LogInformation("Auto-corrected image orientation: {ImagePath}, rotation: {Rotation}", 
-                        Path.GetFileName(imagePath), correctedRotation);
+                    _logger.LogInformation("Image loaded without auto-rotation: {ImagePath}", 
+                        Path.GetFileName(imagePath));
                 }
                 
                 pdfDocument.ClearModifiedFlag();
@@ -782,6 +782,13 @@ namespace DocOrganizer.Infrastructure.Services
             {
                 await Task.Delay(1); // 非同期メソッドにするための最小処理
                 
+                // 自動回転補正を無効化
+                // ユーザーが手動で回転を設定するため、自動補正は行わない
+                _logger.LogDebug("Auto-rotation disabled for {ImagePath}", Path.GetFileName(imagePath));
+                return 0;
+                
+                // 以下、元のコードはコメントアウト
+                /*
                 // 基本的な向き検出ロジック
                 // 1. EXIFデータから向き情報を取得
                 var exifRotation = GetExifRotation(imagePath);
@@ -805,6 +812,7 @@ namespace DocOrganizer.Infrastructure.Services
                 
                 // デフォルトは回転なし
                 return 0;
+                */
             }
             catch (Exception ex)
             {
