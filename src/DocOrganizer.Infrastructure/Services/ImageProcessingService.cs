@@ -86,7 +86,7 @@ namespace DocOrganizer.Infrastructure.Services
                 pdfDocument.AddPage(page);
                 pdfDocument.ClearModifiedFlag();
 
-                _logger.LogInformation("Image loaded without auto-rotation: {ImagePath}", 
+                _logger.LogInformation("Image loaded with auto-orientation detection: {ImagePath}", 
                     Path.GetFileName(imagePath));
 
                 return pdfDocument;
@@ -177,8 +177,11 @@ namespace DocOrganizer.Infrastructure.Services
                 }
 
                 using var image = await LoadImageSafelyAsync(tempImagePath);
+                
+                // バグ修正：画像の向き自動補正を確実に適用
+                // 要件定義書（tmp/DocOrganizer2.2_画像向き修正要件定義書.md）準拠
                 image.Mutate(x => x
-                    .AutoOrient()
+                    .AutoOrient()  // EXIF情報に基づく自動回転
                     .Resize(new ResizeOptions
                     {
                         Size = new Size(width, height),
@@ -448,7 +451,13 @@ namespace DocOrganizer.Infrastructure.Services
             {
                 // Step 1: 基本的な画像読み込みを試行
                 _logger.LogDebug($"Attempting basic ImageSharp load for: {imagePath}");
-                return await Image.LoadAsync(imagePath);
+                var image = await Image.LoadAsync(imagePath);
+                
+                // バグ修正：画像読み込み時に必ずAutoOrientを適用
+                // 要件定義書（tmp/DocOrganizer2.2_画像向き修正要件定義書.md）準拠
+                image.Mutate(x => x.AutoOrient());
+                
+                return image;
             }
             catch (Exception ex)
             {
@@ -485,7 +494,12 @@ namespace DocOrganizer.Infrastructure.Services
                     }
                     
                     using var stream = new MemoryStream(imageBytes);
-                    return await Image.LoadAsync(stream);
+                    var image = await Image.LoadAsync(stream);
+                    
+                    // バグ修正：バイト配列から読み込んだ場合もAutoOrientを適用
+                    image.Mutate(x => x.AutoOrient());
+                    
+                    return image;
                 }
                 catch (Exception innerEx)
                 {
@@ -548,6 +562,10 @@ namespace DocOrganizer.Infrastructure.Services
                 
                 // ImageSharpで最終読み込み
                 var result = await Image.LoadAsync(tempJpegPath);
+                
+                // バグ修正：Magick.NET変換後もAutoOrientを適用
+                result.Mutate(x => x.AutoOrient());
+                
                 return result;
             }
             finally
@@ -780,44 +798,79 @@ namespace DocOrganizer.Infrastructure.Services
         {
             try
             {
-                await Task.Delay(1); // 非同期メソッドにするための最小処理
+                // バグ報告ドキュメント（tmp/DocOrganizer2.2_画像向き修正要件定義書.md）に基づく修正
+                // 縦向き画像が横向きで表示される問題を解決
                 
-                // 自動回転補正を無効化
-                // ユーザーが手動で回転を設定するため、自動補正は行わない
-                _logger.LogDebug("Auto-rotation disabled for {ImagePath}", Path.GetFileName(imagePath));
-                return 0;
+                _logger.LogDebug("Detecting orientation for {ImagePath}", Path.GetFileName(imagePath));
                 
-                // 以下、元のコードはコメントアウト
-                /*
-                // 基本的な向き検出ロジック
-                // 1. EXIFデータから向き情報を取得
-                var exifRotation = GetExifRotation(imagePath);
-                if (exifRotation != 0)
+                // 画像を一時的に読み込んで向き情報を取得
+                using var tempImage = await LoadImageForOrientationCheckAsync(imagePath);
+                
+                // ImageSharpは自動的にEXIF情報を読み取り、AutoOrient()で正しい向きに変換する
+                // ただし、ここでは回転角度のみを検出し、実際の回転は行わない
+                var originalWidth = tempImage.Width;
+                var originalHeight = tempImage.Height;
+                
+                // AutoOrient()を適用して向きを補正
+                tempImage.Mutate(x => x.AutoOrient());
+                
+                // 向きが変わったかチェック
+                var rotatedWidth = tempImage.Width;
+                var rotatedHeight = tempImage.Height;
+                
+                int rotation = 0;
+                if (originalWidth == rotatedHeight && originalHeight == rotatedWidth)
                 {
-                    _logger.LogDebug("EXIF rotation detected: {Rotation} for {ImagePath}", exifRotation, Path.GetFileName(imagePath));
-                    return exifRotation;
+                    // 幅と高さが入れ替わった = 90度または270度回転
+                    // ImageSharpのAutoOrientは正しい向きにするので、ここでは回転不要
+                    rotation = 0;
                 }
                 
-                // 2. 画像の縦横比から推測
-                var aspectRatio = GetImageAspectRatio(imagePath);
-                if (aspectRatio > 0)
-                {
-                    // 縦長の画像で、通常横向きで撮影される書類の場合は90度回転の可能性
-                    if (aspectRatio > 1.3f) // 縦長比率が高い場合
-                    {
-                        _logger.LogDebug("Aspect ratio suggests rotation needed: {AspectRatio} for {ImagePath}", aspectRatio, Path.GetFileName(imagePath));
-                        return 270; // 右に90度回転（時計回り）
-                    }
-                }
+                _logger.LogInformation("Orientation detection complete for {ImagePath}: rotation={Rotation}", 
+                    Path.GetFileName(imagePath), rotation);
                 
-                // デフォルトは回転なし
+                // 画像読み込み処理では、ImageSharpのAutoOrient()に任せるため、
+                // ここでは常に0を返す（AutoOrientが自動的に処理するため）
                 return 0;
-                */
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to detect orientation for {ImagePath}", imagePath);
                 return 0; // エラー時は回転なし
+            }
+        }
+        
+        /// <summary>
+        /// 向きチェック用の画像読み込み（メモリ効率を考慮）
+        /// </summary>
+        private async Task<Image> LoadImageForOrientationCheckAsync(string imagePath)
+        {
+            try
+            {
+                // HEICファイルの場合は先に変換
+                if (IsHeicFile(imagePath))
+                {
+                    var tempJpegPath = await ConvertHeicToJpegAsync(imagePath);
+                    try
+                    {
+                        return await Image.LoadAsync(tempJpegPath);
+                    }
+                    finally
+                    {
+                        if (File.Exists(tempJpegPath))
+                        {
+                            File.Delete(tempJpegPath);
+                        }
+                    }
+                }
+                
+                // 通常の画像ファイル
+                return await Image.LoadAsync(imagePath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load image for orientation check: {ImagePath}", imagePath);
+                throw;
             }
         }
 
