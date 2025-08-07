@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
@@ -62,27 +63,17 @@ namespace DocOrganizer.Infrastructure.Services
                     throw new ArgumentException($"Invalid image file: {imagePath}");
                 }
 
-                // HEIC処理の段階的検証とgraceful degradation対応
+                // 【緊急対応】HEIC処理を一時的に完全無効化（クラッシュ防止・高速化）
                 if (IsHeicFile(imagePath))
                 {
-                    if (!IsHeicProcessingAvailable())
+                    _logger.LogWarning($"⚠️ HEIC file detected - temporarily disabled for stability: {Path.GetFileName(imagePath)}");
+                    // 基本的なファイル検証のみ実行
+                    var fileInfo = new FileInfo(imagePath);
+                    if (!fileInfo.Exists || fileInfo.Length == 0 || fileInfo.Length > 100_000_000)
                     {
-                        // まず基本的なファイル検証を実行（ファイル存在・サイズ・形式チェック）
-                        if (!await IsValidImageAsync(imagePath))
-                        {
-                            throw new ArgumentException($"Invalid HEIC file: {imagePath}");
-                        }
-                        
-                        // ファイルは有効だが処理環境が未整備の場合の警告
-                        _logger.LogWarning($"⚠️ HEIC file detected but Magick.NET processing unavailable. Attempting fallback processing for: {Path.GetFileName(imagePath)}");
-                        
-                        // 代替処理：基本的なドキュメント作成は継続（プレビュー生成時にエラーハンドリング）
-                        // throw はせずに処理を継続させる - graceful degradation
+                        throw new ArgumentException($"Invalid HEIC file: {imagePath}");
                     }
-                    else
-                    {
-                        _logger.LogInformation($"✅ HEIC file will be processed with Magick.NET: {Path.GetFileName(imagePath)}");
-                    }
+                    // 処理は継続（プレビューではプレースホルダー表示）
                 }
 
                 // HEICファイルの場合は向き検出をスキップ（プレビュー変換時に処理される）
@@ -212,28 +203,9 @@ namespace DocOrganizer.Infrastructure.Services
                 
                 if (IsHeicFile(imagePath))
                 {
-                    if (IsHeicProcessingAvailable())
-                    {
-                        try
-                        {
-                            tempImagePath = await ConvertHeicToJpegAsync(imagePath);
-                            isHeicTemp = true;
-                            // HEIC変換後の一時ファイルは削除せず、キャッシュとして保持
-                            // PdfPageのSourceImagePathで参照されるため
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, $"HEIC conversion failed for thumbnail - using placeholder: {Path.GetFileName(imagePath)}");
-                            // サムネイル生成失敗時は空の配列を返す（graceful degradation）
-                            return CreatePlaceholderThumbnail(width, height, "HEIC");
-                        }
-                    }
-                    else
-                    {
-                        _logger.LogWarning($"⚠️ HEIC thumbnail generation unavailable - Magick.NET not available: {Path.GetFileName(imagePath)}");
-                        // プレースホルダー画像を返す
-                        return CreatePlaceholderThumbnail(width, height, "HEIC");
-                    }
+                    // 【緊急対応】HEIC処理を一時的に無効化 - プレースホルダー表示
+                    _logger.LogWarning($"⚠️ HEIC thumbnail temporarily disabled: {Path.GetFileName(imagePath)}");
+                    return CreatePlaceholderThumbnail(width, height, "HEIC");
                 }
 
                 using var image = await LoadImageSafelyAsync(tempImagePath);
@@ -472,7 +444,8 @@ namespace DocOrganizer.Infrastructure.Services
                 // ログ出力を最小限にしてEventLogInternalエラーを防ぐ
                 _logger.LogInformation($"Converting HEIC: {Path.GetFileName(heicPath)}");
                 
-                // Task.Runで別スレッドで実行し、ログシステムとの競合を防ぐ
+                // Task.Runでタイムアウト付き実行（HEIC処理時間を制限）
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30)); // 30秒制限
                 var conversionResult = await Task.Run(() =>
                 {
                     try
@@ -510,7 +483,7 @@ namespace DocOrganizer.Infrastructure.Services
                         // Task.Run内ではログを使わない（EventLogInternalエラー防止）
                         return new { Success = false, Error = innerEx.Message };
                     }
-                });
+                }, cts.Token);
                 
                 // 変換結果の確認
                 if (!conversionResult.Success)
