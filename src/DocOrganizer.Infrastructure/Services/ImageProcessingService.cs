@@ -62,10 +62,27 @@ namespace DocOrganizer.Infrastructure.Services
                     throw new ArgumentException($"Invalid image file: {imagePath}");
                 }
 
-                // HEIC処理可能性の事前確認
-                if (IsHeicFile(imagePath) && !IsHeicProcessingAvailable())
+                // HEIC処理の段階的検証とgraceful degradation対応
+                if (IsHeicFile(imagePath))
                 {
-                    throw new NotSupportedException($"HEIC processing unavailable - please install Magick.NET with HEIC support. File: {Path.GetFileName(imagePath)}");
+                    if (!IsHeicProcessingAvailable())
+                    {
+                        // まず基本的なファイル検証を実行（ファイル存在・サイズ・形式チェック）
+                        if (!await IsValidImageAsync(imagePath))
+                        {
+                            throw new ArgumentException($"Invalid HEIC file: {imagePath}");
+                        }
+                        
+                        // ファイルは有効だが処理環境が未整備の場合の警告
+                        _logger.LogWarning($"⚠️ HEIC file detected but Magick.NET processing unavailable. Attempting fallback processing for: {Path.GetFileName(imagePath)}");
+                        
+                        // 代替処理：基本的なドキュメント作成は継続（プレビュー生成時にエラーハンドリング）
+                        // throw はせずに処理を継続させる - graceful degradation
+                    }
+                    else
+                    {
+                        _logger.LogInformation($"✅ HEIC file will be processed with Magick.NET: {Path.GetFileName(imagePath)}");
+                    }
                 }
 
                 // HEICファイルの場合は向き検出をスキップ（プレビュー変換時に処理される）
@@ -195,10 +212,28 @@ namespace DocOrganizer.Infrastructure.Services
                 
                 if (IsHeicFile(imagePath))
                 {
-                    tempImagePath = await ConvertHeicToJpegAsync(imagePath);
-                    isHeicTemp = true;
-                    // HEIC変換後の一時ファイルは削除せず、キャッシュとして保持
-                    // PdfPageのSourceImagePathで参照されるため
+                    if (IsHeicProcessingAvailable())
+                    {
+                        try
+                        {
+                            tempImagePath = await ConvertHeicToJpegAsync(imagePath);
+                            isHeicTemp = true;
+                            // HEIC変換後の一時ファイルは削除せず、キャッシュとして保持
+                            // PdfPageのSourceImagePathで参照されるため
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, $"HEIC conversion failed for thumbnail - using placeholder: {Path.GetFileName(imagePath)}");
+                            // サムネイル生成失敗時は空の配列を返す（graceful degradation）
+                            return CreatePlaceholderThumbnail(width, height, "HEIC");
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"⚠️ HEIC thumbnail generation unavailable - Magick.NET not available: {Path.GetFileName(imagePath)}");
+                        // プレースホルダー画像を返す
+                        return CreatePlaceholderThumbnail(width, height, "HEIC");
+                    }
                 }
 
                 using var image = await LoadImageSafelyAsync(tempImagePath);
@@ -225,6 +260,30 @@ namespace DocOrganizer.Infrastructure.Services
             {
                 _logger.LogError(ex, "Failed to generate thumbnail: {ImagePath}", imagePath);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// HEIC処理不可能時のプレースホルダーサムネイル生成
+        /// </summary>
+        private byte[] CreatePlaceholderThumbnail(int width, int height, string format)
+        {
+            try
+            {
+                using var image = new Image<SixLabors.ImageSharp.PixelFormats.Rgba32>(width, height);
+                
+                // グレーの背景
+                image.Mutate(x => x.BackgroundColor(Color.LightGray));
+                
+                using var ms = new MemoryStream();
+                image.SaveAsJpeg(ms, new JpegEncoder { Quality = 80 });
+                return ms.ToArray();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create placeholder thumbnail");
+                // 完全に失敗した場合は空配列
+                return new byte[0];
             }
         }
 
@@ -281,6 +340,48 @@ namespace DocOrganizer.Infrastructure.Services
         
         private async Task<bool> ValidateHeicFileAsync(string imagePath)
         {
+            // Magick.NET が利用できない場合の基本検証
+            if (!IsHeicProcessingAvailable())
+            {
+                _logger.LogDebug($"Magick.NET unavailable - performing basic HEIC file validation: {imagePath}");
+                
+                // 基本的なファイル検証（存在・サイズ・マジックナンバー）
+                try
+                {
+                    var fileInfo = new FileInfo(imagePath);
+                    if (!fileInfo.Exists || fileInfo.Length == 0)
+                    {
+                        return false;
+                    }
+                    
+                    // HEICマジックナンバー検証
+                    var header = new byte[12];
+                    using (var stream = File.OpenRead(imagePath))
+                    {
+                        await stream.ReadAsync(header, 0, header.Length);
+                    }
+                    
+                    if (header.Length >= 12)
+                    {
+                        var heicSignature = Encoding.ASCII.GetString(header, 4, 8);
+                        var isHeicFormat = heicSignature.Contains("heic") || heicSignature.Contains("mif1");
+                        
+                        _logger.LogDebug($"HEIC basic validation result: {isHeicFormat} (signature: {heicSignature})");
+                        return isHeicFormat;
+                    }
+                    
+                    // マジックナンバーが不明でも拡張子ベースで許可（graceful degradation）
+                    _logger.LogDebug("HEIC magic number unclear - accepting based on file extension");
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug($"HEIC basic validation failed: {ex.Message}");
+                    return false;
+                }
+            }
+            
+            // Magick.NET が利用可能な場合の詳細検証
             try
             {
                 using var magickImage = new MagickImage();
@@ -357,10 +458,11 @@ namespace DocOrganizer.Infrastructure.Services
         /// </summary>
         private async Task<string> ConvertHeicToJpegAsync(string heicPath)
         {
-            // HEIC処理可能性の事前確認
+            // HEIC処理可能性の確認とgraceful degradation
             if (!IsHeicProcessingAvailable())
             {
-                throw new NotSupportedException($"HEIC processing unavailable - Magick.NET initialization failed. File: {heicPath}");
+                _logger.LogError($"❌ HEIC processing unavailable - Magick.NET initialization failed. Cannot convert: {Path.GetFileName(heicPath)}");
+                throw new NotSupportedException($"HEIC processing unavailable - Magick.NET initialization failed. File: {Path.GetFileName(heicPath)}. Please check Magick.NET installation and HEIC codec support.");
             }
 
             var tempJpegPath = Path.GetTempFileName() + ".jpg";

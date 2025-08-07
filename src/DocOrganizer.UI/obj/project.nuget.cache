@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "U7f99lOwux/vzlrvFD9tQlImCMhzDpJDUKdpOw2k9ogiGJDu8BBdYFyczSGuwfpAIluzx7JRF+L0/tJtenjZlA==",
+  "dgSpecHash": "AhM5Au4SpM60FyXHMGoq7Nnbx3lk56qzmJZc8N1ZvWlSJiMglyhPljsWerwGuqxgW7hVJlqflWB2CzgC1URynw==",
   "success": true,
   "projectFilePath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.UI\\DocOrganizer.UI.csproj",
   "expectedPackageFiles": [
@@ -54,7 +54,8 @@
     "C:\\Users\\koki\\.nuget\\packages\\system.text.json\\8.0.0\\system.text.json.8.0.0.nupkg.sha512",
     "C:\\Users\\koki\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\6.0.36\\microsoft.netcore.app.runtime.win-x64.6.0.36.nupkg.sha512",
     "C:\\Users\\koki\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\6.0.36\\microsoft.windowsdesktop.app.runtime.win-x64.6.0.36.nupkg.sha512",
-    "C:\\Users\\koki\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\6.0.36\\microsoft.aspnetcore.app.runtime.win-x64.6.0.36.nupkg.sha512"
+    "C:\\Users\\koki\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\6.0.36\\microsoft.aspnetcore.app.runtime.win-x64.6.0.36.nupkg.sha512",
+    "C:\\Users\\koki\\.nuget\\packages\\microsoft.netcore.app.crossgen2.win-x64\\6.0.36\\microsoft.netcore.app.crossgen2.win-x64.6.0.36.nupkg.sha512"
   ],
   "logs": []
 }
