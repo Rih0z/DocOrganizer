@@ -27,6 +27,16 @@ namespace DocOrganizer.UI.Views
             _logger?.LogInformation("MainWindow initialized");
             
             this.Loaded += MainWindow_Loaded;
+            
+            // ウィンドウ終了時のクリーンアップ
+            this.Closing += MainWindow_Closing;
+        }
+        
+        private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+        {
+            System.Diagnostics.Debug.WriteLine("[MainWindow] Window closing - cleaning up HEIC cache");
+            _logger?.LogInformation("Cleaning up HEIC cache on window close");
+            DocOrganizer.UI.ViewModels.PageViewModel.CleanupHeicCache();
         }
         
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
