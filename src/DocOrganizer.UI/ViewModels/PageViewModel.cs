@@ -1,11 +1,15 @@
+using System;
 using System.ComponentModel;
+using System.IO;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using DocOrganizer.Core.Models;
 using SkiaSharp;
+using ImageMagick;
 
 namespace DocOrganizer.UI.ViewModels
 {
-    public partial class PageViewModel : ObservableObject
+    public partial class PageViewModel : ObservableObject, IDisposable
     {
         private readonly PdfPage _page;
         
@@ -51,33 +55,34 @@ namespace DocOrganizer.UI.ViewModels
             {
                 System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] ページ {_page.PageNumber} 開始 - Rotation: {_page.Rotation}");
                 
-                // 画像ファイルから直接サムネイルを生成
-                if (!string.IsNullOrEmpty(_page.SourceImagePath) && System.IO.File.Exists(_page.SourceImagePath))
+                // まずPdfPageに既にサムネイル画像があるか確認（HEICの場合はMainViewModelで事前生成される）
+                if (_page.ThumbnailImage != null)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] 画像ファイルから生成: {_page.SourceImagePath}");
-                    _ = Task.Run(() => LoadThumbnailFromImage());
-                    _ = Task.Run(() => LoadPreviewFromImage());
+                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] PDFページのサムネイル使用");
+                    LoadThumbnailFromPdfPage();
+                }
+                // 画像ファイルから直接サムネイルを生成（HEIC以外）
+                else if (!string.IsNullOrEmpty(_page.SourceImagePath) && System.IO.File.Exists(_page.SourceImagePath))
+                {
+                    var extension = Path.GetExtension(_page.SourceImagePath).ToLowerInvariant();
+                    var isHeic = extension == ".heic" || extension == ".heif";
+                    
+                    if (!isHeic)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] 画像ファイルから生成: {_page.SourceImagePath}");
+                        _ = Task.Run(() => LoadThumbnailFromImage());
+                        _ = Task.Run(() => LoadPreviewFromImage());
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] HEICファイルのため、MainViewModelでの処理を待機: {_page.SourceImagePath}");
+                        // HEICファイルの場合はMainViewModelで処理されるのを待つ
+                    }
                 }
                 // PdfPageからサムネイル画像を取得
-                else if (_page.ThumbnailImage != null)
+                else if (false) // この条件は不要になったため無効化
                 {
-                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] PDFページのサムネイル変換 - Size: {_page.ThumbnailImage.Width}x{_page.ThumbnailImage.Height}");
-                    
-                    // SkiaSharpのSKBitmapをWPFで表示可能な形式に変換
-                    using var data = _page.ThumbnailImage.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
-                    var stream = new System.IO.MemoryStream(data.ToArray());
-                    
-                    var bitmap = new System.Windows.Media.Imaging.BitmapImage();
-                    bitmap.BeginInit();
-                    bitmap.StreamSource = stream;
-                    bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                    bitmap.EndInit();
-                    bitmap.Freeze();
-                    
-                    ThumbnailImage = bitmap;
-                    PreviewImage = bitmap; // プレビューにも同じ画像を設定
-                    
-                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] サムネイル設定完了");
+                    // このブロックは上に移動したため削除
                 }
                 else
                 {
@@ -100,11 +105,102 @@ namespace DocOrganizer.UI.ViewModels
             }
         }
         
-        private async void LoadThumbnailFromImage()
+        private void LoadThumbnailFromPdfPage()
         {
             try
             {
-                using var originalBitmap = SkiaSharp.SKBitmap.Decode(_page.SourceImagePath);
+                if (_page.ThumbnailImage != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnailFromPdfPage] PDFページのサムネイル変換 - Size: {_page.ThumbnailImage.Width}x{_page.ThumbnailImage.Height}");
+                    
+                    // SkiaSharpのSKBitmapをWPFで表示可能な形式に変換
+                    using var data = _page.ThumbnailImage.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+                    var stream = new System.IO.MemoryStream(data.ToArray());
+                    
+                    var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.StreamSource = stream;
+                    bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                    bitmap.EndInit();
+                    bitmap.Freeze();
+                    
+                    ThumbnailImage = bitmap;
+                    
+                    // プレビュー画像も設定されていれば使用
+                    if (_page.PreviewImage != null)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[LoadThumbnailFromPdfPage] プレビュー画像も変換 - Size: {_page.PreviewImage.Width}x{_page.PreviewImage.Height}");
+                        using var previewData = _page.PreviewImage.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+                        var previewStream = new System.IO.MemoryStream(previewData.ToArray());
+                        
+                        var previewBitmap = new System.Windows.Media.Imaging.BitmapImage();
+                        previewBitmap.BeginInit();
+                        previewBitmap.StreamSource = previewStream;
+                        previewBitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                        previewBitmap.EndInit();
+                        previewBitmap.Freeze();
+                        
+                        PreviewImage = previewBitmap;
+                    }
+                    else
+                    {
+                        PreviewImage = bitmap; // プレビューがない場合はサムネイルを使用
+                    }
+                    
+                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnailFromPdfPage] サムネイルとプレビュー設定完了");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[LoadThumbnailFromPdfPage] エラー: {ex.Message}");
+            }
+        }
+        
+        private CancellationTokenSource? _loadThumbnailCts;
+        private string? _heicTempJpegPath; // HEIC変換時の一時ファイルパス（PDF発行まで保持）
+        
+        private async void LoadThumbnailFromImage()
+        {
+            // 前の読み込み処理をキャンセル
+            _loadThumbnailCts?.Cancel();
+            _loadThumbnailCts = new CancellationTokenSource();
+            var cancellationToken = _loadThumbnailCts.Token;
+            
+            string tempJpegPath = null;
+            
+            try
+            {
+                // HEICファイルチェック
+                string imagePathToLoad = _page.SourceImagePath;
+                bool isHeic = Path.GetExtension(imagePathToLoad).Equals(".heic", StringComparison.OrdinalIgnoreCase) ||
+                             Path.GetExtension(imagePathToLoad).Equals(".heif", StringComparison.OrdinalIgnoreCase);
+                
+                if (isHeic)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnailFromImage] HEIC file detected, converting to JPEG: {Path.GetFileName(imagePathToLoad)}");
+                    
+                    // HEICファイルをJPEGに変換（一時的）
+                    try
+                    {
+                        tempJpegPath = await ConvertHeicToJpegForPreview(imagePathToLoad);
+                        if (string.IsNullOrEmpty(tempJpegPath) || !File.Exists(tempJpegPath))
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[LoadThumbnailFromImage] HEIC conversion failed or file not found");
+                            return;
+                        }
+                        imagePathToLoad = tempJpegPath;
+                        
+                        // 一時ファイルパスを保持（PDF発行時まで削除しない）
+                        _heicTempJpegPath = tempJpegPath;
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[LoadThumbnailFromImage] HEIC conversion error: {ex.Message}");
+                        return;
+                    }
+                }
+                
+                using var originalBitmap = SkiaSharp.SKBitmap.Decode(imagePathToLoad);
                 if (originalBitmap == null) return;
                 
                 // サムネイルサイズを計算
@@ -140,21 +236,62 @@ namespace DocOrganizer.UI.ViewModels
                     bitmap.EndInit();
                     bitmap.Freeze();
                     ThumbnailImage = bitmap;
+                    
+                    // プレビュー画像も設定（サムネイルと同じ画像を使用）
+                    PreviewImage = bitmap;
+                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnailFromImage] Thumbnail and Preview set successfully - PreviewImage: {PreviewImage != null}");
+                    
+                    // MainViewModelにPreviewImage更新を通知
+                    OnPropertyChanged(nameof(PreviewImage));
                 });
                 
                 thumbnail.Dispose();
+                
+                // 注意: HEICの一時ファイルはここでは削除しない（PDF発行時まで保持）
+                // PDF生成完了後またはアプリケーション終了時に削除する
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"画像サムネイル生成エラー: {ex.Message}");
+                
+                // エラー時も一時ファイルは削除しない（他の処理で使用される可能性があるため）
             }
         }
         
         private async void LoadPreviewFromImage()
         {
+            string tempJpegPath = null;
+            
             try
             {
-                using var originalBitmap = SkiaSharp.SKBitmap.Decode(_page.SourceImagePath);
+                // HEICファイルチェック
+                string imagePathToLoad = _page.SourceImagePath;
+                bool isHeic = Path.GetExtension(imagePathToLoad).Equals(".heic", StringComparison.OrdinalIgnoreCase) ||
+                             Path.GetExtension(imagePathToLoad).Equals(".heif", StringComparison.OrdinalIgnoreCase);
+                
+                if (isHeic)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[LoadPreviewFromImage] HEIC file detected, converting to JPEG: {Path.GetFileName(imagePathToLoad)}");
+                    
+                    // HEICファイルをJPEGに変換（一時的）
+                    try
+                    {
+                        tempJpegPath = await ConvertHeicToJpegForPreview(imagePathToLoad);
+                        if (string.IsNullOrEmpty(tempJpegPath) || !File.Exists(tempJpegPath))
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[LoadPreviewFromImage] HEIC conversion failed or file not found");
+                            return;
+                        }
+                        imagePathToLoad = tempJpegPath;
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[LoadPreviewFromImage] HEIC conversion error: {ex.Message}");
+                        return;
+                    }
+                }
+                
+                using var originalBitmap = SkiaSharp.SKBitmap.Decode(imagePathToLoad);
                 if (originalBitmap == null) return;
                 
                 // プレビューはより高解像度で生成
@@ -191,14 +328,79 @@ namespace DocOrganizer.UI.ViewModels
                     bitmap.EndInit();
                     bitmap.Freeze();
                     PreviewImage = bitmap;
+                    
+                    // MainViewModelにPreviewImage更新を通知
+                    OnPropertyChanged(nameof(PreviewImage));
                 });
                 
                 preview.Dispose();
+                
+                // 一時ファイルのクリーンアップ
+                if (!string.IsNullOrEmpty(tempJpegPath) && File.Exists(tempJpegPath))
+                {
+                    try
+                    {
+                        File.Delete(tempJpegPath);
+                        System.Diagnostics.Debug.WriteLine($"[LoadPreviewFromImage] Temporary JPEG deleted: {Path.GetFileName(tempJpegPath)}");
+                    }
+                    catch (Exception deleteEx)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[LoadPreviewFromImage] Failed to delete temp file: {deleteEx.Message}");
+                    }
+                }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"プレビュー画像生成エラー: {ex.Message}");
+                
+                // エラー時も一時ファイルをクリーンアップ
+                if (!string.IsNullOrEmpty(tempJpegPath) && File.Exists(tempJpegPath))
+                {
+                    try
+                    {
+                        File.Delete(tempJpegPath);
+                    }
+                    catch
+                    {
+                        // クリーンアップエラーは無視
+                    }
+                }
             }
+        }
+
+        /// <summary>
+        /// HEICファイルをプレビュー用にJPEGに変換
+        /// </summary>
+        private async Task<string> ConvertHeicToJpegForPreview(string heicPath)
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    // ImageMagickを使用してHEICをJPEGに変換
+                    ImageMagick.MagickNET.Initialize();
+                    
+                    var tempJpegPath = Path.Combine(Path.GetTempPath(), $"preview_{Guid.NewGuid()}.jpg");
+                    
+                    using (var image = new ImageMagick.MagickImage(heicPath))
+                    {
+                        // プレビュー用に品質を設定
+                        image.Quality = 85;
+                        
+                        // JPEG形式で保存
+                        image.Write(tempJpegPath, ImageMagick.MagickFormat.Jpeg);
+                        
+                        System.Diagnostics.Debug.WriteLine($"[ConvertHeicToJpegForPreview] Successfully converted to: {Path.GetFileName(tempJpegPath)}");
+                    }
+                    
+                    return tempJpegPath;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[ConvertHeicToJpegForPreview] Conversion failed: {ex.Message}");
+                    return null;
+                }
+            });
         }
 
         public void UpdatePageNumber(int newPageNumber)
@@ -241,13 +443,49 @@ namespace DocOrganizer.UI.ViewModels
                     return;
                 }
                 
-                // 画像を読み込んで回転を適用
-                using var originalBitmap = SkiaSharp.SKBitmap.Decode(_page.SourceImagePath);
-                if (originalBitmap == null)
+                // HEICファイルの特別処理
+                SkiaSharp.SKBitmap originalBitmap = null;
+                string tempJpegPath = null;
+                
+                try
                 {
-                    ThumbnailImage = null;
-                    return;
-                }
+                    if (IsHeicFile(_page.SourceImagePath))
+                    {
+                        // HEICファイルの場合は先にJPEGに変換
+                        tempJpegPath = await ConvertHeicToJpegForRotationAsync(_page.SourceImagePath);
+                        if (string.IsNullOrEmpty(tempJpegPath))
+                        {
+                            // 変換失敗時の処理
+                            ThumbnailImage = null;
+                            return;
+                        }
+                        // ファイル存在チェックを少し待機（非同期処理の完了待ち）
+                        for (int i = 0; i < 10; i++)
+                        {
+                            if (System.IO.File.Exists(tempJpegPath))
+                            {
+                                break;
+                            }
+                            await Task.Delay(100);
+                        }
+                        if (!System.IO.File.Exists(tempJpegPath))
+                        {
+                            ThumbnailImage = null;
+                            return;
+                        }
+                        originalBitmap = SkiaSharp.SKBitmap.Decode(tempJpegPath);
+                    }
+                    else
+                    {
+                        // 通常の画像ファイル
+                        originalBitmap = SkiaSharp.SKBitmap.Decode(_page.SourceImagePath);
+                    }
+                    
+                    if (originalBitmap == null)
+                    {
+                        ThumbnailImage = null;
+                        return;
+                    }
                 
                 // 回転した画像を作成
                 var rotatedBitmap = RotateBitmap(originalBitmap, _page.Rotation);
@@ -286,9 +524,26 @@ namespace DocOrganizer.UI.ViewModels
                     ThumbnailImage = bitmap;
                 });
                 
-                // メモリクリーンアップ
-                rotatedBitmap.Dispose();
-                thumbnail.Dispose();
+                    // メモリクリーンアップ
+                    rotatedBitmap.Dispose();
+                    thumbnail.Dispose();
+                    originalBitmap?.Dispose();
+                }
+                finally
+                {
+                    // 一時ファイルのクリーンアップ
+                    if (!string.IsNullOrEmpty(tempJpegPath) && System.IO.File.Exists(tempJpegPath))
+                    {
+                        try
+                        {
+                            System.IO.File.Delete(tempJpegPath);
+                        }
+                        catch
+                        {
+                            // クリーンアップエラーは無視
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -333,13 +588,48 @@ namespace DocOrganizer.UI.ViewModels
                     return;
                 }
                 
-                // 画像を読み込んで回転を適用
-                using var originalBitmap = SkiaSharp.SKBitmap.Decode(_page.SourceImagePath);
-                if (originalBitmap == null)
+                // HEICファイルの特別処理
+                SkiaSharp.SKBitmap originalBitmap = null;
+                string tempJpegPath = null;
+                
+                try
                 {
-                    PreviewImage = null;
-                    return;
-                }
+                    if (IsHeicFile(_page.SourceImagePath))
+                    {
+                        // HEICファイルの場合は先にJPEGに変換
+                        tempJpegPath = await ConvertHeicToJpegForRotationAsync(_page.SourceImagePath);
+                        if (string.IsNullOrEmpty(tempJpegPath))
+                        {
+                            PreviewImage = null;
+                            return;
+                        }
+                        // ファイル存在チェックを少し待機（非同期処理の完了待ち）
+                        for (int i = 0; i < 10; i++)
+                        {
+                            if (System.IO.File.Exists(tempJpegPath))
+                            {
+                                break;
+                            }
+                            await Task.Delay(100);
+                        }
+                        if (!System.IO.File.Exists(tempJpegPath))
+                        {
+                            PreviewImage = null;
+                            return;
+                        }
+                        originalBitmap = SkiaSharp.SKBitmap.Decode(tempJpegPath);
+                    }
+                    else
+                    {
+                        // 通常の画像ファイル
+                        originalBitmap = SkiaSharp.SKBitmap.Decode(_page.SourceImagePath);
+                    }
+                    
+                    if (originalBitmap == null)
+                    {
+                        PreviewImage = null;
+                        return;
+                    }
                 
                 // 回転した画像を作成
                 var rotatedBitmap = RotateBitmap(originalBitmap, _page.Rotation);
@@ -379,9 +669,26 @@ namespace DocOrganizer.UI.ViewModels
                     PreviewImage = bitmap;
                 });
                 
-                // メモリクリーンアップ
-                rotatedBitmap.Dispose();
-                preview.Dispose();
+                    // メモリクリーンアップ
+                    rotatedBitmap.Dispose();
+                    preview.Dispose();
+                    originalBitmap?.Dispose();
+                }
+                finally
+                {
+                    // 一時ファイルのクリーンアップ
+                    if (!string.IsNullOrEmpty(tempJpegPath) && System.IO.File.Exists(tempJpegPath))
+                    {
+                        try
+                        {
+                            System.IO.File.Delete(tempJpegPath);
+                        }
+                        catch
+                        {
+                            // クリーンアップエラーは無視
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -554,8 +861,25 @@ namespace DocOrganizer.UI.ViewModels
                 if (string.IsNullOrEmpty(_page.SourceImagePath) || !System.IO.File.Exists(_page.SourceImagePath))
                     return;
                 
-                using var originalBitmap = SkiaSharp.SKBitmap.Decode(_page.SourceImagePath);
-                if (originalBitmap == null) return;
+                SkiaSharp.SKBitmap originalBitmap = null;
+                string tempJpegPath = null;
+                
+                try
+                {
+                    if (IsHeicFile(_page.SourceImagePath))
+                    {
+                        // HEICファイルの場合は先に同期的にJPEGに変換
+                        tempJpegPath = ConvertHeicToJpegSyncForRotation(_page.SourceImagePath);
+                        if (string.IsNullOrEmpty(tempJpegPath) || !System.IO.File.Exists(tempJpegPath))
+                            return;
+                        originalBitmap = SkiaSharp.SKBitmap.Decode(tempJpegPath);
+                    }
+                    else
+                    {
+                        originalBitmap = SkiaSharp.SKBitmap.Decode(_page.SourceImagePath);
+                    }
+                    
+                    if (originalBitmap == null) return;
                 
                 // 回転した画像を作成
                 var rotatedBitmap = RotateBitmap(originalBitmap, _page.Rotation);
@@ -621,10 +945,27 @@ namespace DocOrganizer.UI.ViewModels
                     PreviewImage = bitmap;
                 }
                 
-                // メモリクリーンアップ
-                rotatedBitmap.Dispose();
-                thumbnail.Dispose();
-                preview.Dispose();
+                    // メモリクリーンアップ
+                    rotatedBitmap.Dispose();
+                    thumbnail.Dispose();
+                    preview.Dispose();
+                    originalBitmap?.Dispose();
+                }
+                finally
+                {
+                    // 一時ファイルのクリーンアップ
+                    if (!string.IsNullOrEmpty(tempJpegPath) && System.IO.File.Exists(tempJpegPath))
+                    {
+                        try
+                        {
+                            System.IO.File.Delete(tempJpegPath);
+                        }
+                        catch
+                        {
+                            // クリーンアップエラーは無視
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -635,6 +976,98 @@ namespace DocOrganizer.UI.ViewModels
         public void ClearPreviewImage()
         {
             PreviewImage = null;
+        }
+        
+        /// <summary>
+        /// HEICファイルかどうかを判定
+        /// </summary>
+        private bool IsHeicFile(string filePath)
+        {
+            var extension = Path.GetExtension(filePath)?.ToLowerInvariant();
+            return extension == ".heic" || extension == ".heif";
+        }
+        
+        /// <summary>
+        /// HEICファイルを回転処理用にJPEGに変換（非同期版）
+        /// </summary>
+        private async Task<string> ConvertHeicToJpegForRotationAsync(string heicPath)
+        {
+            try
+            {
+                var tempJpegPath = Path.GetTempFileName() + ".jpg";
+                
+                await Task.Run(() =>
+                {
+                    using (var image = new MagickImage(heicPath))
+                    {
+                        image.Format = MagickFormat.Jpeg;
+                        image.Quality = 95;
+                        image.Write(tempJpegPath);
+                    }
+                });
+                
+                return tempJpegPath;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"HEIC to JPEG conversion error: {ex.Message}");
+                return null;
+            }
+        }
+        
+        /// <summary>
+        /// HEICファイルを回転処理用にJPEGに変換（同期版）
+        /// </summary>
+        private string ConvertHeicToJpegSyncForRotation(string heicPath)
+        {
+            try
+            {
+                var tempJpegPath = Path.GetTempFileName() + ".jpg";
+                
+                using (var image = new MagickImage(heicPath))
+                {
+                    image.Format = MagickFormat.Jpeg;
+                    image.Quality = 95;
+                    image.Write(tempJpegPath);
+                }
+                
+                return tempJpegPath;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"HEIC to JPEG sync conversion error: {ex.Message}");
+                return null;
+            }
+        }
+        
+        /// <summary>
+        /// 一時ファイルのクリーンアップ（PDF発行完了時に呼び出す）
+        /// </summary>
+        public void CleanupTempFiles()
+        {
+            if (!string.IsNullOrEmpty(_heicTempJpegPath) && File.Exists(_heicTempJpegPath))
+            {
+                try
+                {
+                    File.Delete(_heicTempJpegPath);
+                    System.Diagnostics.Debug.WriteLine($"[CleanupTempFiles] Deleted temp JPEG: {Path.GetFileName(_heicTempJpegPath)}");
+                    _heicTempJpegPath = null;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[CleanupTempFiles] Failed to delete temp file: {ex.Message}");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// リソースの解放
+        /// </summary>
+        public void Dispose()
+        {
+            CleanupTempFiles();
+            _loadThumbnailCts?.Cancel();
+            _loadThumbnailCts?.Dispose();
         }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -10,6 +11,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using DocOrganizer.Application.Interfaces;
 using DocOrganizer.Core.Models;
+using SkiaSharp;
 
 namespace DocOrganizer.UI.ViewModels
 {
@@ -199,11 +201,14 @@ namespace DocOrganizer.UI.ViewModels
             EmptyStateVisibility = "Collapsed";
             UpdateUI();
             
-            // 最初のページを自動選択
+            // 最初のページを自動選択してプレビューを即座に表示
             if (Pages.Any())
             {
-                Pages.First().IsSelected = true;
-                UpdateSelectedPage(Pages.First());
+                var firstPage = Pages.First();
+                firstPage.IsSelected = true;
+                
+                // シンプルに即座に表示（全ての画像形式で統一）
+                UpdateSelectedPage(firstPage);
             }
             
             // サムネイル更新を非同期で実行（UIをブロックしない）
@@ -226,17 +231,96 @@ namespace DocOrganizer.UI.ViewModels
         {
             try
             {
-                await _pdfEditorService.UpdateAllThumbnailsAsync();
-                
-                // PageViewModelのサムネイルを更新
-                foreach (var pageVm in Pages)
+                // PDFが画像から作成された場合、ImageProcessingServiceを使用してサムネイルを生成
+                if (_currentDocument != null && _currentDocument.IsTemporaryFromImages)
                 {
-                    pageVm.LoadThumbnail();
+                    var pageTasks = new List<Task>();
+                    
+                    for (int i = 0; i < _currentDocument.Pages.Count; i++)
+                    {
+                        var pageIndex = i;
+                        var pdfPage = _currentDocument.Pages[pageIndex];
+                        
+                        if (!string.IsNullOrEmpty(pdfPage.SourceImagePath))
+                        {
+                            var task = Task.Run(async () =>
+                            {
+                                try
+                                {
+                                    var extension = Path.GetExtension(pdfPage.SourceImagePath).ToLowerInvariant();
+                                    var isHeic = extension == ".heic" || extension == ".heif";
+                                    
+                                    System.Diagnostics.Debug.WriteLine($"[UpdateAllThumbnailsAsync] Generating thumbnail for page {pageIndex + 1}: {pdfPage.SourceImagePath} (HEIC: {isHeic})");
+                                    
+                                    // サムネイル生成（ImageProcessingServiceがHEIC変換を処理）
+                                    var thumbnailData = await _imageProcessingService.GetImageThumbnailAsync(
+                                        pdfPage.SourceImagePath, 
+                                        150, 
+                                        150);
+                                    
+                                    if (thumbnailData != null && thumbnailData.Length > 0)
+                                    {
+                                        using var stream = new MemoryStream(thumbnailData);
+                                        var skBitmap = SKBitmap.Decode(stream);
+                                        
+                                        // HEICファイルの場合、プレビュー画像も生成
+                                        if (isHeic)
+                                        {
+                                            System.Diagnostics.Debug.WriteLine($"[UpdateAllThumbnailsAsync] Generating preview for HEIC file: {pdfPage.SourceImagePath}");
+                                            var previewData = await _imageProcessingService.GetImageThumbnailAsync(
+                                                pdfPage.SourceImagePath,
+                                                800,
+                                                800);
+                                            
+                                            if (previewData != null && previewData.Length > 0)
+                                            {
+                                                using var previewStream = new MemoryStream(previewData);
+                                                var previewBitmap = SKBitmap.Decode(previewStream);
+                                                pdfPage.SetPreviewImage(previewBitmap);
+                                            }
+                                        }
+                                        
+                                        await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                                        {
+                                            pdfPage.SetThumbnailImage(skBitmap);
+                                            
+                                            // ViewModelに通知
+                                            if (pageIndex < Pages.Count)
+                                            {
+                                                Pages[pageIndex].LoadThumbnail();
+                                            }
+                                        });
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"[UpdateAllThumbnailsAsync] Failed to generate thumbnail for page {pageIndex + 1}: {ex.Message}");
+                                }
+                            });
+                            
+                            pageTasks.Add(task);
+                        }
+                    }
+                    
+                    // 全サムネイル生成を待機
+                    await Task.WhenAll(pageTasks).ConfigureAwait(false);
+                }
+                else
+                {
+                    // 通常のPDFファイルの場合は従来の処理
+                    await _pdfEditorService.UpdateAllThumbnailsAsync();
+                    
+                    // PageViewModelのサムネイルを更新
+                    foreach (var pageVm in Pages)
+                    {
+                        pageVm.LoadThumbnail();
+                    }
                 }
             }
             catch (Exception ex)
             {
                 // Failed to update thumbnails - エラーはUIに表示済み
+                System.Diagnostics.Debug.WriteLine($"[UpdateAllThumbnailsAsync] Failed to update thumbnails: {ex.Message}");
             }
         }
 
@@ -289,7 +373,7 @@ namespace DocOrganizer.UI.ViewModels
                 // forceUpdateまたはPreviewImageがnullの場合のみ更新
                 if (!forceUpdate && pageViewModel.PreviewImage != null)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[UpdatePreview] PageViewModelのPreviewImageを使用");
+                    System.Diagnostics.Debug.WriteLine($"[UpdatePreview] PageViewModelのPreviewImageを使用 - PreviewImage: {pageViewModel.PreviewImage != null}");
                     
                     // UIスレッドで実行
                     await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
@@ -301,14 +385,17 @@ namespace DocOrganizer.UI.ViewModels
                         {
                             PreviewWidth = bitmapImage.PixelWidth;
                             PreviewHeight = bitmapImage.PixelHeight;
+                            System.Diagnostics.Debug.WriteLine($"[UpdatePreview] CurrentPageImage設定完了 - Size: {PreviewWidth}x{PreviewHeight}");
                         }
-                        
-                        System.Diagnostics.Debug.WriteLine($"[UpdatePreview] CurrentPageImage設定完了");
+                        else
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[UpdatePreview] CurrentPageImage設定完了 - BitmapImageではない: {CurrentPageImage?.GetType()}");
+                        }
                     });
                 }
                 else if (_currentDocument != null)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[UpdatePreview] PreviewImageがないため新規生成");
+                    System.Diagnostics.Debug.WriteLine($"[UpdatePreview] PreviewImageがないため新規生成 - forceUpdate: {forceUpdate}, PreviewImage is null: {pageViewModel.PreviewImage == null}");
                     
                     var pageIndex = _currentDocument.Pages.ToList().IndexOf(pageViewModel.Page);
                     if (pageIndex >= 0)
@@ -483,6 +570,10 @@ namespace DocOrganizer.UI.ViewModels
                 {
                     StatusMessage = $"保存完了: {Path.GetFileName(filePath)}";
                     _currentDocument.FilePath = filePath;
+                    
+                    // PDF保存完了後、HEIC一時ファイルをクリーンアップ
+                    CleanupAllTempFiles();
+                    
                     UpdateUI();
                 }
                 else
@@ -497,6 +588,28 @@ namespace DocOrganizer.UI.ViewModels
             finally
             {
                 ProgressVisibility = "Collapsed";
+            }
+        }
+
+        /// <summary>
+        /// 全ページのHEIC一時ファイルをクリーンアップ
+        /// </summary>
+        private void CleanupAllTempFiles()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("[CleanupAllTempFiles] Starting cleanup of HEIC temp files");
+                
+                foreach (var page in Pages)
+                {
+                    page.CleanupTempFiles();
+                }
+                
+                System.Diagnostics.Debug.WriteLine("[CleanupAllTempFiles] Cleanup completed");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[CleanupAllTempFiles] Error during cleanup: {ex.Message}");
             }
         }
 
@@ -531,6 +644,9 @@ namespace DocOrganizer.UI.ViewModels
                 var selectedPages = Pages.Where(p => p.IsSelected).ToList();
                 System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] Selected pages count: {selectedPages.Count}");
                 
+                // 現在選択されているページを保持
+                var currentSelectedPage = selectedPages.FirstOrDefault();
+                
                 // UIスレッドで同期的に実行
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -553,11 +669,12 @@ namespace DocOrganizer.UI.ViewModels
                     }
                     
                     // 選択中のページのプレビューを強制更新
-                    var selectedPage = selectedPages.FirstOrDefault();
-                    if (selectedPage != null)
+                    // 回転直後に即座にプレビューを更新する
+                    if (currentSelectedPage != null)
                     {
                         System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] プレビュー強制更新");
-                        UpdatePreview(selectedPage, forceUpdate: true);
+                        // UpdateSelectedPageを呼び出してプレビューを強制更新
+                        UpdateSelectedPage(currentSelectedPage);
                     }
                     
                     System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] 全ページの更新完了");
@@ -774,16 +891,22 @@ namespace DocOrganizer.UI.ViewModels
                     System.Diagnostics.Debug.WriteLine("[UpdateSelectedPage] selectedPage is null, returning");
                     return;
                 }
+                
+                // 前の選択ページの監視を停止
+                if (_selectedPage != null)
+                {
+                    _selectedPage.PropertyChanged -= OnSelectedPagePropertyChanged;
+                }
                     
                 _selectedPage = selectedPage;
                 System.Diagnostics.Debug.WriteLine($"[UpdateSelectedPage] Selected page set to: {_selectedPage.PageNumber}");
                 
-                // 回転後の新しいプレビューを生成（UpdatePreviewメソッドを使用）
-                UpdatePreview(selectedPage);
+                // 新しい選択ページの監視を開始
+                selectedPage.PropertyChanged += OnSelectedPagePropertyChanged;
                 
-                // ステータスバーに情報を表示
-                PageInfo = $"ページ {selectedPage.PageNumber}";
-                StatusMessage = $"ページ {selectedPage.PageNumber} を表示中";
+                // プレビューを即座に更新（待機なし、全形式統一）
+                UpdatePreview(selectedPage, forceUpdate: true);
+                
                 UpdateUI();
                 
                 System.Diagnostics.Debug.WriteLine("[UpdateSelectedPage] Completed successfully");
@@ -793,6 +916,24 @@ namespace DocOrganizer.UI.ViewModels
                 System.Diagnostics.Debug.WriteLine($"[UpdateSelectedPage] Error: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"[UpdateSelectedPage] StackTrace: {ex.StackTrace}");
                 _dialogService.ShowError($"ページ選択エラー: {ex.Message}");
+            }
+        }
+
+        private void OnSelectedPagePropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(PageViewModel.PreviewImage) && sender is PageViewModel pageViewModel)
+            {
+                System.Diagnostics.Debug.WriteLine($"[OnSelectedPagePropertyChanged] PreviewImage updated for page {pageViewModel.PageNumber}");
+                
+                // PreviewImageが更新されたらCurrentPageImageを即座に更新
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    if (pageViewModel.PreviewImage != null)
+                    {
+                        CurrentPageImage = pageViewModel.PreviewImage;
+                        System.Diagnostics.Debug.WriteLine($"[OnSelectedPagePropertyChanged] CurrentPageImage updated successfully");
+                    }
+                });
             }
         }
 
@@ -945,6 +1086,7 @@ namespace DocOrganizer.UI.ViewModels
         private bool IsImageFile(string filePath)
         {
             var extension = Path.GetExtension(filePath).ToLowerInvariant();
+            // HEIC形式を再有効化（ImageMagick変換対応済み）
             return extension == ".jpg" || extension == ".jpeg" || 
                    extension == ".png" || extension == ".heic" || 
                    extension == ".heif" || extension == ".bmp" || 

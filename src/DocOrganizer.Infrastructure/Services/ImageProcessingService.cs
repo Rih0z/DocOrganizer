@@ -36,6 +36,11 @@ namespace DocOrganizer.Infrastructure.Services
             ".jpg", ".jpeg", ".png", ".heic", ".heif", ".bmp", ".tiff", ".gif", ".webp"
         };
 
+        // HEIC処理クラッシュ修正: 安全な初期化管理
+        private bool _magickNetInitialized = false;
+        private bool _magickNetAvailable = false;
+        private readonly object _initLock = new object();
+
         public ImageProcessingService(ILogger<ImageProcessingService> logger, IPdfService pdfService)
         {
             _logger = logger;
@@ -44,8 +49,8 @@ namespace DocOrganizer.Infrastructure.Services
             // エンコーディング問題対策: UTF-8をサポート
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             
-            // Magick.NET初期化
-            InitializeMagickNetSafely();
+            // Magick.NET初期化（安全版）
+            _magickNetAvailable = InitializeMagickNetSafely();
         }
 
         public async Task<PdfDocument> ConvertImageToPdfAsync(string imagePath)
@@ -57,8 +62,23 @@ namespace DocOrganizer.Infrastructure.Services
                     throw new ArgumentException($"Invalid image file: {imagePath}");
                 }
 
-                // 向き自動補正を実行
-                var correctedRotation = await DetectAndCorrectOrientationAsync(imagePath);
+                // HEIC処理可能性の事前確認
+                if (IsHeicFile(imagePath) && !IsHeicProcessingAvailable())
+                {
+                    throw new NotSupportedException($"HEIC processing unavailable - please install Magick.NET with HEIC support. File: {Path.GetFileName(imagePath)}");
+                }
+
+                // HEICファイルの場合は向き検出をスキップ（プレビュー変換時に処理される）
+                int correctedRotation = 0;
+                if (!IsHeicFile(imagePath))
+                {
+                    // 通常の画像ファイルのみ向き自動補正を実行
+                    correctedRotation = await DetectAndCorrectOrientationAsync(imagePath);
+                }
+                else
+                {
+                    _logger.LogInformation($"HEIC file detected, orientation will be handled during preview conversion: {Path.GetFileName(imagePath)}");
+                }
                 
                 // 仮想的なPDFドキュメントを作成（実際のPDFファイルは作成しない）
                 var pdfDocument = new PdfDocument()
@@ -66,12 +86,13 @@ namespace DocOrganizer.Infrastructure.Services
                     IsTemporaryFromImages = true,
                     FilePath = Path.ChangeExtension(imagePath, ".pdf")
                 };
+                
                 pdfDocument.SourceImagePaths.Add(imagePath);
                 
                 // ページを作成（自動補正された回転角度を設定）
                 var page = new PdfPage(1)
                 {
-                    SourceImagePath = imagePath,
+                    SourceImagePath = imagePath, // HEICファイルのままセット（プレビュー生成時に自動変換）
                     Rotation = correctedRotation
                 };
                 
@@ -86,7 +107,7 @@ namespace DocOrganizer.Infrastructure.Services
                 pdfDocument.AddPage(page);
                 pdfDocument.ClearModifiedFlag();
 
-                _logger.LogInformation("Image loaded with auto-orientation detection: {ImagePath}", 
+                _logger.LogInformation("Image loaded successfully: {ImagePath}", 
                     Path.GetFileName(imagePath));
 
                 return pdfDocument;
@@ -170,10 +191,14 @@ namespace DocOrganizer.Infrastructure.Services
                 }
 
                 var tempImagePath = imagePath;
+                bool isHeicTemp = false;
                 
                 if (IsHeicFile(imagePath))
                 {
                     tempImagePath = await ConvertHeicToJpegAsync(imagePath);
+                    isHeicTemp = true;
+                    // HEIC変換後の一時ファイルは削除せず、キャッシュとして保持
+                    // PdfPageのSourceImagePathで参照されるため
                 }
 
                 using var image = await LoadImageSafelyAsync(tempImagePath);
@@ -191,10 +216,8 @@ namespace DocOrganizer.Infrastructure.Services
                 using var ms = new MemoryStream();
                 await image.SaveAsJpegAsync(ms, new JpegEncoder { Quality = 80 });
 
-                if (tempImagePath != imagePath && File.Exists(tempImagePath))
-                {
-                    File.Delete(tempImagePath);
-                }
+                // HEIC一時ファイルは削除しない（メインプレビューで使用するため）
+                // アプリケーション終了時にクリーンアップ
 
                 return ms.ToArray();
             }
@@ -241,6 +264,7 @@ namespace DocOrganizer.Infrastructure.Services
                 // 形式別検証
                 if (IsHeicFile(imagePath))
                 {
+                    // HEIC形式の検証
                     return await ValidateHeicFileAsync(imagePath);
                 }
                 else
@@ -319,41 +343,77 @@ namespace DocOrganizer.Infrastructure.Services
             }
         }
 
+        /// <summary>
+        /// HEIC処理可能性の事前確認
+        /// </summary>
+        private bool IsHeicProcessingAvailable()
+        {
+            return _magickNetAvailable;
+        }
+
+        /// <summary>
+        /// HEIC処理クラッシュ修正: 安全なHEIC→JPEG変換
+        /// EventLogInternal disposed objectエラー対策を含む
+        /// </summary>
         private async Task<string> ConvertHeicToJpegAsync(string heicPath)
         {
+            // HEIC処理可能性の事前確認
+            if (!IsHeicProcessingAvailable())
+            {
+                throw new NotSupportedException($"HEIC processing unavailable - Magick.NET initialization failed. File: {heicPath}");
+            }
+
             var tempJpegPath = Path.GetTempFileName() + ".jpg";
             
             try
             {
-                _logger.LogDebug($"Converting HEIC to JPEG: {heicPath} -> {tempJpegPath}");
+                // ログ出力を最小限にしてEventLogInternalエラーを防ぐ
+                _logger.LogInformation($"Converting HEIC: {Path.GetFileName(heicPath)}");
                 
-                // Magick.NET初期設定（動的Ghostscript検出）
-                InitializeMagickNetSafely();
-                
-                using (var magickImage = new MagickImage())
+                // Task.Runで別スレッドで実行し、ログシステムとの競合を防ぐ
+                var conversionResult = await Task.Run(() =>
                 {
-                    // HEIC読み込み設定
-                    magickImage.Settings.BackgroundColor = MagickColors.White;
-                    magickImage.ColorSpace = ColorSpace.sRGB;
-                    
-                    // 非同期での読み込み
-                    await Task.Run(() => magickImage.Read(heicPath));
-                    
-                    // 基本的な検証
-                    if (magickImage.Width == 0 || magickImage.Height == 0)
+                    try
                     {
-                        throw new InvalidOperationException($"Invalid HEIC dimensions: {magickImage.Width}x{magickImage.Height}");
+                        using (var magickImage = new MagickImage())
+                        {
+                            // HEIC読み込み設定
+                            magickImage.Settings.BackgroundColor = MagickColors.White;
+                            magickImage.ColorSpace = ColorSpace.sRGB;
+                            
+                            // 同期的に読み込み（Task.Run内なので問題なし）
+                            magickImage.Read(heicPath);
+                            
+                            // 基本的な検証
+                            if (magickImage.Width == 0 || magickImage.Height == 0)
+                            {
+                                return new { Success = false, Error = $"Invalid dimensions: {magickImage.Width}x{magickImage.Height}" };
+                            }
+                            
+                            // JPEG変換設定
+                            magickImage.Format = MagickFormat.Jpeg;
+                            magickImage.Quality = 95;
+                            
+                            // AutoOrientはここで1回のみ実行
+                            magickImage.AutoOrient();
+                            
+                            // JPEG出力（同期的に）
+                            magickImage.Write(tempJpegPath);
+                            
+                            return new { Success = true, Error = (string)null };
+                        }
                     }
-                    
-                    _logger.LogDebug($"HEIC dimensions: {magickImage.Width}x{magickImage.Height}");
-                    
-                    // JPEG変換設定
-                    magickImage.Format = MagickFormat.Jpeg;
-                    magickImage.Quality = 95;
-                    magickImage.AutoOrient();
-                    
-                    // JPEG出力
-                    await Task.Run(() => magickImage.Write(tempJpegPath));
+                    catch (Exception innerEx)
+                    {
+                        // Task.Run内ではログを使わない（EventLogInternalエラー防止）
+                        return new { Success = false, Error = innerEx.Message };
+                    }
+                });
+                
+                // 変換結果の確認
+                if (!conversionResult.Success)
+                {
+                    throw new InvalidOperationException($"HEIC conversion failed: {conversionResult.Error}");
                 }
                 
                 // 出力ファイル検証
@@ -368,13 +428,14 @@ namespace DocOrganizer.Infrastructure.Services
                     throw new InvalidOperationException("JPEG output file is empty");
                 }
                 
-                _logger.LogDebug($"HEIC conversion completed: {outputFileInfo.Length} bytes");
+                _logger.LogInformation($"HEIC conversion completed: {outputFileInfo.Length:N0} bytes");
                 
                 return tempJpegPath;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to convert HEIC to JPEG: {HeicPath}", heicPath);
+                // エラーログも最小限に
+                _logger.LogError($"HEIC conversion failed: {ex.Message}");
                 
                 // 失敗時は一時ファイルをクリーンアップ
                 if (File.Exists(tempJpegPath))
@@ -383,13 +444,50 @@ namespace DocOrganizer.Infrastructure.Services
                     {
                         File.Delete(tempJpegPath);
                     }
-                    catch (Exception cleanupEx)
+                    catch
                     {
-                        _logger.LogWarning(cleanupEx, $"Failed to cleanup temp file: {tempJpegPath}");
+                        // クリーンアップエラーは無視
                     }
                 }
                 
-                throw new InvalidOperationException($"HEIC to JPEG conversion failed for {heicPath}: {ex.Message}", ex);
+                // HEIC専用エラーハンドリング
+                if (IsHeicProcessingError(ex))
+                {
+                    throw new ImageProcessingException($"HEIC processing failed: {ex.Message}", ex);
+                }
+                else
+                {
+                    throw new InvalidOperationException($"HEIC to JPEG conversion failed: {ex.Message}", ex);
+                }
+            }
+        }
+
+        /// <summary>
+        /// HEIC処理エラーの判定
+        /// </summary>
+        private static bool IsHeicProcessingError(Exception ex)
+        {
+            return ex is MagickException || 
+                   ex.Message.Contains("HEIC", StringComparison.OrdinalIgnoreCase) ||
+                   ex.Message.Contains("Magick", StringComparison.OrdinalIgnoreCase) ||
+                   ex.Message.Contains("initialization", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 一時ファイル削除の安全実行
+        /// </summary>
+        private void CleanupTempFile(string tempPath)
+        {
+            if (File.Exists(tempPath))
+            {
+                try
+                {
+                    File.Delete(tempPath);
+                }
+                catch (Exception deleteEx)
+                {
+                    _logger.LogWarning(deleteEx, "Failed to delete temporary file: {TempPath}", tempPath);
+                }
             }
         }
 
@@ -453,9 +551,22 @@ namespace DocOrganizer.Infrastructure.Services
                 _logger.LogDebug($"Attempting basic ImageSharp load for: {imagePath}");
                 var image = await Image.LoadAsync(imagePath);
                 
-                // バグ修正：画像読み込み時に必ずAutoOrientを適用
-                // 要件定義書（tmp/DocOrganizer2.2_画像向き修正要件定義書.md）準拠
-                image.Mutate(x => x.AutoOrient());
+                // バグ修正: HEIC変換後ファイルの二重AutoOrient防止
+                // ConvertHeicToJpegAsyncで既にAutoOrientが適用されたファイルの検出
+                bool isHeicConvertedFile = Path.GetExtension(imagePath).Equals(".jpg", StringComparison.OrdinalIgnoreCase) && 
+                                         imagePath.Contains(Path.GetTempPath());
+                
+                if (!isHeicConvertedFile)
+                {
+                    // バグ修正：画像読み込み時に必ずAutoOrientを適用
+                    // 要件定義書（tmp/DocOrganizer2.2_画像向き修正要件定義書.md）準拠
+                    image.Mutate(x => x.AutoOrient());
+                    _logger.LogDebug($"AutoOrient applied to: {Path.GetFileName(imagePath)}");
+                }
+                else
+                {
+                    _logger.LogDebug($"Skipping AutoOrient for HEIC-converted file: {Path.GetFileName(imagePath)}");
+                }
                 
                 return image;
             }
@@ -713,36 +824,83 @@ namespace DocOrganizer.Infrastructure.Services
         }
         
         /// <summary>
-        /// プロフェッショナルレベルのMagick.NET初期化処理
-        /// 環境に依存しない動的Ghostscript検出
+        /// HEIC処理クラッシュ修正: 安全なMagick.NET初期化処理
+        /// クラッシュ防止とスレッドセーフな実装
         /// </summary>
-        private void InitializeMagickNetSafely()
+        private bool InitializeMagickNetSafely()
         {
-            try
+            lock (_initLock)
             {
-                // 既に初期化済みかチェック
-                if (MagickNET.SupportedFormats.Any())
+                if (_magickNetInitialized)
                 {
                     _logger.LogDebug("Magick.NET already initialized");
-                    return;
+                    return _magickNetAvailable;
                 }
-                
-                // Ghostscriptの動的検出
-                var ghostscriptPath = FindGhostscriptPath();
-                if (!string.IsNullOrEmpty(ghostscriptPath))
+
+                try
                 {
-                    _logger.LogDebug($"Setting Ghostscript directory: {ghostscriptPath}");
-                    MagickNET.SetGhostscriptDirectory(ghostscriptPath);
+                    _logger.LogDebug("Attempting Magick.NET initialization...");
+                    
+                    // 単一ファイル実行時のパス解決
+                    var appDir = System.AppContext.BaseDirectory;
+                    if (!string.IsNullOrEmpty(appDir))
+                    {
+                        _logger.LogDebug($"Setting native library directory: {appDir}");
+                        MagickNET.SetNativeLibraryDirectory(appDir);
+                    }
+                    
+                    // Ghostscriptの動的検出（必須ではない）
+                    var ghostscriptPath = FindGhostscriptPath();
+                    if (!string.IsNullOrEmpty(ghostscriptPath))
+                    {
+                        _logger.LogDebug($"Setting Ghostscript directory: {ghostscriptPath}");
+                        MagickNET.SetGhostscriptDirectory(ghostscriptPath);
+                    }
+                    
+                    // 初期化実行 - 例外処理を最小限に
+                    MagickNET.Initialize();
+                    
+                    // 初期化成功の確認
+                    var supportedFormats = MagickNET.SupportedFormats;
+                    var formatCount = supportedFormats?.Count() ?? 0;
+                    
+                    if (formatCount > 0)
+                    {
+                        _logger.LogInformation($"Magick.NET initialized successfully with {formatCount} supported formats");
+                        
+                        // HEIC形式のサポート確認
+                        var heicSupported = supportedFormats?.Any(f => 
+                            f.Format.ToString().Equals("HEIC", StringComparison.OrdinalIgnoreCase) ||
+                            f.Format.ToString().Equals("HEIF", StringComparison.OrdinalIgnoreCase)) ?? false;
+                        
+                        if (heicSupported)
+                        {
+                            _logger.LogInformation("✅ HEIC format is fully supported");
+                        }
+                        else
+                        {
+                            _logger.LogWarning("⚠️ HEIC format is NOT supported - will use fallback processing");
+                        }
+                        
+                        _magickNetInitialized = true;
+                        _magickNetAvailable = true;
+                        return true;
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Magick.NET initialized but no formats available");
+                        _magickNetInitialized = true;
+                        _magickNetAvailable = false;
+                        return false;
+                    }
                 }
-                
-                // Magick.NET初期化
-                MagickNET.Initialize();
-                _logger.LogInformation($"Magick.NET initialized successfully with {MagickNET.SupportedFormats.Count()} supported formats");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Magick.NET initialization failed - HEIC support may be limited");
-                // HEICサポートなしでも他の機能は動作するため、例外は投げない
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "❌ Magick.NET initialization failed - HEIC processing disabled");
+                    _magickNetInitialized = true;
+                    _magickNetAvailable = false;
+                    return false;
+                }
             }
         }
         
@@ -798,16 +956,19 @@ namespace DocOrganizer.Infrastructure.Services
         {
             try
             {
-                // バグ報告ドキュメント（tmp/DocOrganizer2.2_画像向き修正要件定義書.md）に基づく修正
-                // 縦向き画像が横向きで表示される問題を解決
+                // HEICファイルの場合は向き検出をスキップ（プレビュー変換時に処理される）
+                if (IsHeicFile(imagePath))
+                {
+                    _logger.LogDebug("HEIC file orientation will be handled during preview conversion: {ImagePath}", Path.GetFileName(imagePath));
+                    return 0;
+                }
                 
                 _logger.LogDebug("Detecting orientation for {ImagePath}", Path.GetFileName(imagePath));
                 
-                // 画像を一時的に読み込んで向き情報を取得
-                using var tempImage = await LoadImageForOrientationCheckAsync(imagePath);
+                // 通常の画像ファイルのみImageSharpで向き検出
+                using var tempImage = await Image.LoadAsync(imagePath);
                 
                 // ImageSharpは自動的にEXIF情報を読み取り、AutoOrient()で正しい向きに変換する
-                // ただし、ここでは回転角度のみを検出し、実際の回転は行わない
                 var originalWidth = tempImage.Width;
                 var originalHeight = tempImage.Height;
                 
@@ -842,6 +1003,7 @@ namespace DocOrganizer.Infrastructure.Services
         
         /// <summary>
         /// 向きチェック用の画像読み込み（メモリ効率を考慮）
+        /// EventLogInternal disposed objectエラー対策版
         /// </summary>
         private async Task<Image> LoadImageForOrientationCheckAsync(string imagePath)
         {
@@ -850,16 +1012,41 @@ namespace DocOrganizer.Infrastructure.Services
                 // HEICファイルの場合は先に変換
                 if (IsHeicFile(imagePath))
                 {
-                    var tempJpegPath = await ConvertHeicToJpegAsync(imagePath);
+                    string tempJpegPath = null;
+                    Image resultImage = null;
+                    
                     try
                     {
-                        return await Image.LoadAsync(tempJpegPath);
+                        tempJpegPath = await ConvertHeicToJpegAsync(imagePath);
+                        
+                        // メモリストリーム経由で読み込み（ファイルロックを避ける）
+                        using (var fileStream = new FileStream(tempJpegPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                        using (var memoryStream = new MemoryStream())
+                        {
+                            await fileStream.CopyToAsync(memoryStream);
+                            memoryStream.Position = 0;
+                            resultImage = await Image.LoadAsync(memoryStream);
+                        }
+                        
+                        return resultImage;
                     }
                     finally
                     {
-                        if (File.Exists(tempJpegPath))
+                        // 一時ファイルの削除は別タスクで非同期実行（メインスレッドをブロックしない）
+                        if (!string.IsNullOrEmpty(tempJpegPath) && File.Exists(tempJpegPath))
                         {
-                            File.Delete(tempJpegPath);
+                            _ = Task.Run(async () =>
+                            {
+                                await Task.Delay(100); // 少し待機
+                                try
+                                {
+                                    File.Delete(tempJpegPath);
+                                }
+                                catch
+                                {
+                                    // ログシステムが破棄されている可能性があるため、エラーは無視
+                                }
+                            });
                         }
                     }
                 }

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using SkiaSharp;
 using DocOrganizer.Core.Models;
+using ImageMagick;
 
 namespace DocOrganizer.Infrastructure.Services
 {
@@ -223,7 +224,7 @@ namespace DocOrganizer.Infrastructure.Services
         /// </summary>
         public static async Task CreatePdfFileFromImagesWithRotationAsync(IEnumerable<string> imagePaths, IEnumerable<int>? rotations, string outputPath, ILogger logger)
         {
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
                 try
                 {
@@ -242,11 +243,32 @@ namespace DocOrganizer.Infrastructure.Services
                     
                     foreach (var imagePath in imagePaths)
                     {
+                        // HEICファイルの処理
+                        string actualImagePath = imagePath;
+                        string? tempJpegPath = null;
+                        
+                        if (IsHeicFile(imagePath))
+                        {
+                            logger.LogInformation("Converting HEIC to JPEG for PDF generation: {ImagePath}", imagePath);
+                            tempJpegPath = await ConvertHeicToJpegForPdfAsync(imagePath, logger);
+                            if (tempJpegPath == null)
+                            {
+                                logger.LogWarning("Failed to convert HEIC, skipping: {ImagePath}", imagePath);
+                                index++;
+                                continue;
+                            }
+                            actualImagePath = tempJpegPath;
+                        }
+                        
                         // 画像を読み込み
-                        using var bitmap = SKBitmap.Decode(imagePath);
+                        using var bitmap = SKBitmap.Decode(actualImagePath);
                         if (bitmap == null)
                         {
-                            logger.LogWarning("Failed to decode image, skipping: {ImagePath}", imagePath);
+                            logger.LogWarning("Failed to decode image, skipping: {ImagePath}", actualImagePath);
+                            if (tempJpegPath != null && File.Exists(tempJpegPath))
+                            {
+                                File.Delete(tempJpegPath);
+                            }
                             index++;
                             continue;
                         }
@@ -368,6 +390,21 @@ namespace DocOrganizer.Infrastructure.Services
                         canvas.Restore();
                         
                         document.EndPage();
+                        
+                        // 一時ファイルのクリーンアップ
+                        if (tempJpegPath != null && File.Exists(tempJpegPath))
+                        {
+                            try
+                            {
+                                File.Delete(tempJpegPath);
+                                logger.LogDebug("Deleted temporary JPEG file: {TempPath}", tempJpegPath);
+                            }
+                            catch (Exception ex)
+                            {
+                                logger.LogWarning(ex, "Failed to delete temporary file: {TempPath}", tempJpegPath);
+                            }
+                        }
+                        
                         index++;
                     }
 
@@ -595,6 +632,50 @@ namespace DocOrganizer.Infrastructure.Services
             canvas.DrawBitmap(originalBitmap, 0, 0);
 
             return rotatedBitmap;
+        }
+
+        /// <summary>
+        /// ファイルがHEIC形式かどうかを判定
+        /// </summary>
+        private static bool IsHeicFile(string filePath)
+        {
+            var extension = Path.GetExtension(filePath)?.ToLowerInvariant();
+            return extension == ".heic" || extension == ".heif";
+        }
+
+        /// <summary>
+        /// HEICファイルをJPEGに変換（PDF生成用）
+        /// </summary>
+        private static async Task<string?> ConvertHeicToJpegForPdfAsync(string heicPath, ILogger logger)
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    // ImageMagickの初期化（スレッドセーフ）
+                    MagickNET.Initialize();
+                    
+                    var tempJpegPath = Path.Combine(Path.GetTempPath(), $"heic_converted_{Guid.NewGuid()}.jpg");
+                    
+                    using (var image = new MagickImage(heicPath))
+                    {
+                        // JPEG品質設定
+                        image.Quality = 85;
+                        
+                        // JPEG形式で保存
+                        image.Write(tempJpegPath, MagickFormat.Jpeg);
+                        
+                        logger.LogInformation("Successfully converted HEIC to JPEG: {OutputPath}", tempJpegPath);
+                    }
+                    
+                    return tempJpegPath;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to convert HEIC to JPEG: {HeicPath}", heicPath);
+                    return null;
+                }
+            });
         }
     }
 }

@@ -554,6 +554,7 @@ namespace DocOrganizer.UI.Views
         private bool IsImageFile(string filePath)
         {
             var extension = Path.GetExtension(filePath).ToLowerInvariant();
+            // HEIC形式を再有効化（ImageMagick変換対応済み）
             return extension == ".jpg" || extension == ".jpeg" || 
                    extension == ".png" || extension == ".heic" || 
                    extension == ".heif" || extension == ".bmp" || 

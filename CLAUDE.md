@@ -814,6 +814,15 @@ ai_coding_principles:
       - "保守可能なコードベース"
       - "拡張可能なアーキテクチャ"
 
+  active_bugs:
+    heic_rotation_issue:
+      description: "HEICファイルの回転編集機能が失敗する"
+      issue_location: "tmp/DocOrganizer2.2_HEIC回転編集バグレポート_20250806.md"
+      priority: "高"
+      status: "調査中"
+      reported_date: "2025-08-06"
+      summary: "HEICファイルは読み込みとPDF生成は可能だが、90度回転などの編集操作が失敗する"
+
   mindset:
     philosophy:
       - "Perfect is the enemy of good - 完璧より動作を優先"
