@@ -193,13 +193,15 @@ namespace DocOrganizer.Infrastructure.Services
         {
             try
             {
+                _logger.LogDebug($"Starting thumbnail generation for: {Path.GetFileName(imagePath)} ({width}x{height})");
+                
                 if (!await IsValidImageAsync(imagePath))
                 {
-                    throw new ArgumentException($"Invalid image file: {imagePath}");
+                    _logger.LogWarning($"Invalid image file, creating placeholder: {Path.GetFileName(imagePath)}");
+                    return CreatePlaceholderThumbnail(width, height, "INVALID");
                 }
 
                 var tempImagePath = imagePath;
-                bool isHeicTemp = false;
                 
                 if (IsHeicFile(imagePath))
                 {
@@ -208,30 +210,41 @@ namespace DocOrganizer.Infrastructure.Services
                     return CreatePlaceholderThumbnail(width, height, "HEIC");
                 }
 
-                using var image = await LoadImageSafelyAsync(tempImagePath);
+                // HEIC以外の画像は正常処理を継続
+                _logger.LogDebug($"Processing non-HEIC image: {Path.GetFileName(imagePath)}");
                 
-                // バグ修正：画像の向き自動補正を確実に適用
-                // 要件定義書（tmp/DocOrganizer2.2_画像向き修正要件定義書.md）準拠
-                image.Mutate(x => x
-                    .AutoOrient()  // EXIF情報に基づく自動回転
-                    .Resize(new ResizeOptions
-                    {
-                        Size = new Size(width, height),
-                        Mode = ResizeMode.Max
-                    }));
+                try 
+                {
+                    using var image = await LoadImageSafelyAsync(tempImagePath);
+                    
+                    // バグ修正：画像の向き自動補正を確実に適用
+                    // 要件定義書（tmp/DocOrganizer2.2_画像向き修正要件定義書.md）準拠
+                    image.Mutate(x => x
+                        .AutoOrient()  // EXIF情報に基づく自動回転
+                        .Resize(new ResizeOptions
+                        {
+                            Size = new Size(width, height),
+                            Mode = ResizeMode.Max
+                        }));
 
-                using var ms = new MemoryStream();
-                await image.SaveAsJpegAsync(ms, new JpegEncoder { Quality = 80 });
-
-                // HEIC一時ファイルは削除しない（メインプレビューで使用するため）
-                // アプリケーション終了時にクリーンアップ
-
-                return ms.ToArray();
+                    using var ms = new MemoryStream();
+                    await image.SaveAsJpegAsync(ms, new JpegEncoder { Quality = 80 });
+                    var result = ms.ToArray();
+                    
+                    _logger.LogDebug($"Thumbnail generated successfully: {result.Length} bytes for {Path.GetFileName(imagePath)}");
+                    return result;
+                }
+                catch (Exception imageEx)
+                {
+                    _logger.LogError(imageEx, $"Failed to process image {Path.GetFileName(imagePath)}, creating placeholder");
+                    return CreatePlaceholderThumbnail(width, height, "ERROR");
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to generate thumbnail: {ImagePath}", imagePath);
-                throw;
+                _logger.LogError(ex, "Critical error in thumbnail generation: {ImagePath}", imagePath);
+                // 最終的なフォールバック
+                return CreatePlaceholderThumbnail(width, height, "FAIL");
             }
         }
 
@@ -242,20 +255,58 @@ namespace DocOrganizer.Infrastructure.Services
         {
             try
             {
+                _logger.LogDebug($"Creating placeholder thumbnail {width}x{height} for format: {format}");
+                
                 using var image = new Image<SixLabors.ImageSharp.PixelFormats.Rgba32>(width, height);
                 
-                // グレーの背景
-                image.Mutate(x => x.BackgroundColor(Color.LightGray));
+                // シンプルな背景色設定（テキスト描画は省略）
+                image.Mutate(x => x.BackgroundColor(Color.FromRgb(200, 200, 200)));
                 
                 using var ms = new MemoryStream();
-                image.SaveAsJpeg(ms, new JpegEncoder { Quality = 80 });
-                return ms.ToArray();
+                image.SaveAsJpeg(ms, new JpegEncoder { Quality = 90 });
+                var result = ms.ToArray();
+                
+                _logger.LogDebug($"Placeholder thumbnail created successfully: {result.Length} bytes");
+                return result;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to create placeholder thumbnail");
-                // 完全に失敗した場合は空配列
-                return new byte[0];
+                
+                // 絶対に失敗しない最小限のプレースホルダーを生成
+                try
+                {
+                    using var simpleImage = new Image<SixLabors.ImageSharp.PixelFormats.Rgba32>(width, height);
+                    simpleImage.Mutate(x => x.BackgroundColor(Color.Gray));
+                    using var simpleMs = new MemoryStream();
+                    simpleImage.SaveAsJpeg(simpleMs);
+                    return simpleMs.ToArray();
+                }
+                catch
+                {
+                    // 最後の手段: 固定サイズのダミーJPEGヘッダー
+                    _logger.LogWarning("Creating minimal dummy JPEG placeholder");
+                    return CreateMinimalJpegPlaceholder();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 最小限のダミーJPEGプレースホルダー生成（絶対に失敗しない）
+        /// </summary>
+        private byte[] CreateMinimalJpegPlaceholder()
+        {
+            // 最小限の有効なJPEGバイト配列を生成
+            // 1x1ピクセルの灰色JPEG（Base64エンコード済み）
+            const string minimalJpegBase64 = "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=";
+            try
+            {
+                return Convert.FromBase64String(minimalJpegBase64);
+            }
+            catch
+            {
+                // さらなる最後の手段: 空でない最小配列
+                return new byte[] { 0xFF, 0xD8, 0xFF, 0xE0 }; // JPEG開始マーカー
             }
         }
 

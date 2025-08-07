@@ -260,8 +260,16 @@ namespace DocOrganizer.UI.ViewModels
                                     
                                     if (thumbnailData != null && thumbnailData.Length > 0)
                                     {
-                                        using var stream = new MemoryStream(thumbnailData);
-                                        var skBitmap = SKBitmap.Decode(stream);
+                                        try
+                                        {
+                                            using var stream = new MemoryStream(thumbnailData);
+                                            var skBitmap = SKBitmap.Decode(stream);
+                                            
+                                            if (skBitmap == null)
+                                            {
+                                                System.Diagnostics.Debug.WriteLine($"[UpdateAllThumbnailsAsync] Failed to decode bitmap for: {pdfPage.SourceImagePath}");
+                                                return; // 現在のタスクを終了
+                                            }
                                         
                                         // HEICファイルの場合、プレビュー画像も生成
                                         if (isHeic)
@@ -276,10 +284,17 @@ namespace DocOrganizer.UI.ViewModels
                                             {
                                                 using var previewStream = new MemoryStream(previewData);
                                                 var previewBitmap = SKBitmap.Decode(previewStream);
-                                                pdfPage.SetPreviewImage(previewBitmap);
+                                                if (previewBitmap != null)
+                                                {
+                                                    pdfPage.SetPreviewImage(previewBitmap);
+                                                }
+                                                else
+                                                {
+                                                    System.Diagnostics.Debug.WriteLine($"[UpdateAllThumbnailsAsync] Failed to decode preview bitmap for HEIC: {pdfPage.SourceImagePath}");
+                                                }
                                             }
                                         }
-                                        
+
                                         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                                         {
                                             pdfPage.SetThumbnailImage(skBitmap);
@@ -290,6 +305,15 @@ namespace DocOrganizer.UI.ViewModels
                                                 Pages[pageIndex].LoadThumbnail();
                                             }
                                         });
+                                    }
+                                    catch (Exception decodeEx)
+                                        {
+                                            System.Diagnostics.Debug.WriteLine($"[UpdateAllThumbnailsAsync] Failed to decode or set thumbnail for page {pageIndex + 1}: {decodeEx.Message}");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        System.Diagnostics.Debug.WriteLine($"[UpdateAllThumbnailsAsync] Empty or null thumbnail data for page {pageIndex + 1}: {pdfPage.SourceImagePath}");
                                     }
                                 }
                                 catch (Exception ex)
