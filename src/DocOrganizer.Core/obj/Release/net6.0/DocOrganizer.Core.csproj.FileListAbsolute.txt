@@ -10,3 +10,15 @@ C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocO
 C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Core\obj\Release\net6.0\refint\DocOrganizer.Core.dll
 C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Core\obj\Release\net6.0\DocOrganizer.Core.pdb
 C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\src\DocOrganizer.Core\obj\Release\net6.0\ref\DocOrganizer.Core.dll
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Core\bin\Release\net6.0\DocOrganizer.Core.deps.json
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Core\bin\Release\net6.0\DocOrganizer.Core.dll
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Core\bin\Release\net6.0\DocOrganizer.Core.pdb
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Core\obj\Release\net6.0\DocOrganizer.Core.csproj.AssemblyReference.cache
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Core\obj\Release\net6.0\DocOrganizer.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Core\obj\Release\net6.0\DocOrganizer.Core.AssemblyInfoInputs.cache
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Core\obj\Release\net6.0\DocOrganizer.Core.AssemblyInfo.cs
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Core\obj\Release\net6.0\DocOrganizer.Core.csproj.CoreCompileInputs.cache
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Core\obj\Release\net6.0\DocOrganizer.Core.dll
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Core\obj\Release\net6.0\refint\DocOrganizer.Core.dll
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Core\obj\Release\net6.0\DocOrganizer.Core.pdb
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Core\obj\Release\net6.0\ref\DocOrganizer.Core.dll

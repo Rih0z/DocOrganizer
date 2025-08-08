@@ -556,7 +556,7 @@ namespace DocOrganizer.Infrastructure.Services
 
                     return null;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     // ログ出力は呼び出し元で行う
                     return null;
@@ -604,7 +604,7 @@ namespace DocOrganizer.Infrastructure.Services
 
                     return null;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     return null;
                 }

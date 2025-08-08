@@ -193,7 +193,7 @@ namespace DocOrganizer.UI.ViewModels
             // まずPageViewModelを作成
             foreach (var page in document.Pages)
             {
-                var pageVm = new PageViewModel(page);
+                var pageVm = new PageViewModel(page, _imageProcessingService);
                 pageVm.PropertyChanged += PageViewModel_PropertyChanged;
                 Pages.Add(pageVm);
             }
@@ -271,29 +271,8 @@ namespace DocOrganizer.UI.ViewModels
                                                 return; // 現在のタスクを終了
                                             }
                                         
-                                        // HEICファイルの場合、プレビュー画像も生成
-                                        if (isHeic)
-                                        {
-                                            System.Diagnostics.Debug.WriteLine($"[UpdateAllThumbnailsAsync] Generating preview for HEIC file: {pdfPage.SourceImagePath}");
-                                            var previewData = await _imageProcessingService.GetImageThumbnailAsync(
-                                                pdfPage.SourceImagePath,
-                                                800,
-                                                800);
-                                            
-                                            if (previewData != null && previewData.Length > 0)
-                                            {
-                                                using var previewStream = new MemoryStream(previewData);
-                                                var previewBitmap = SKBitmap.Decode(previewStream);
-                                                if (previewBitmap != null)
-                                                {
-                                                    pdfPage.SetPreviewImage(previewBitmap);
-                                                }
-                                                else
-                                                {
-                                                    System.Diagnostics.Debug.WriteLine($"[UpdateAllThumbnailsAsync] Failed to decode preview bitmap for HEIC: {pdfPage.SourceImagePath}");
-                                                }
-                                            }
-                                        }
+                                        // HEIC処理はPageViewModelに一元化（重複処理を防止）
+                                        System.Diagnostics.Debug.WriteLine($"[UpdateAllThumbnailsAsync] HEIC processing delegated to PageViewModel for: {Path.GetFileName(pdfPage.SourceImagePath)}");
 
                                         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                                         {
@@ -394,70 +373,123 @@ namespace DocOrganizer.UI.ViewModels
                 
                 if (pageViewModel?.Page == null) return;
 
-                // forceUpdateまたはPreviewImageがnullの場合のみ更新
-                if (!forceUpdate && pageViewModel.PreviewImage != null)
+                // forceUpdate=trueまたはPreviewImageがnullの場合は処理を実行
+                if (forceUpdate || pageViewModel.PreviewImage == null)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[UpdatePreview] PageViewModelのPreviewImageを使用 - PreviewImage: {pageViewModel.PreviewImage != null}");
+                    System.Diagnostics.Debug.WriteLine($"[UpdatePreview] 強制更新またはPreviewImage未設定 - PreviewImage: {pageViewModel.PreviewImage != null}");
                     
-                    // UIスレッドで実行
+                    // PageViewModelに既にPreviewImageがある場合はそれを使用（HEIC最適化処理済み）
+                    if (pageViewModel.PreviewImage != null)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[UpdatePreview] PageViewModelのPreviewImageを使用");
+                        
+                        // UI スレッドで実行
+                        await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                        {
+                            CurrentPageImage = pageViewModel.PreviewImage;
+                            
+                            // プレビューサイズを適切に計算（画面表示用）
+                            if (CurrentPageImage is System.Windows.Media.Imaging.BitmapImage bitmapImage)
+                            {
+                                // 小さいサムネイルの場合は適切な表示サイズに拡大
+                                var displayWidth = Math.Max(bitmapImage.PixelWidth, 600);
+                                var displayHeight = Math.Max(bitmapImage.PixelHeight, 800);
+                                
+                                // アスペクト比を維持
+                                var aspectRatio = (double)bitmapImage.PixelWidth / bitmapImage.PixelHeight;
+                                if (aspectRatio > 1) // 横長
+                                {
+                                    displayHeight = (int)(displayWidth / aspectRatio);
+                                }
+                                else // 縦長
+                                {
+                                    displayWidth = (int)(displayHeight * aspectRatio);
+                                }
+                                
+                                PreviewWidth = displayWidth;
+                                PreviewHeight = displayHeight;
+                                System.Diagnostics.Debug.WriteLine($"[UpdatePreview] CurrentPageImage設定完了 (強制更新) - Original: {bitmapImage.PixelWidth}x{bitmapImage.PixelHeight}, Display: {PreviewWidth}x{PreviewHeight}");
+                            }
+                        });
+                        return;
+                    }
+                    
+                    // PreviewImageがない場合はPDF処理で生成
+                    if (_currentDocument != null)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[UpdatePreview] PreviewImageがないためPDFから新規生成");
+                        
+                        var pageIndex = _currentDocument.Pages.ToList().IndexOf(pageViewModel.Page);
+                        if (pageIndex >= 0)
+                        {
+                            // 高解像度プレビューを生成（スケール1.5倍）
+                            var previewBitmap = await _pdfEditorService.GetPagePreviewAsync(_currentDocument, pageIndex, 1.5f);
+                            
+                            if (previewBitmap != null)
+                            {
+                                // UI スレッドで実行
+                                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                                {
+                                    try
+                                    {
+                                        // SkiaSharpのSKBitmapをWPFで表示可能な形式に変換
+                                        using var data = previewBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+                                        var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                                        bitmap.BeginInit();
+                                        bitmap.StreamSource = new System.IO.MemoryStream(data.ToArray());
+                                        bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                                        bitmap.EndInit();
+                                        bitmap.Freeze();
+                                        
+                                        CurrentPageImage = bitmap;
+                                        
+                                        // プレビューサイズを更新
+                                        PreviewWidth = bitmap.PixelWidth;
+                                        PreviewHeight = bitmap.PixelHeight;
+                                        System.Diagnostics.Debug.WriteLine($"[UpdatePreview] PDFプレビュー生成完了 - Size: {PreviewWidth}x{PreviewHeight}");
+                                    }
+                                    catch (Exception uiEx)
+                                    {
+                                        System.Diagnostics.Debug.WriteLine($"プレビューUI更新エラー: {uiEx.Message}");
+                                    }
+                                });
+                                
+                                previewBitmap.Dispose();
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // forceUpdate=false かつ PreviewImageが存在する場合（通常ケース）
+                    System.Diagnostics.Debug.WriteLine($"[UpdatePreview] PageViewModelのPreviewImageを使用（通常ケース）");
+                    
                     await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                     {
                         CurrentPageImage = pageViewModel.PreviewImage;
                         
-                        // プレビューサイズを更新
                         if (CurrentPageImage is System.Windows.Media.Imaging.BitmapImage bitmapImage)
                         {
-                            PreviewWidth = bitmapImage.PixelWidth;
-                            PreviewHeight = bitmapImage.PixelHeight;
-                            System.Diagnostics.Debug.WriteLine($"[UpdatePreview] CurrentPageImage設定完了 - Size: {PreviewWidth}x{PreviewHeight}");
-                        }
-                        else
-                        {
-                            System.Diagnostics.Debug.WriteLine($"[UpdatePreview] CurrentPageImage設定完了 - BitmapImageではない: {CurrentPageImage?.GetType()}");
+                            // 小さいサムネイルの場合は適切な表示サイズに拡大
+                            var displayWidth = Math.Max(bitmapImage.PixelWidth, 600);
+                            var displayHeight = Math.Max(bitmapImage.PixelHeight, 800);
+                            
+                            // アスペクト比を維持
+                            var aspectRatio = (double)bitmapImage.PixelWidth / bitmapImage.PixelHeight;
+                            if (aspectRatio > 1) // 横長
+                            {
+                                displayHeight = (int)(displayWidth / aspectRatio);
+                            }
+                            else // 縦長
+                            {
+                                displayWidth = (int)(displayHeight * aspectRatio);
+                            }
+                            
+                            PreviewWidth = displayWidth;
+                            PreviewHeight = displayHeight;
+                            System.Diagnostics.Debug.WriteLine($"[UpdatePreview] CurrentPageImage設定完了（通常） - Original: {bitmapImage.PixelWidth}x{bitmapImage.PixelHeight}, Display: {PreviewWidth}x{PreviewHeight}");
                         }
                     });
-                }
-                else if (_currentDocument != null)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[UpdatePreview] PreviewImageがないため新規生成 - forceUpdate: {forceUpdate}, PreviewImage is null: {pageViewModel.PreviewImage == null}");
-                    
-                    var pageIndex = _currentDocument.Pages.ToList().IndexOf(pageViewModel.Page);
-                    if (pageIndex >= 0)
-                    {
-                        // 高解像度プレビューを生成（スケール1.5倍）
-                        var previewBitmap = await _pdfEditorService.GetPagePreviewAsync(_currentDocument, pageIndex, 1.5f);
-                        
-                        if (previewBitmap != null)
-                        {
-                            // UIスレッドで実行
-                            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
-                            {
-                                try
-                                {
-                                    // SkiaSharpのSKBitmapをWPFで表示可能な形式に変換
-                                    using var data = previewBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
-                                    var bitmap = new System.Windows.Media.Imaging.BitmapImage();
-                                    bitmap.BeginInit();
-                                    bitmap.StreamSource = new System.IO.MemoryStream(data.ToArray());
-                                    bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                                    bitmap.EndInit();
-                                    bitmap.Freeze();
-                                    
-                                    CurrentPageImage = bitmap;
-                                    
-                                    // プレビューサイズを更新
-                                    PreviewWidth = bitmap.PixelWidth;
-                                    PreviewHeight = bitmap.PixelHeight;
-                                }
-                                catch (Exception uiEx)
-                                {
-                                    System.Diagnostics.Debug.WriteLine($"プレビューUI更新エラー: {uiEx.Message}");
-                                }
-                            });
-                            
-                            previewBitmap.Dispose();
-                        }
-                    }
                 }
             }
             catch (Exception ex)
@@ -949,15 +981,27 @@ namespace DocOrganizer.UI.ViewModels
             {
                 System.Diagnostics.Debug.WriteLine($"[OnSelectedPagePropertyChanged] PreviewImage updated for page {pageViewModel.PageNumber}");
                 
-                // PreviewImageが更新されたらCurrentPageImageを即座に更新
-                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                // 選択中のページのみ更新（非選択ページのプレビュー更新を無視）
+                if (pageViewModel.IsSelected && pageViewModel == _selectedPage)
                 {
-                    if (pageViewModel.PreviewImage != null)
+                    // PreviewImageが更新されたらCurrentPageImageを即座に更新
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
                     {
-                        CurrentPageImage = pageViewModel.PreviewImage;
-                        System.Diagnostics.Debug.WriteLine($"[OnSelectedPagePropertyChanged] CurrentPageImage updated successfully");
-                    }
-                });
+                        if (pageViewModel.PreviewImage != null)
+                        {
+                            CurrentPageImage = pageViewModel.PreviewImage;
+                            System.Diagnostics.Debug.WriteLine($"[OnSelectedPagePropertyChanged] CurrentPageImage updated successfully for selected page {pageViewModel.PageNumber}");
+                        }
+                        else
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[OnSelectedPagePropertyChanged] PreviewImage is null for page {pageViewModel.PageNumber}, keeping current preview");
+                        }
+                    });
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"[OnSelectedPagePropertyChanged] Ignoring PreviewImage update for non-selected page {pageViewModel.PageNumber}");
+                }
             }
         }
 

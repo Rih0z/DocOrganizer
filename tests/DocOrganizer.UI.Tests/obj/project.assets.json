@@ -8272,19 +8272,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\koki\\.nuget\\packages\\": {}
+    "C:\\Users\\217216X721451\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\tests\\DocOrganizer.UI.Tests\\DocOrganizer.UI.Tests.csproj",
+      "projectUniqueName": "C:\\Users\\217216X721451\\github\\DocOrganizer\\tests\\DocOrganizer.UI.Tests\\DocOrganizer.UI.Tests.csproj",
       "projectName": "DocOrganizer.UI.Tests",
-      "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\tests\\DocOrganizer.UI.Tests\\DocOrganizer.UI.Tests.csproj",
-      "packagesPath": "C:\\Users\\koki\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\tests\\DocOrganizer.UI.Tests\\obj\\",
+      "projectPath": "C:\\Users\\217216X721451\\github\\DocOrganizer\\tests\\DocOrganizer.UI.Tests\\DocOrganizer.UI.Tests.csproj",
+      "packagesPath": "C:\\Users\\217216X721451\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\217216X721451\\github\\DocOrganizer\\tests\\DocOrganizer.UI.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\koki\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\217216X721451\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net6.0-windows"
@@ -8296,8 +8296,8 @@
         "net6.0-windows7.0": {
           "targetAlias": "net6.0-windows",
           "projectReferences": {
-            "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.UI\\DocOrganizer.UI.csproj": {
-              "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.UI\\DocOrganizer.UI.csproj"
+            "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.UI\\DocOrganizer.UI.csproj": {
+              "projectPath": "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.UI\\DocOrganizer.UI.csproj"
             }
           }
         }

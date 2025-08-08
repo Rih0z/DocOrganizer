@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "serena": {
-      "command": "uvx",
-      "args": ["--from", "git+https://github.com/oraios/serena", "serena-mcp-server"]
+      "command": "C:\\Users\\217216X721451\\.local\\bin\\serena-mcp-server.exe",
+      "args": ["--project", ".", "--context", "desktop-app", "--mode", "interactive", "--mode", "editing"]
     },
     "windows-build-server": {
       "command": "npx",

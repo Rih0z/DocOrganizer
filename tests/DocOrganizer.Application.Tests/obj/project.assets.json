@@ -6696,19 +6696,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\koki\\.nuget\\packages\\": {}
+    "C:\\Users\\217216X721451\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\tests\\DocOrganizer.Application.Tests\\DocOrganizer.Application.Tests.csproj",
+      "projectUniqueName": "C:\\Users\\217216X721451\\github\\DocOrganizer\\tests\\DocOrganizer.Application.Tests\\DocOrganizer.Application.Tests.csproj",
       "projectName": "DocOrganizer.Application.Tests",
-      "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\tests\\DocOrganizer.Application.Tests\\DocOrganizer.Application.Tests.csproj",
-      "packagesPath": "C:\\Users\\koki\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\tests\\DocOrganizer.Application.Tests\\obj\\",
+      "projectPath": "C:\\Users\\217216X721451\\github\\DocOrganizer\\tests\\DocOrganizer.Application.Tests\\DocOrganizer.Application.Tests.csproj",
+      "packagesPath": "C:\\Users\\217216X721451\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\217216X721451\\github\\DocOrganizer\\tests\\DocOrganizer.Application.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\koki\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\217216X721451\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net6.0"
@@ -6720,14 +6720,14 @@
         "net6.0": {
           "targetAlias": "net6.0",
           "projectReferences": {
-            "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Application\\DocOrganizer.Application.csproj": {
-              "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Application\\DocOrganizer.Application.csproj"
+            "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.Application\\DocOrganizer.Application.csproj": {
+              "projectPath": "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.Application\\DocOrganizer.Application.csproj"
             },
-            "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Core\\DocOrganizer.Core.csproj": {
-              "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Core\\DocOrganizer.Core.csproj"
+            "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.Core\\DocOrganizer.Core.csproj": {
+              "projectPath": "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.Core\\DocOrganizer.Core.csproj"
             },
-            "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Infrastructure\\DocOrganizer.Infrastructure.csproj": {
-              "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Infrastructure\\DocOrganizer.Infrastructure.csproj"
+            "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.Infrastructure\\DocOrganizer.Infrastructure.csproj": {
+              "projectPath": "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.Infrastructure\\DocOrganizer.Infrastructure.csproj"
             }
           }
         }

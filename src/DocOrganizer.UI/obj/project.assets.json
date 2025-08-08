@@ -3618,19 +3618,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\koki\\.nuget\\packages\\": {}
+    "C:\\Users\\217216X721451\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "2.2.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.UI\\DocOrganizer.UI.csproj",
+      "projectUniqueName": "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.UI\\DocOrganizer.UI.csproj",
       "projectName": "DocOrganizer",
-      "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.UI\\DocOrganizer.UI.csproj",
-      "packagesPath": "C:\\Users\\koki\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.UI\\obj\\",
+      "projectPath": "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.UI\\DocOrganizer.UI.csproj",
+      "packagesPath": "C:\\Users\\217216X721451\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.UI\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\koki\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\217216X721451\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net6.0-windows"
@@ -3642,14 +3642,14 @@
         "net6.0-windows7.0": {
           "targetAlias": "net6.0-windows",
           "projectReferences": {
-            "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Application\\DocOrganizer.Application.csproj": {
-              "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Application\\DocOrganizer.Application.csproj"
+            "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.Application\\DocOrganizer.Application.csproj": {
+              "projectPath": "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.Application\\DocOrganizer.Application.csproj"
             },
-            "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Core\\DocOrganizer.Core.csproj": {
-              "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Core\\DocOrganizer.Core.csproj"
+            "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.Core\\DocOrganizer.Core.csproj": {
+              "projectPath": "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.Core\\DocOrganizer.Core.csproj"
             },
-            "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Infrastructure\\DocOrganizer.Infrastructure.csproj": {
-              "projectPath": "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\src\\DocOrganizer.Infrastructure\\DocOrganizer.Infrastructure.csproj"
+            "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.Infrastructure\\DocOrganizer.Infrastructure.csproj": {
+              "projectPath": "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.Infrastructure\\DocOrganizer.Infrastructure.csproj"
             }
           }
         }
@@ -3707,6 +3707,10 @@
         "downloadDependencies": [
           {
             "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
+            "version": "[6.0.36, 6.0.36]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Crossgen2.win-x64",
             "version": "[6.0.36, 6.0.36]"
           },
           {

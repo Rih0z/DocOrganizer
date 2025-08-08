@@ -186,17 +186,16 @@ namespace DocOrganizer.Infrastructure.Services
                     throw new ArgumentException($"Invalid image file: {imagePath}");
                 }
 
-                var tempImagePath = imagePath;
-                
+                // 🚀 Phase 1最適化: HEIC処理の統一化と2重変換排除
                 if (IsHeicFile(imagePath))
                 {
-                    tempImagePath = await ConvertHeicToJpegAsync(imagePath);
+                    return await GetHeicThumbnailOptimizedAsync(imagePath, width, height);
                 }
 
-                using var image = await LoadImageSafelyAsync(tempImagePath);
+                // 通常の画像ファイル処理（HEIC以外）
+                using var image = await LoadImageSafelyAsync(imagePath);
                 
-                // バグ修正：画像の向き自動補正を確実に適用
-                // 要件定義書（tmp/DocOrganizer2.2_画像向き修正要件定義書.md）準拠
+                // 画像の向き自動補正を確実に適用
                 image.Mutate(x => x
                     .AutoOrient()  // EXIF情報に基づく自動回転
                     .Resize(new ResizeOptions
@@ -207,18 +206,122 @@ namespace DocOrganizer.Infrastructure.Services
 
                 using var ms = new MemoryStream();
                 await image.SaveAsJpegAsync(ms, new JpegEncoder { Quality = 80 });
-
-                if (tempImagePath != imagePath && File.Exists(tempImagePath))
-                {
-                    File.Delete(tempImagePath);
-                }
-
                 return ms.ToArray();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to generate thumbnail: {ImagePath}", imagePath);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// HEIC画像専用の最適化サムネイル生成（2重変換排除・高速化）
+        /// </summary>
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        private async Task<byte[]> GetHeicThumbnailOptimizedAsync(string heicPath, int width, int height)
+        {
+            try
+            {
+                _logger.LogDebug($"[HEIC最適化] サムネイル生成開始: {Path.GetFileName(heicPath)} ({width}x{height})");
+
+                // 🚀 Phase 3最適化: Windows標準対応優先・段階的フォールバック
+                var supportLevel = GetHeicSupportLevel();
+                
+                switch (supportLevel)
+                {
+                    case HeicSupportLevel.WindowsNative:
+                        return await GenerateHeicThumbnailWithWicAsync(heicPath, width, height);
+                        
+                    case HeicSupportLevel.MagickNet:
+                        return await GenerateHeicThumbnailWithMagickAsync(heicPath, width, height);
+                        
+                    case HeicSupportLevel.None:
+                    default:
+                        throw new NotSupportedException(
+                            $"HEIC not supported - install Microsoft HEIF Extensions from Microsoft Store. File: {Path.GetFileName(heicPath)}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[HEIC最適化] サムネイル生成エラー: {HeicPath}", heicPath);
+                
+                // HEICエラーの特別処理
+                if (IsHeicProcessingError(ex))
+                {
+                    throw new ImageProcessingException($"HEIC thumbnail generation failed: {ex.Message}", ex);
+                }
+                
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Windows標準WIC経由HEIC処理（最高性能）
+        /// </summary>
+        private async Task<byte[]> GenerateHeicThumbnailWithWicAsync(string heicPath, int width, int height)
+        {
+            try
+            {
+                _logger.LogDebug($"[WIC-HEIC] Windows標準処理開始: {Path.GetFileName(heicPath)}");
+                
+                // TODO: Phase 3実装予定 - WIC Interop Library使用
+                // 現在はMagick.NETにフォールバック
+                _logger.LogWarning("[WIC-HEIC] Windows標準処理は次期実装予定 - Magick.NETで処理");
+                return await GenerateHeicThumbnailWithMagickAsync(heicPath, width, height);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[WIC-HEIC] Windows標準処理エラー - Magick.NETにフォールバック");
+                return await GenerateHeicThumbnailWithMagickAsync(heicPath, width, height);
+            }
+        }
+        
+        /// <summary>
+        /// Magick.NET経由HEIC処理（安定版・現行方式）
+        /// </summary>
+        private async Task<byte[]> GenerateHeicThumbnailWithMagickAsync(string heicPath, int width, int height)
+        {
+            // HEIC処理可能性の事前確認
+            if (!IsHeicProcessingAvailable())
+            {
+                throw new NotSupportedException($"Magick.NET HEIC processing unavailable. File: {heicPath}");
+            }
+
+            using (var magickImage = new MagickImage())
+            {
+                // HEIC読み込み設定
+                magickImage.Settings.BackgroundColor = MagickColors.White;
+                magickImage.ColorSpace = ColorSpace.sRGB;
+                
+                // 非同期での読み込み
+                await Task.Run(() => magickImage.Read(heicPath));
+                
+                // 基本検証
+                if (magickImage.Width == 0 || magickImage.Height == 0)
+                {
+                    throw new InvalidOperationException($"Invalid HEIC dimensions: {magickImage.Width}x{magickImage.Height}");
+                }
+                
+                _logger.LogDebug($"[Magick-HEIC] 原画像サイズ: {magickImage.Width}x{magickImage.Height}");
+                
+                // 🚀 直接サムネイル生成（中間JPEG作成なし）
+                magickImage.AutoOrient(); // 1回のみ適用
+                magickImage.Format = MagickFormat.Jpeg;
+                magickImage.Quality = 80;
+                
+                // サイズ調整
+                var geometry = new MagickGeometry((uint)Math.Max(1, width), (uint)Math.Max(1, height))
+                {
+                    IgnoreAspectRatio = false
+                };
+                magickImage.Resize(geometry);
+                
+                // 直接バイト配列として取得（ファイル作成なし）
+                var thumbnailBytes = magickImage.ToByteArray();
+                
+                _logger.LogDebug($"[Magick-HEIC] サムネイル生成完了: {thumbnailBytes.Length} bytes");
+                return thumbnailBytes;
             }
         }
 
@@ -342,6 +445,109 @@ namespace DocOrganizer.Infrastructure.Services
         private bool IsHeicProcessingAvailable()
         {
             return _magickNetAvailable;
+        }
+
+        /// <summary>
+        /// Windows標準HEIC拡張機能の検出（2025年ベストプラクティス）
+        /// </summary>
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        private bool CheckWindowsHeicSupport()
+        {
+            try
+            {
+                // Windows 11 22H2以降の自動判定
+                var osVersion = Environment.OSVersion.Version;
+                var isWindows11 = osVersion.Major >= 10 && osVersion.Build >= 22621; // Windows 11 22H2
+                
+                if (isWindows11)
+                {
+                    _logger.LogDebug("Windows 11 22H2+ detected - HEIC native support available");
+                    return CheckHeicExtensionInstalled();
+                }
+                
+                // Windows 10の場合は拡張機能チェックのみ
+                _logger.LogDebug("Windows 10 detected - checking HEIC extensions");
+                return CheckHeicExtensionInstalled();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to check Windows HEIC support");
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Microsoft HEIF画像拡張機能のインストール状況確認
+        /// </summary>
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        private bool CheckHeicExtensionInstalled()
+        {
+            try
+            {
+                // レジストリチェック: HEIF Decoder
+                using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(
+                    @"SOFTWARE\Classes\CLSID\{7ED96837-96F0-4812-B211-F13C24117ED3}");
+                    
+                if (key != null)
+                {
+                    _logger.LogDebug("Microsoft HEIF Image Extensions detected via registry");
+                    return true;
+                }
+                
+                // WIC Codec確認: HEIC Decoder CLSID
+                var heicDecoderClsid = new Guid("7ED96837-96F0-4812-B211-F13C24117ED3");
+                
+                // COM オブジェクト作成テスト（軽量チェック）
+                var comType = Type.GetTypeFromCLSID(heicDecoderClsid, false);
+                if (comType != null)
+                {
+                    _logger.LogDebug("WIC HEIC Decoder CLSID confirmed");
+                    return true;
+                }
+                
+                _logger.LogWarning("Microsoft HEIF Image Extensions not found - install from Microsoft Store");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to verify HEIC extension installation");
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// HEIC処理能力の総合判定（Windows拡張機能優先・Magick.NETフォールバック）
+        /// </summary>
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        private HeicSupportLevel GetHeicSupportLevel()
+        {
+            // 1. Windows標準対応チェック（最優先）
+            if (CheckWindowsHeicSupport())
+            {
+                _logger.LogInformation("HEIC Support: Windows Native (Optimal)");
+                return HeicSupportLevel.WindowsNative;
+            }
+            
+            // 2. Magick.NET対応チェック（フォールバック）
+            if (IsHeicProcessingAvailable())
+            {
+                _logger.LogInformation("HEIC Support: Magick.NET (Fallback)");
+                return HeicSupportLevel.MagickNet;
+            }
+            
+            // 3. 対応不可
+            _logger.LogWarning("HEIC Support: None - Please install Microsoft HEIF Extensions");
+            return HeicSupportLevel.None;
+        }
+        
+        /// <summary>
+        /// HEIC対応レベル定義
+        /// </summary>
+        private enum HeicSupportLevel
+        {
+            None = 0,           // 対応不可
+            MagickNet = 1,      // Magick.NET経由（現在の方式）
+            WindowsNative = 2   // Windows標準（最適）
         }
 
         /// <summary>
