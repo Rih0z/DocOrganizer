@@ -523,8 +523,8 @@ namespace DocOrganizer.Infrastructure.Services
                         using var originalBitmap = SKBitmap.Decode(page.SourceImagePath);
                         if (originalBitmap == null) return null;
 
-                        // スケールを適用したサイズを計算
-                        int previewWidth = (int)(600 * scale); // プレビュー用の標準幅
+                        // スケールを適用したサイズを計算（高解像度プレビュー用）
+                        int previewWidth = (int)(1200 * scale); // プレビュー用の高解像度幅（2倍）
                         int previewHeight = (int)(originalBitmap.Height * (double)previewWidth / originalBitmap.Width);
                         
                         // 回転を適用

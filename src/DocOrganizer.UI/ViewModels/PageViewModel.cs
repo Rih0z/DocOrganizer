@@ -165,10 +165,7 @@ namespace DocOrganizer.UI.ViewModels
                         
                         PreviewImage = previewBitmap;
                     }
-                    else
-                    {
-                        PreviewImage = bitmap; // プレビューがない場合はサムネイルを使用
-                    }
+                    // PreviewImageは設定せず、MainViewModelで高品質プレビューを生成
                     
                     System.Diagnostics.Debug.WriteLine($"[LoadThumbnailFromPdfPage] サムネイルとプレビュー設定完了");
                 }
@@ -260,7 +257,7 @@ namespace DocOrganizer.UI.ViewModels
                         
                     var bitmap = CreateBitmapFromBytes(thumbnailData);
                     ThumbnailImage = bitmap;
-                    PreviewImage = bitmap; // プレビューも統一
+                    // PreviewImageはnullのままにして、MainViewModelで高品質プレビューを生成する
                     
                     System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] HEIC最適化完了: {Path.GetFileName(heicPath)}");
                     OnPropertyChanged(nameof(PreviewImage));
@@ -313,7 +310,7 @@ namespace DocOrganizer.UI.ViewModels
                     var bitmap = CreateBitmapFromBytes(data.ToArray());
                     
                     ThumbnailImage = bitmap;
-                    PreviewImage = bitmap;
+                    // PreviewImageは設定せず、高品質プレビューはMainViewModelで生成
                     OnPropertyChanged(nameof(PreviewImage));
                 });
                 
@@ -339,7 +336,7 @@ namespace DocOrganizer.UI.ViewModels
             {
                 var bitmap = CreateBitmapFromBytes(thumbnailData);
                 ThumbnailImage = bitmap;
-                PreviewImage = bitmap;
+                // PreviewImageは設定せず、高品質プレビューはMainViewModelで生成
                 OnPropertyChanged(nameof(PreviewImage));
             });
         }
@@ -483,7 +480,7 @@ namespace DocOrganizer.UI.ViewModels
                     bitmap.Freeze();
                     
                     ThumbnailImage = bitmap;
-                    PreviewImage = bitmap;
+                    // PreviewImageは設定せず、高品質プレビューはMainViewModelで生成
                 });
                 
                 placeholderBitmap.Dispose();

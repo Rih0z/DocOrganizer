@@ -1230,5 +1230,144 @@ namespace DocOrganizer.Infrastructure.Services
                 return 0;
             }
         }
+
+        /// <summary>
+        /// 高品質プレビュー生成（文字視認性を優先した処理）
+        /// HEICファイル専用の高解像度プレビュー生成
+        /// </summary>
+        /// <param name="imagePath">画像ファイルパス</param>
+        /// <param name="maxWidth">最大幅（デフォルト: 1200px）</param>
+        /// <param name="maxHeight">最大高さ（デフォルト: 1600px）</param>
+        /// <returns>高品質プレビュー画像のSKBitmap</returns>
+        public async Task<SkiaSharp.SKBitmap?> GenerateHighQualityPreviewAsync(string imagePath, int maxWidth = 1200, int maxHeight = 1600)
+        {
+            if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
+            {
+                return null;
+            }
+
+            try
+            {
+                _logger.LogDebug($"Generating high quality preview: {imagePath} (Max: {maxWidth}x{maxHeight})");
+
+                var extension = Path.GetExtension(imagePath).ToLowerInvariant();
+                
+                // HEICファイルの場合は高品質変換処理
+                if (extension == ".heic" || extension == ".heif")
+                {
+                    return await GenerateHeicHighQualityPreviewAsync(imagePath, maxWidth, maxHeight);
+                }
+                
+                // 一般画像ファイルの高品質プレビュー
+                return await GenerateStandardHighQualityPreviewAsync(imagePath, maxWidth, maxHeight);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to generate high quality preview for {ImagePath}", imagePath);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// HEIC専用高品質プレビュー生成
+        /// </summary>
+        private async Task<SkiaSharp.SKBitmap?> GenerateHeicHighQualityPreviewAsync(string heicPath, int maxWidth, int maxHeight)
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    using var magickImage = new ImageMagick.MagickImage(heicPath);
+                    
+                    // 高品質設定
+                    magickImage.Quality = 98; // 高品質（文字視認性重視）
+                    magickImage.Density = new ImageMagick.Density(300, 300); // 高DPI
+                    
+                    // 向き自動補正
+                    magickImage.AutoOrient();
+                    
+                    // アスペクト比を維持してリサイズ
+                    var originalWidth = (int)magickImage.Width;
+                    var originalHeight = (int)magickImage.Height;
+                    
+                    // サイズ制限に基づいたリサイズ計算
+                    int newWidth = originalWidth;
+                    int newHeight = originalHeight;
+                    
+                    if (originalWidth > maxWidth || originalHeight > maxHeight)
+                    {
+                        double scaleX = (double)maxWidth / originalWidth;
+                        double scaleY = (double)maxHeight / originalHeight;
+                        double scale = Math.Min(scaleX, scaleY);
+                        
+                        newWidth = (int)(originalWidth * scale);
+                        newHeight = (int)(originalHeight * scale);
+                    }
+                    
+                    // 高品質リサイズ
+                    magickImage.FilterType = ImageMagick.FilterType.Lanczos;
+                    magickImage.Resize((uint)newWidth, (uint)newHeight);
+                    
+                    // シャープニング（文字の鮮鋭化）
+                    magickImage.Sharpen();
+                    
+                    // SKBitmapに変換
+                    using var stream = new MemoryStream();
+                    magickImage.Format = ImageMagick.MagickFormat.Png; // 無圧縮PNG
+                    magickImage.Write(stream);
+                    stream.Position = 0;
+                    
+                    var skBitmap = SkiaSharp.SKBitmap.Decode(stream);
+                    _logger.LogDebug($"HEIC high quality preview generated: {newWidth}x{newHeight}");
+                    
+                    return skBitmap;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to generate HEIC high quality preview: {HeicPath}", heicPath);
+                    return null;
+                }
+            });
+        }
+
+        /// <summary>
+        /// 一般画像ファイル用高品質プレビュー生成
+        /// </summary>
+        private async Task<SkiaSharp.SKBitmap?> GenerateStandardHighQualityPreviewAsync(string imagePath, int maxWidth, int maxHeight)
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    using var originalBitmap = SkiaSharp.SKBitmap.Decode(imagePath);
+                    if (originalBitmap == null) return null;
+                    
+                    // アスペクト比を維持してリサイズ
+                    int newWidth = originalBitmap.Width;
+                    int newHeight = originalBitmap.Height;
+                    
+                    if (originalBitmap.Width > maxWidth || originalBitmap.Height > maxHeight)
+                    {
+                        double scaleX = (double)maxWidth / originalBitmap.Width;
+                        double scaleY = (double)maxHeight / originalBitmap.Height;
+                        double scale = Math.Min(scaleX, scaleY);
+                        
+                        newWidth = (int)(originalBitmap.Width * scale);
+                        newHeight = (int)(originalBitmap.Height * scale);
+                    }
+                    
+                    // 高品質リサイズ
+                    var resizedBitmap = originalBitmap.Resize(new SkiaSharp.SKImageInfo(newWidth, newHeight), SkiaSharp.SKFilterQuality.High);
+                    _logger.LogDebug($"Standard high quality preview generated: {newWidth}x{newHeight}");
+                    
+                    return resizedBitmap;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to generate standard high quality preview: {ImagePath}", imagePath);
+                    return null;
+                }
+            });
+        }
     }
 }

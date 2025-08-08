@@ -373,8 +373,12 @@ namespace DocOrganizer.UI.ViewModels
                 
                 if (pageViewModel?.Page == null) return;
 
-                // forceUpdate=trueまたはPreviewImageがnullの場合は処理を実行
-                if (forceUpdate || pageViewModel.PreviewImage == null)
+                // HEIC判定による強制高解像度プレビュー条件
+                bool isHeicSource = !string.IsNullOrEmpty(pageViewModel.Page.SourceImagePath) && 
+                                   IsHeicFile(pageViewModel.Page.SourceImagePath);
+                
+                // forceUpdate、PreviewImageがnull、またはHEICファイルの場合は処理を実行
+                if (forceUpdate || pageViewModel.PreviewImage == null || isHeicSource)
                 {
                     System.Diagnostics.Debug.WriteLine($"[UpdatePreview] 強制更新またはPreviewImage未設定 - PreviewImage: {pageViewModel.PreviewImage != null}");
                     
@@ -414,16 +418,93 @@ namespace DocOrganizer.UI.ViewModels
                         return;
                     }
                     
-                    // PreviewImageがない場合はPDF処理で生成
+                    // PreviewImageがない場合の処理
                     if (_currentDocument != null)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[UpdatePreview] PreviewImageがないためPDFから新規生成");
-                        
                         var pageIndex = _currentDocument.Pages.ToList().IndexOf(pageViewModel.Page);
                         if (pageIndex >= 0)
                         {
-                            // 高解像度プレビューを生成（スケール1.5倍）
-                            var previewBitmap = await _pdfEditorService.GetPagePreviewAsync(_currentDocument, pageIndex, 1.5f);
+                            var page = _currentDocument.Pages[pageIndex];
+                            
+                            // 元画像パスが存在する場合は新しい高品質プレビューサービスを使用
+                            if (!string.IsNullOrEmpty(page.SourceImagePath) && System.IO.File.Exists(page.SourceImagePath))
+                            {
+                                System.Diagnostics.Debug.WriteLine($"[UpdatePreview] 高品質プレビューサービスで生成: {page.SourceImagePath}");
+                                
+                                try
+                                {
+                                    // 新しい高品質プレビューサービスを使用
+                                    var highQualityBitmap = await _imageProcessingService.GenerateHighQualityPreviewAsync(page.SourceImagePath, 1200, 1600);
+                                    
+                                    if (highQualityBitmap != null)
+                                    {
+                                        // 回転を適用
+                                        var finalBitmap = highQualityBitmap;
+                                        if (page.Rotation != 0)
+                                        {
+                                            finalBitmap = RotateSkBitmap(highQualityBitmap, page.Rotation);
+                                        }
+                                        
+                                        await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                                        {
+                                            try
+                                            {
+                                                // 無圧縮PNG形式で変換（最高品質）
+                                                using var data = finalBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+                                                var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                                                bitmap.BeginInit();
+                                                bitmap.StreamSource = new System.IO.MemoryStream(data.ToArray());
+                                                bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                                                bitmap.EndInit();
+                                                bitmap.Freeze();
+                                                
+                                                CurrentPageImage = bitmap;
+                                                
+                                                // プレビューサイズを計算（高解像度維持）
+                                                var displayWidth = Math.Max(bitmap.PixelWidth, 600);
+                                                var displayHeight = Math.Max(bitmap.PixelHeight, 800);
+                                                
+                                                var aspectRatio = (double)bitmap.PixelWidth / bitmap.PixelHeight;
+                                                if (aspectRatio > 1)
+                                                {
+                                                    displayHeight = (int)(displayWidth / aspectRatio);
+                                                }
+                                                else
+                                                {
+                                                    displayWidth = (int)(displayHeight * aspectRatio);
+                                                }
+                                                
+                                                PreviewWidth = displayWidth;
+                                                PreviewHeight = displayHeight;
+                                                
+                                                System.Diagnostics.Debug.WriteLine($"[UpdatePreview] 高品質プレビュー完了 - Size: {PreviewWidth}x{PreviewHeight}");
+                                            }
+                                            catch (Exception uiEx)
+                                            {
+                                                System.Diagnostics.Debug.WriteLine($"高品質プレビューUI更新エラー: {uiEx.Message}");
+                                            }
+                                        });
+                                        
+                                        if (finalBitmap != highQualityBitmap)
+                                        {
+                                            finalBitmap.Dispose();
+                                        }
+                                        highQualityBitmap.Dispose();
+                                        return; // 高品質プレビュー完了、PDFプレビューをスキップ
+                                    }
+                                }
+                                catch (Exception imgEx)
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"高品質プレビュー生成エラー: {imgEx.Message}");
+                                    // エラーの場合はPDFプレビューにフォールバック
+                                }
+                            }
+                            
+                            // PDFプレビュー生成（フォールバック処理）
+                            System.Diagnostics.Debug.WriteLine($"[UpdatePreview] PDFプレビューから生成");
+                            
+                            // 最高品質プレビューを生成（スケール3.0倍で高解像度）
+                            var previewBitmap = await _pdfEditorService.GetPagePreviewAsync(_currentDocument, pageIndex, 3.0f);
                             
                             if (previewBitmap != null)
                             {
@@ -432,7 +513,7 @@ namespace DocOrganizer.UI.ViewModels
                                 {
                                     try
                                     {
-                                        // SkiaSharpのSKBitmapをWPFで表示可能な形式に変換
+                                        // SkiaSharpのSKBitmapを無圧縮PNG形式で変換（最高品質）
                                         using var data = previewBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
                                         var bitmap = new System.Windows.Media.Imaging.BitmapImage();
                                         bitmap.BeginInit();
@@ -1252,6 +1333,58 @@ namespace DocOrganizer.UI.ViewModels
                 ProgressVisibility = "Collapsed";
                 StatusMessage = "準備完了";
             }
+        }
+
+        /// <summary>
+        /// HEICファイル判定
+        /// </summary>
+        private static bool IsHeicFile(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath)) return false;
+            var extension = Path.GetExtension(filePath).ToLowerInvariant();
+            return extension == ".heic" || extension == ".heif";
+        }
+
+        /// <summary>
+        /// SkiaSharp SKBitmapの回転処理
+        /// </summary>
+        private static SkiaSharp.SKBitmap RotateSkBitmap(SkiaSharp.SKBitmap original, int rotation)
+        {
+            if (rotation == 0) return original;
+            
+            var rotationAngle = rotation % 360;
+            if (rotationAngle == 0) return original;
+            
+            // 回転後のサイズを計算
+            int newWidth, newHeight;
+            if (rotationAngle == 90 || rotationAngle == 270)
+            {
+                newWidth = original.Height;
+                newHeight = original.Width;
+            }
+            else
+            {
+                newWidth = original.Width;
+                newHeight = original.Height;
+            }
+            
+            var rotatedBitmap = new SkiaSharp.SKBitmap(newWidth, newHeight);
+            using (var canvas = new SkiaSharp.SKCanvas(rotatedBitmap))
+            {
+                // 中心を基準に回転
+                canvas.Translate(newWidth / 2f, newHeight / 2f);
+                canvas.RotateDegrees(rotationAngle);
+                canvas.Translate(-original.Width / 2f, -original.Height / 2f);
+                
+                using (var paint = new SkiaSharp.SKPaint())
+                {
+                    paint.IsAntialias = true;
+                    paint.FilterQuality = SkiaSharp.SKFilterQuality.High;
+                    canvas.DrawBitmap(original, 0, 0, paint);
+                }
+            }
+            
+            return rotatedBitmap;
         }
     }
 }
