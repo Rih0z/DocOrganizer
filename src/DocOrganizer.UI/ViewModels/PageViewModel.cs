@@ -371,28 +371,15 @@ namespace DocOrganizer.UI.ViewModels
                 Rotation = _page.Rotation;
                 System.Diagnostics.Debug.WriteLine($"[UpdateRotationSync] ページ {_page.PageNumber} 回転更新: {_page.Rotation}度");
                 
-                // ★追加: キャッシュクリアと即座の再生成
+                // ★修正: キャッシュクリアのみ実行、サムネイル再生成は削除
                 ClearOptimizedCache();
                 
-                // プレビューを再生成（HEICファイルの場合）
-                if (!string.IsNullOrEmpty(_page.SourceImagePath) && System.IO.File.Exists(_page.SourceImagePath))
-                {
-                    bool isHeic = System.IO.Path.GetExtension(_page.SourceImagePath).Equals(".heic", StringComparison.OrdinalIgnoreCase) ||
-                                 System.IO.Path.GetExtension(_page.SourceImagePath).Equals(".heif", StringComparison.OrdinalIgnoreCase);
-                    
-                    if (isHeic)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[UpdateRotationSync] HEIC回転プレビュー更新");
-                        _ = Task.Run(async () => await UpdateRotatedHeicPreviewAsync());
-                    }
-                    
-                    // ★追加: 全画像タイプでサムネイル再生成
-                    LoadThumbnail();
-                }
+                System.Diagnostics.Debug.WriteLine($"[UpdateRotationSync] ページ {_page.PageNumber} キャッシュクリア完了 - サムネイル再生成はRegenerateThumbnailAfterRotationAsyncに委任");
                 
-                // 強制的にプロパティ変更通知を発火
-                OnPropertyChanged(nameof(ThumbnailImage));
-                OnPropertyChanged(nameof(PreviewImage));
+                // ★削除: LoadThumbnail()呼び出しを完全削除（競合状態の原因）
+                // 理由: RegenerateThumbnailAfterRotationAsync()と重複実行され、古い状態で上書きされる
+                
+                // プロパティ変更通知は回転値のみ（サムネイル更新は非同期処理完了時に実行）
                 OnPropertyChanged(nameof(Rotation));
             }
             catch (Exception ex)
@@ -404,76 +391,10 @@ namespace DocOrganizer.UI.ViewModels
         /// <summary>
         /// 回転後のサムネイル強制再生成
         /// </summary>
+        [Obsolete("非同期版RegenerateThumbnailAfterRotationAsync()を使用してください", true)]
         public void RegenerateThumbnailAfterRotation()
         {
-            try
-            {
-                System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotation] ページ {PageNumber} 回転角度 {_page.Rotation}° - 強化版開始");
-                
-                // 1. 全キャッシュの完全削除
-                ClearAllImageCaches();
-                
-                // 2. WPF Dispatcher上で確実にnull化
-                System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                {
-                    // 古いBitmapImageリソースを解放
-                    if (ThumbnailImage is System.Windows.Media.Imaging.BitmapImage oldBitmap)
-                    {
-                        try
-                        {
-                            oldBitmap.StreamSource?.Dispose();
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotation] Bitmap解放エラー: {ex.Message}");
-                        }
-                    }
-                    
-                    // 確実にnull設定
-                    ThumbnailImage = null;
-                    OnPropertyChanged(nameof(ThumbnailImage));
-                    
-                    System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotation] ページ {PageNumber} null化完了");
-                });
-                
-                // 3. 非同期で新しいサムネイル生成（回転角度を考慮）
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotation] ページ {PageNumber} サムネイル再生成開始");
-                        
-                        // 回転角度を明示的に渡してサムネイル生成
-                        await GenerateThumbnailWithRotation(_page.Rotation);
-                        
-                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            OnPropertyChanged(nameof(ThumbnailImage));
-                            System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotation] ページ {PageNumber} 最終更新完了");
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotation] サムネイル生成エラー: {ex.Message}");
-                        
-                        // エラー時のフォールバック処理
-                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            FallbackThumbnailRegeneration();
-                        });
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotation] 致命的エラー: {ex.Message}");
-                
-                // 致命的エラー時の最終フォールバック
-                System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                {
-                    FallbackThumbnailRegeneration();
-                });
-            }
+            throw new InvalidOperationException("この同期版メソッドは廃止されました。RegenerateThumbnailAfterRotationAsync()を使用してください。");
         }
 
         
