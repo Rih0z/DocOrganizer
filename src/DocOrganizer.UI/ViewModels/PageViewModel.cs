@@ -98,7 +98,7 @@ namespace DocOrganizer.UI.ViewModels
                 }
                 
                 // [ObservableProperty]による自動PropertyChanged通知に依存
-                OnPropertyChanged(nameof(PreviewImage));
+                // [ObservableProperty]自動通知に依存
             }
             catch (Exception ex)
             {
@@ -269,7 +269,7 @@ namespace DocOrganizer.UI.ViewModels
                     // PreviewImageはnullのままにして、MainViewModelで高品質プレビューを生成する
                     
                     System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] HEIC最適化完了: {Path.GetFileName(heicPath)}");
-                    OnPropertyChanged(nameof(PreviewImage));
+                    // [ObservableProperty]自動通知に依存
                 });
             }
             catch (Exception ex)
@@ -303,7 +303,7 @@ namespace DocOrganizer.UI.ViewModels
                     // PreviewImageは設定せず、高品質プレビューはMainViewModelで生成
                     
                     System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] 修正版C - 回転角度 {_page.Rotation}度 完了: {Path.GetFileName(imagePath)}");
-                    OnPropertyChanged(nameof(PreviewImage));
+                    // [ObservableProperty]自動通知に依存
                 });
             }
             catch (Exception ex)
@@ -333,7 +333,7 @@ namespace DocOrganizer.UI.ViewModels
                 var bitmap = CreateBitmapFromBytes(thumbnailData);
                 ThumbnailImage = bitmap;
                 // PreviewImageは設定せず、高品質プレビューはMainViewModelで生成
-                OnPropertyChanged(nameof(PreviewImage));
+                // [ObservableProperty]自動通知に依存
             });
         }
         
@@ -708,7 +708,7 @@ namespace DocOrganizer.UI.ViewModels
                         _optimizedPreviewCache = new WeakReference<BitmapSource>(wpfBitmap);
                         
                         PreviewImage = wpfBitmap;
-                        OnPropertyChanged(nameof(PreviewImage));
+                        // [ObservableProperty]自動通知に依存
                         
                         System.Diagnostics.Debug.WriteLine($"[UpdateRotatedHeicPreviewAsync] HEIC回転プレビュー最適化完了");
                     }
