@@ -120,7 +120,17 @@ namespace DocOrganizer.UI.ViewModels
             {
                 _optimizedThumbnailCache = null;
                 _optimizedPreviewCache = null;
-                System.Diagnostics.Debug.WriteLine($"[ClearOptimizedCache] キャッシュクリア完了");
+                
+                // ★修正案B: WPF BitmapImageキャッシュも強制クリア
+                if (ThumbnailImage is System.Windows.Media.Imaging.BitmapImage bitmapImage)
+                {
+                    bitmapImage.StreamSource?.Dispose();
+                }
+                
+                // ★修正案B: UI強制更新
+                ThumbnailImage = null;
+                
+                System.Diagnostics.Debug.WriteLine($"[ClearOptimizedCache] キャッシュクリア完了（修正版B - WPFキャッシュ含む）");
             }
             catch (Exception ex)
             {
@@ -275,47 +285,34 @@ namespace DocOrganizer.UI.ViewModels
         /// </summary>
         private async Task ProcessStandardImageAsync(string imagePath, CancellationToken cancellationToken)
         {
-            await Task.Run(() =>
+            try
             {
-                using var originalBitmap = SkiaSharp.SKBitmap.Decode(imagePath);
-                if (originalBitmap == null || cancellationToken.IsCancellationRequested) 
+                // ★修正案C: 回転角度を明示的に渡してサムネイル生成
+                var thumbnailData = await _imageProcessingService.GetImageThumbnailAsync(imagePath, 150, 150, _page.Rotation);
+                
+                if (cancellationToken.IsCancellationRequested || thumbnailData == null)
                     return;
-                
-                // サムネイルサイズを計算
-                var thumbnailSize = 150;
-                var aspectRatio = (float)originalBitmap.Height / originalBitmap.Width;
-                var thumbnailHeight = (int)(thumbnailSize * aspectRatio);
-                
-                // サムネイル生成
-                var thumbnail = new SkiaSharp.SKBitmap(thumbnailSize, thumbnailHeight);
-                using (var canvas = new SkiaSharp.SKCanvas(thumbnail))
-                {
-                    using var paint = new SkiaSharp.SKPaint()
-                    {
-                        IsAntialias = true,
-                        FilterQuality = SkiaSharp.SKFilterQuality.High
-                    };
-                    
-                    var destRect = SkiaSharp.SKRect.Create(0, 0, thumbnailSize, thumbnailHeight);
-                    canvas.DrawBitmap(originalBitmap, destRect, paint);
-                }
                 
                 // UI更新
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     if (cancellationToken.IsCancellationRequested)
                         return;
-                    
-                    using var data = thumbnail.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
-                    var bitmap = CreateBitmapFromBytes(data.ToArray());
-                    
+                        
+                    var bitmap = CreateBitmapFromBytes(thumbnailData);
                     ThumbnailImage = bitmap;
                     // PreviewImageは設定せず、高品質プレビューはMainViewModelで生成
+                    
+                    System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] 修正版C - 回転角度 {_page.Rotation}度 完了: {Path.GetFileName(imagePath)}");
                     OnPropertyChanged(nameof(PreviewImage));
                 });
-                
-                thumbnail.Dispose();
-            });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] エラー: {ex.Message}");
+                // エラー時は元の処理にフォールバック
+                await ProcessImageFallbackAsync(imagePath, cancellationToken);
+            }
         }
         
         /// <summary>
@@ -374,6 +371,9 @@ namespace DocOrganizer.UI.ViewModels
                 Rotation = _page.Rotation;
                 System.Diagnostics.Debug.WriteLine($"[UpdateRotationSync] ページ {_page.PageNumber} 回転更新: {_page.Rotation}度");
                 
+                // ★追加: キャッシュクリアと即座の再生成
+                ClearOptimizedCache();
+                
                 // プレビューを再生成（HEICファイルの場合）
                 if (!string.IsNullOrEmpty(_page.SourceImagePath) && System.IO.File.Exists(_page.SourceImagePath))
                 {
@@ -385,6 +385,9 @@ namespace DocOrganizer.UI.ViewModels
                         System.Diagnostics.Debug.WriteLine($"[UpdateRotationSync] HEIC回転プレビュー更新");
                         _ = Task.Run(async () => await UpdateRotatedHeicPreviewAsync());
                     }
+                    
+                    // ★追加: 全画像タイプでサムネイル再生成
+                    LoadThumbnail();
                 }
                 
                 // 強制的にプロパティ変更通知を発火
@@ -395,6 +398,245 @@ namespace DocOrganizer.UI.ViewModels
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[UpdateRotationSync] エラー: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 回転後のサムネイル強制再生成
+        /// </summary>
+        public void RegenerateThumbnailAfterRotation()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotation] ページ {PageNumber} 回転角度 {_page.Rotation}° - 強化版開始");
+                
+                // 1. 全キャッシュの完全削除
+                ClearAllImageCaches();
+                
+                // 2. WPF Dispatcher上で確実にnull化
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    // 古いBitmapImageリソースを解放
+                    if (ThumbnailImage is System.Windows.Media.Imaging.BitmapImage oldBitmap)
+                    {
+                        try
+                        {
+                            oldBitmap.StreamSource?.Dispose();
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotation] Bitmap解放エラー: {ex.Message}");
+                        }
+                    }
+                    
+                    // 確実にnull設定
+                    ThumbnailImage = null;
+                    OnPropertyChanged(nameof(ThumbnailImage));
+                    
+                    System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotation] ページ {PageNumber} null化完了");
+                });
+                
+                // 3. 非同期で新しいサムネイル生成（回転角度を考慮）
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotation] ページ {PageNumber} サムネイル再生成開始");
+                        
+                        // 回転角度を明示的に渡してサムネイル生成
+                        await GenerateThumbnailWithRotation(_page.Rotation);
+                        
+                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            OnPropertyChanged(nameof(ThumbnailImage));
+                            System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotation] ページ {PageNumber} 最終更新完了");
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotation] サムネイル生成エラー: {ex.Message}");
+                        
+                        // エラー時のフォールバック処理
+                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            FallbackThumbnailRegeneration();
+                        });
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotation] 致命的エラー: {ex.Message}");
+                
+                // 致命的エラー時の最終フォールバック
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    FallbackThumbnailRegeneration();
+                });
+            }
+        }
+
+        
+        /// <summary>
+        /// 回転後のサムネイル強制再生成（非同期版）
+        /// </summary>
+        public async Task RegenerateThumbnailAfterRotationAsync()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotationAsync] ページ {PageNumber} 回転角度 {_page.Rotation}° - 非同期版開始");
+                
+                // 1. 全キャッシュの完全削除
+                ClearAllImageCaches();
+                
+                // 2. WPF Dispatcher上で確実にnull化
+                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    // 古いBitmapImageリソースを解放
+                    if (ThumbnailImage is System.Windows.Media.Imaging.BitmapImage oldBitmap)
+                    {
+                        try
+                        {
+                            oldBitmap.StreamSource?.Dispose();
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotationAsync] Bitmap解放エラー: {ex.Message}");
+                        }
+                    }
+                    
+                    // 確実にnull設定
+                    ThumbnailImage = null;
+                    OnPropertyChanged(nameof(ThumbnailImage));
+                    
+                    System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotationAsync] ページ {PageNumber} null化完了");
+                });
+                
+                // 3. 新しいサムネイル生成（回転角度を考慮）
+                try
+                {
+                    System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotationAsync] ページ {PageNumber} サムネイル再生成開始");
+                    
+                    // 回転角度を明示的に渡してサムネイル生成
+                    await GenerateThumbnailWithRotation(_page.Rotation);
+                    
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        OnPropertyChanged(nameof(ThumbnailImage));
+                        System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotationAsync] ページ {PageNumber} 最終更新完了");
+                    });
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotationAsync] サムネイル生成エラー: {ex.Message}");
+                    
+                    // エラー時のフォールバック処理
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        FallbackThumbnailRegeneration();
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotationAsync] 致命的エラー: {ex.Message}");
+                
+                // 致命的エラー時の最終フォールバック
+                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    FallbackThumbnailRegeneration();
+                });
+            }
+        }
+        
+        /// <summary>
+        /// 全画像キャッシュの完全削除
+        /// </summary>
+        private void ClearAllImageCaches()
+        {
+            try
+            {
+                // WeakReference キャッシュクリア
+                _optimizedThumbnailCache = null;
+                _optimizedPreviewCache = null;
+                
+                // 強制ガベージコレクション
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                
+                System.Diagnostics.Debug.WriteLine($"[ClearAllImageCaches] ページ {PageNumber} 全キャッシュクリア完了");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ClearAllImageCaches] エラー: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// 回転角度を考慮したサムネイル生成
+        /// </summary>
+        private async Task GenerateThumbnailWithRotation(int rotationDegrees)
+        {
+            if (_imageProcessingService == null || string.IsNullOrEmpty(_page.SourceImagePath))
+            {
+                System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] 必要な情報が不足");
+                return;
+            }
+            
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] ページ {PageNumber} 回転 {rotationDegrees}度でサムネイル生成");
+                
+                // 回転角度を明示的に渡してサムネイル生成
+                var thumbnailData = await _imageProcessingService.GetImageThumbnailAsync(
+                    _page.SourceImagePath, 150, 150, rotationDegrees);
+                
+                if (thumbnailData != null && thumbnailData.Length > 0)
+                {
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        try
+                        {
+                            var bitmap = CreateBitmapFromBytes(thumbnailData);
+                            ThumbnailImage = bitmap;
+                            
+                            System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] ページ {PageNumber} 新しいサムネイル設定完了");
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] Bitmap作成エラー: {ex.Message}");
+                            throw;
+                        }
+                    });
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] サムネイルデータが空");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] エラー: {ex.Message}");
+                throw;
+            }
+        }
+        
+        /// <summary>
+        /// エラー時のフォールバック処理
+        /// </summary>
+        private void FallbackThumbnailRegeneration()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"[FallbackThumbnailRegeneration] ページ {PageNumber} フォールバック実行");
+                
+                ThumbnailImage = null;
+                OnPropertyChanged(nameof(ThumbnailImage));
+                LoadThumbnail(); // 従来の方法で再試行
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[FallbackThumbnailRegeneration] フォールバックもエラー: {ex.Message}");
             }
         }
 

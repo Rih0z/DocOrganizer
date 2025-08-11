@@ -65,6 +65,12 @@ namespace DocOrganizer.UI.ViewModels
         private bool canMerge;
         
         [ObservableProperty]
+        private bool canMoveUp;
+        
+        [ObservableProperty]
+        private bool canMoveDown;
+        
+        [ObservableProperty]
         private string zoomLevel = "100%";
 
         private PdfDocument? _currentDocument;
@@ -342,7 +348,28 @@ namespace DocOrganizer.UI.ViewModels
             var selectedCount = Pages.Count(p => p.IsSelected);
             HasSelectedPages = selectedCount > 0;
             
-            System.Diagnostics.Debug.WriteLine($"[UpdateSelectionState] Selected count: {selectedCount}, HasSelectedPages: {HasSelectedPages}");
+            // 移動可能性を判定
+            if (selectedCount == 1)
+            {
+                var selectedPage = Pages.FirstOrDefault(p => p.IsSelected);
+                if (selectedPage != null)
+                {
+                    var selectedIndex = Pages.IndexOf(selectedPage);
+                    CanMoveUp = selectedIndex > 0;
+                    CanMoveDown = selectedIndex < Pages.Count - 1;
+                }
+            }
+            else
+            {
+                CanMoveUp = false;
+                CanMoveDown = false;
+            }
+            
+            System.Diagnostics.Debug.WriteLine($"[UpdateSelectionState] Selected count: {selectedCount}, HasSelectedPages: {HasSelectedPages}, CanMoveUp: {CanMoveUp}, CanMoveDown: {CanMoveDown}");
+            
+            // 移動コマンドの状態変更を通知
+            MovePageUpCommand?.NotifyCanExecuteChanged();
+            MovePageDownCommand?.NotifyCanExecuteChanged();
             
             if (selectedCount == 1)
             {
@@ -615,6 +642,8 @@ namespace DocOrganizer.UI.ViewModels
                     RotateLeftCommand?.NotifyCanExecuteChanged();
                     RotateRightCommand?.NotifyCanExecuteChanged();
                     DeleteCommand?.NotifyCanExecuteChanged();
+                    MovePageUpCommand?.NotifyCanExecuteChanged();
+                    MovePageDownCommand?.NotifyCanExecuteChanged();
                     MergeCommand?.NotifyCanExecuteChanged();
                     SplitCommand?.NotifyCanExecuteChanged();
                     System.Diagnostics.Debug.WriteLine("[UpdateUI] Command notifications sent");
@@ -750,27 +779,25 @@ namespace DocOrganizer.UI.ViewModels
             }
         }
 
-        [RelayCommand(CanExecute = nameof(HasSelectedPages))]
-        private void RotateLeft()
+        private async Task RotateLeft()
         {
             System.Diagnostics.Debug.WriteLine("[RotateLeft] Command executed");
             System.Diagnostics.Debug.WriteLine($"[RotateLeft] HasSelectedPages: {HasSelectedPages}");
-            RotateSelectedPages(270); // 左回転 = 270度（反時計回り）
+            await RotateSelectedPages(270); // 左回転 = 270度（反時計回り）
         }
 
-        [RelayCommand(CanExecute = nameof(HasSelectedPages))]
-        private void RotateRight()
+        private async Task RotateRight()
         {
             System.Diagnostics.Debug.WriteLine("[RotateRight] Command executed");
             System.Diagnostics.Debug.WriteLine($"[RotateRight] HasSelectedPages: {HasSelectedPages}");
-            RotateSelectedPages(90); // 右回転 = 90度（時計回り）
+            await RotateSelectedPages(90); // 右回転 = 90度（時計回り）
         }
 
-        private void RotateSelectedPages(int degrees)
+        private async Task RotateSelectedPages(int degrees)
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] Called with degrees: {degrees}");
+                System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] 非同期版開始: {degrees}度回転");
                 
                 if (_currentDocument == null)
                 {
@@ -779,52 +806,141 @@ namespace DocOrganizer.UI.ViewModels
                 }
                 
                 var selectedPages = Pages.Where(p => p.IsSelected).ToList();
-                System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] Selected pages count: {selectedPages.Count}");
+                System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] 選択ページ数: {selectedPages.Count}");
+                
+                if (!selectedPages.Any())
+                {
+                    System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] 選択ページなし");
+                    return;
+                }
                 
                 // 現在選択されているページを保持
                 var currentSelectedPage = selectedPages.FirstOrDefault();
                 
-                // UIスレッドで同期的に実行
-                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                // UI同期実行（WPF Dispatcher使用）
+                await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
                 {
                     System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] UI更新開始 - {selectedPages.Count}ページ");
                     
+                    // サムネイル再生成タスクを収集
+                    var regenerationTasks = new List<Task>();
+                    
                     foreach (var pageVm in selectedPages)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] Rotating page {pageVm.PageNumber}");
+                        System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] ページ {pageVm.PageNumber} 回転処理開始");
                         
-                        // PdfEditorServiceを使わず、直接Core層のみを更新
-                        pageVm.Page.Rotation = (pageVm.Page.Rotation + degrees) % 360;
-                        if (pageVm.Page.Rotation < 0) pageVm.Page.Rotation += 360;
+                        // Core層データ更新（回転角度計算）
+                        var newRotation = (pageVm.Page.Rotation + degrees) % 360;
+                        if (newRotation < 0) newRotation += 360;
                         
-                        System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] ページ {pageVm.PageNumber} の回転値: {pageVm.Page.Rotation}度");
+                        pageVm.Page.Rotation = newRotation;
+                        System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] ページ {pageVm.PageNumber} 新回転値: {newRotation}度");
                         
-                        // PageViewModelの更新（同期的に）
+                        // PageViewModel同期更新
                         pageVm.UpdateRotationSync();
                         
-                        System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] ページ {pageVm.PageNumber} 更新完了");
+                        // 非同期サムネイル再生成タスクを収集
+                        var task = pageVm.RegenerateThumbnailAfterRotationAsync();
+                        regenerationTasks.Add(task);
+                        
+                        System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] ページ {pageVm.PageNumber} タスク登録完了");
                     }
                     
-                    // 選択中のページのプレビューを強制更新
-                    // 回転直後に即座にプレビューを更新する
+                    // 全サムネイル再生成完了を待機
+                    System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] 全サムネイル再生成待機開始 ({regenerationTasks.Count}タスク)");
+                    await Task.WhenAll(regenerationTasks);
+                    System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] 全サムネイル再生成完了");
+                    
+                    // サムネイル再生成完了後にUI更新
+                    ForceCompleteCollectionRefresh();
+                    
+                    // 現在選択ページのプレビュー更新
                     if (currentSelectedPage != null)
                     {
-                        System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] プレビュー強制更新");
-                        // UpdateSelectedPageを呼び出してプレビューを強制更新
-                        UpdateSelectedPage(currentSelectedPage);
+                        UpdateCurrentPagePreview(currentSelectedPage);
                     }
                     
-                    System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] 全ページの更新完了");
+                    System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] 全ページ処理完了");
                 });
                 
-                StatusMessage = $"{selectedPages.Count} ページを回転しました";
-                System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] Completed successfully");
+                // 成功メッセージ
+                StatusMessage = $"{selectedPages.Count} ページを{Math.Abs(degrees)}度回転しました";
+                System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] 処理成功: {selectedPages.Count}ページ {degrees}度回転完了");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] Error: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] StackTrace: {ex.StackTrace}");
+                System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] エラー: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] スタックトレース: {ex.StackTrace}");
                 _dialogService.ShowError($"回転エラー: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// WPF CollectionViewの完全リフレッシュ（強化版）
+        /// </summary>
+        private void ForceCompleteCollectionRefresh()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("[ForceCompleteCollectionRefresh] 完全リフレッシュ開始");
+                
+                // 1. CollectionViewの強制リフレッシュ
+                var collectionView = System.Windows.Data.CollectionViewSource.GetDefaultView(Pages);
+                if (collectionView != null)
+                {
+                    collectionView.Refresh();
+                    System.Diagnostics.Debug.WriteLine("[ForceCompleteCollectionRefresh] CollectionView.Refresh() 完了");
+                }
+                
+                // 2. ObservableCollectionの変更通知
+                OnPropertyChanged(nameof(Pages));
+                System.Diagnostics.Debug.WriteLine("[ForceCompleteCollectionRefresh] Pages プロパティ通知完了");
+                
+                // 3. 各PageViewModelの個別通知
+                foreach (var page in Pages)
+                {
+                    page.OnPropertyChanged(nameof(PageViewModel.ThumbnailImage));
+                }
+                System.Diagnostics.Debug.WriteLine($"[ForceCompleteCollectionRefresh] 個別通知完了 ({Pages.Count}ページ)");
+                
+                // 4. 追加保険: 少し待ってから再度通知
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(50); // 50ms後に追加通知
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        OnPropertyChanged(nameof(Pages));
+                        System.Diagnostics.Debug.WriteLine("[ForceCompleteCollectionRefresh] 遅延追加通知完了");
+                    });
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ForceCompleteCollectionRefresh] エラー: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// 現在選択ページのプレビュー更新
+        /// </summary>
+        private void UpdateCurrentPagePreview(PageViewModel selectedPage)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"[UpdateCurrentPagePreview] ページ {selectedPage.PageNumber} プレビュー更新");
+                
+                // 右側プレビューの強制更新
+                UpdateSelectedPage(selectedPage);
+                
+                // 追加: 選択状態の強制リフレッシュ
+                selectedPage.OnPropertyChanged(nameof(PageViewModel.IsSelected));
+                selectedPage.OnPropertyChanged(nameof(PageViewModel.ThumbnailImage));
+                
+                System.Diagnostics.Debug.WriteLine($"[UpdateCurrentPagePreview] ページ {selectedPage.PageNumber} プレビュー更新完了");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[UpdateCurrentPagePreview] エラー: {ex.Message}");
             }
         }
 
@@ -851,6 +967,78 @@ namespace DocOrganizer.UI.ViewModels
                 
                 UpdateUI();
                 StatusMessage = $"{selectedPages.Count} ページを削除しました";
+            }
+        }
+
+        [RelayCommand(CanExecute = nameof(CanMoveUp))]
+        private void MovePageUp()
+        {
+            System.Diagnostics.Debug.WriteLine("[MovePageUp] Command executed");
+            
+            if (_currentDocument == null || !CanMoveUp) return;
+            
+            var selectedPage = Pages.FirstOrDefault(p => p.IsSelected);
+            if (selectedPage == null) return;
+            
+            var currentIndex = Pages.IndexOf(selectedPage);
+            if (currentIndex <= 0) return;
+            
+            // ObservableCollectionで位置を移動
+            Pages.Move(currentIndex, currentIndex - 1);
+            
+            // PDFドキュメント側も同じ順序に更新（PDF出力の順序を正しくするため）
+            if (_currentDocument != null && currentIndex < _currentDocument.Pages.Count)
+            {
+                _currentDocument.MovePage(currentIndex, currentIndex - 1);
+            }
+            
+            // ページ番号を再設定
+            UpdatePageNumbers();
+            
+            // UI状態を更新
+            UpdateSelectionState();
+            
+            StatusMessage = $"ページ {selectedPage.PageNumber} を上に移動しました";
+            System.Diagnostics.Debug.WriteLine($"[MovePageUp] Page moved from {currentIndex + 1} to {currentIndex}");
+        }
+
+        [RelayCommand(CanExecute = nameof(CanMoveDown))]
+        private void MovePageDown()
+        {
+            System.Diagnostics.Debug.WriteLine("[MovePageDown] Command executed");
+            
+            if (_currentDocument == null || !CanMoveDown) return;
+            
+            var selectedPage = Pages.FirstOrDefault(p => p.IsSelected);
+            if (selectedPage == null) return;
+            
+            var currentIndex = Pages.IndexOf(selectedPage);
+            if (currentIndex >= Pages.Count - 1) return;
+            
+            // ObservableCollectionで位置を移動
+            Pages.Move(currentIndex, currentIndex + 1);
+            
+            // PDFドキュメント側も同じ順序に更新（PDF出力の順序を正しくするため）
+            if (_currentDocument != null && currentIndex + 1 < _currentDocument.Pages.Count)
+            {
+                _currentDocument.MovePage(currentIndex, currentIndex + 1);
+            }
+            
+            // ページ番号を再設定
+            UpdatePageNumbers();
+            
+            // UI状態を更新
+            UpdateSelectionState();
+            
+            StatusMessage = $"ページ {selectedPage.PageNumber} を下に移動しました";
+            System.Diagnostics.Debug.WriteLine($"[MovePageDown] Page moved from {currentIndex + 1} to {currentIndex + 2}");
+        }
+
+        private void UpdatePageNumbers()
+        {
+            for (int i = 0; i < Pages.Count; i++)
+            {
+                Pages[i].UpdatePageNumber(i + 1);
             }
         }
 
