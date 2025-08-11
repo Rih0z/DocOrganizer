@@ -339,6 +339,16 @@ namespace DocOrganizer.UI.ViewModels
             {
                 UpdateSelectionState();
             }
+            // ★修正: ThumbnailImage変更時にCollectionView項目を更新
+            else if (e.PropertyName == nameof(PageViewModel.ThumbnailImage))
+            {
+                // 個別PageViewModelのThumbnailImage更新時にCollectionViewを更新
+                System.Windows.Application.Current.Dispatcher.Invoke(() => {
+                    var collectionView = System.Windows.Data.CollectionViewSource.GetDefaultView(Pages);
+                    collectionView?.Refresh();
+                    System.Diagnostics.Debug.WriteLine($"[PageViewModel_PropertyChanged] ThumbnailImage更新でCollectionView更新");
+                });
+            }
         }
 
         private void UpdateSelectionState()
