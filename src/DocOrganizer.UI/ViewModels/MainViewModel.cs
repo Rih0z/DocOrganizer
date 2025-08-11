@@ -895,9 +895,21 @@ namespace DocOrganizer.UI.ViewModels
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("[ForceCompleteCollectionRefresh] シンプル版実行開始");
+                System.Diagnostics.Debug.WriteLine("[ForceCompleteCollectionRefresh] 強制コレクション更新開始");
                 
-                // ★シンプル化: 基本的なCollectionView更新のみ
+                // ★新アプローチ: ObservableCollectionの構造変更を偽装して強制更新
+                // WPFバインディングエンジンに「コレクションが変更された」と錯覚させる
+                if (Pages.Count > 0)
+                {
+                    // 最後の要素を一時的に削除して即座に再追加
+                    var lastPage = Pages.Last();
+                    Pages.RemoveAt(Pages.Count - 1);
+                    Pages.Add(lastPage);
+                    
+                    System.Diagnostics.Debug.WriteLine("[ForceCompleteCollectionRefresh] ObservableCollection構造変更による強制更新完了");
+                }
+                
+                // 従来の方法も併用して確実性を高める
                 var collectionView = System.Windows.Data.CollectionViewSource.GetDefaultView(Pages);
                 if (collectionView != null)
                 {
@@ -905,9 +917,8 @@ namespace DocOrganizer.UI.ViewModels
                     System.Diagnostics.Debug.WriteLine("[ForceCompleteCollectionRefresh] CollectionView.Refresh() 完了");
                 }
                 
-                // ObservableCollectionの変更通知
                 OnPropertyChanged(nameof(Pages));
-                System.Diagnostics.Debug.WriteLine("[ForceCompleteCollectionRefresh] シンプル版完了");
+                System.Diagnostics.Debug.WriteLine("[ForceCompleteCollectionRefresh] 強制更新完了");
             }
             catch (Exception ex)
             {
