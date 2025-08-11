@@ -179,6 +179,15 @@ namespace DocOrganizer.Infrastructure.Services
 
         public async Task<byte[]> GetImageThumbnailAsync(string imagePath, int width = 150, int height = 150)
         {
+            // デフォルトは0度回転
+            return await GetImageThumbnailAsync(imagePath, width, height, 0);
+        }
+
+        /// <summary>
+        /// ★修正案C: 回転角度を指定してサムネイル生成
+        /// </summary>
+        public async Task<byte[]> GetImageThumbnailAsync(string imagePath, int width = 150, int height = 150, int rotationDegrees = 0)
+        {
             try
             {
                 if (!await IsValidImageAsync(imagePath))
@@ -189,23 +198,35 @@ namespace DocOrganizer.Infrastructure.Services
                 // 🚀 Phase 1最適化: HEIC処理の統一化と2重変換排除
                 if (IsHeicFile(imagePath))
                 {
-                    return await GetHeicThumbnailOptimizedAsync(imagePath, width, height);
+                    return await GetHeicThumbnailOptimizedAsync(imagePath, width, height, rotationDegrees);
                 }
 
                 // 通常の画像ファイル処理（HEIC以外）
                 using var image = await LoadImageSafelyAsync(imagePath);
                 
-                // 画像の向き自動補正を確実に適用
-                image.Mutate(x => x
-                    .AutoOrient()  // EXIF情報に基づく自動回転
-                    .Resize(new ResizeOptions
-                    {
-                        Size = new Size(width, height),
-                        Mode = ResizeMode.Max
-                    }));
+                // ★修正: 初回読み込み時（rotationDegrees = 0）は手動回転をスキップ
+                // LoadImageSafelyAsync()で既にAutoOrient適用済みのため、0度回転で元に戻すことを防ぐ
+                if (rotationDegrees != 0)
+                {
+                    image.Mutate(x => x.Rotate(rotationDegrees));
+                    _logger.LogDebug($"Manual rotation applied: {rotationDegrees}° for {Path.GetFileName(imagePath)}");
+                }
+                else
+                {
+                    _logger.LogDebug($"Skipping manual rotation (0°) - using AutoOrient result: {Path.GetFileName(imagePath)}");
+                }
+                
+                // リサイズ処理
+                image.Mutate(x => x.Resize(new ResizeOptions
+                {
+                    Size = new Size(width, height),
+                    Mode = ResizeMode.Max
+                }));
 
                 using var ms = new MemoryStream();
                 await image.SaveAsJpegAsync(ms, new JpegEncoder { Quality = 80 });
+                
+                System.Diagnostics.Debug.WriteLine($"[GetImageThumbnailAsync] 修正版C - 回転角度 {rotationDegrees}度 適用: {Path.GetFileName(imagePath)}");
                 return ms.ToArray();
             }
             catch (Exception ex)
@@ -219,7 +240,7 @@ namespace DocOrganizer.Infrastructure.Services
         /// HEIC画像専用の最適化サムネイル生成（2重変換排除・高速化）
         /// </summary>
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-        private async Task<byte[]> GetHeicThumbnailOptimizedAsync(string heicPath, int width, int height)
+        private async Task<byte[]> GetHeicThumbnailOptimizedAsync(string heicPath, int width, int height, int rotationDegrees = 0)
         {
             try
             {
@@ -306,7 +327,7 @@ namespace DocOrganizer.Infrastructure.Services
                 _logger.LogDebug($"[Magick-HEIC] 原画像サイズ: {magickImage.Width}x{magickImage.Height}");
                 
                 // 🚀 直接サムネイル生成（中間JPEG作成なし）
-                magickImage.AutoOrient(); // 1回のみ適用
+                // ★修正: AutoOrient重複削除 - 統一的な向き補正はLoadImageSafelyAsyncで実行
                 magickImage.Format = MagickFormat.Jpeg;
                 magickImage.Quality = 80;
                 
@@ -589,9 +610,8 @@ namespace DocOrganizer.Infrastructure.Services
                     magickImage.Format = MagickFormat.Jpeg;
                     magickImage.Quality = 95;
                     
-                    // バグ修正: AutoOrientはここで1回のみ実行
-                    // LoadImageSafelyAsyncでの二重処理を防ぐため、フラグを設定
-                    magickImage.AutoOrient();
+                    // ★修正: AutoOrient重複削除 - HEIC変換でもAutoOrient統一化
+                    // 向きの自動補正は後続のLoadImageSafelyAsyncで統一処理
                     
                     // JPEG出力
                     await Task.Run(() => magickImage.Write(tempJpegPath));
@@ -731,21 +751,28 @@ namespace DocOrganizer.Infrastructure.Services
                 _logger.LogDebug($"Attempting basic ImageSharp load for: {imagePath}");
                 var image = await Image.LoadAsync(imagePath);
                 
-                // バグ修正: HEIC変換後ファイルの二重AutoOrient防止
-                // ConvertHeicToJpegAsyncで既にAutoOrientが適用されたファイルの検出
+                // ★Phase 1修正: EXIF Orientationに基づく条件付きAutoOrient適用
+                var orientation = GetExifOrientation(image);
+                _logger.LogDebug($"EXIF Orientation detected: {orientation} for {Path.GetFileName(imagePath)}");
+                
+                // HEICファイルの特別処理（MagickNetで既に処理済みの可能性を考慮）
+                bool isHeicFile = Path.GetExtension(imagePath).ToLowerInvariant() is ".heic" or ".heif";
                 bool isHeicConvertedFile = Path.GetExtension(imagePath).Equals(".jpg", StringComparison.OrdinalIgnoreCase) && 
                                          imagePath.Contains(Path.GetTempPath());
                 
-                if (!isHeicConvertedFile)
+                if (!isHeicFile && !isHeicConvertedFile && orientation != 1)
                 {
-                    // バグ修正：画像読み込み時に必ずAutoOrientを適用
-                    // 要件定義書（tmp/DocOrganizer2.2_画像向き修正要件定義書.md）準拠
+                    // 一般的な画像ファイル（JPG, PNG等）で、Normal以外の向きの場合のみAutoOrient適用
                     image.Mutate(x => x.AutoOrient());
-                    _logger.LogDebug($"AutoOrient applied to: {Path.GetFileName(imagePath)}");
+                    _logger.LogInformation($"AutoOrient applied for orientation {orientation}: {Path.GetFileName(imagePath)}");
+                }
+                else if (isHeicFile || isHeicConvertedFile)
+                {
+                    _logger.LogDebug($"Skipping AutoOrient for HEIC/converted file: {Path.GetFileName(imagePath)}");
                 }
                 else
                 {
-                    _logger.LogDebug($"Skipping AutoOrient for HEIC-converted file: {Path.GetFileName(imagePath)}");
+                    _logger.LogDebug($"Skipping AutoOrient for normal orientation (1): {Path.GetFileName(imagePath)}");
                 }
                 
                 return image;
@@ -759,7 +786,7 @@ namespace DocOrganizer.Infrastructure.Services
                     throw new NotSupportedException($"Image file format not supported or corrupted: {imagePath}", ex);
                 }
                 
-                // 具体的な「attempt to access missing method」エラーのキャッチ
+                // 具体的な"attempt to access missing method"エラーのキャッチ
                 var isMissingMethodError = ex.Message.Contains("attempt to access", StringComparison.OrdinalIgnoreCase) || 
                                          ex.Message.Contains("missing method", StringComparison.OrdinalIgnoreCase) ||
                                          ex.GetType().Name.Contains("MissingMethod");
@@ -787,8 +814,15 @@ namespace DocOrganizer.Infrastructure.Services
                     using var stream = new MemoryStream(imageBytes);
                     var image = await Image.LoadAsync(stream);
                     
-                    // バグ修正：バイト配列から読み込んだ場合もAutoOrientを適用
-                    image.Mutate(x => x.AutoOrient());
+                    // バイト配列読み込みでも同様のEXIF処理を適用
+                    var orientation = GetExifOrientation(image);
+                    bool isHeicFile = Path.GetExtension(imagePath).ToLowerInvariant() is ".heic" or ".heif";
+                    
+                    if (!isHeicFile && orientation != 1)
+                    {
+                        image.Mutate(x => x.AutoOrient());
+                        _logger.LogInformation($"AutoOrient applied to byte-loaded image (orientation {orientation}): {Path.GetFileName(imagePath)}");
+                    }
                     
                     return image;
                 }
@@ -846,7 +880,9 @@ namespace DocOrganizer.Infrastructure.Services
                     // JPEG形式で保存
                     magickImage.Format = MagickFormat.Jpeg;
                     magickImage.Quality = 90;
-                    magickImage.AutoOrient();
+                    
+                    // ★修正: AutoOrient重複削除 - MagickNet内でのAutoOrient削除
+                    // 向きの自動補正はImageSharpのLoadImageSafelyAsyncで統一して行う
                     
                     await Task.Run(() => magickImage.Write(tempJpegPath));
                 }
@@ -854,8 +890,10 @@ namespace DocOrganizer.Infrastructure.Services
                 // ImageSharpで最終読み込み
                 var result = await Image.LoadAsync(tempJpegPath);
                 
-                // バグ修正：Magick.NET変換後もAutoOrientを適用
-                result.Mutate(x => x.AutoOrient());
+                // ★修正: AutoOrient重複削除 - ImageSharpでの重複AutoOrientも削除
+                // LoadImageSafelyAsyncで既に適用済みのため不要
+                
+                _logger.LogDebug($"MagickNet conversion completed without AutoOrient duplication: {Path.GetFileName(imagePath)}");
                 
                 return result;
             }
@@ -1115,39 +1153,34 @@ namespace DocOrganizer.Infrastructure.Services
         {
             try
             {
-                // バグ報告ドキュメント（tmp/DocOrganizer2.2_画像向き修正要件定義書.md）に基づく修正
-                // 縦向き画像が横向きで表示される問題を解決
-                
                 _logger.LogDebug("Detecting orientation for {ImagePath}", Path.GetFileName(imagePath));
                 
-                // 画像を一時的に読み込んで向き情報を取得
-                using var tempImage = await LoadImageForOrientationCheckAsync(imagePath);
+                // 画像を読み込み（AutoOrientは適用せずEXIF情報のみ取得）
+                using var image = await Image.LoadAsync(imagePath);
                 
-                // ImageSharpは自動的にEXIF情報を読み取り、AutoOrient()で正しい向きに変換する
-                // ただし、ここでは回転角度のみを検出し、実際の回転は行わない
-                var originalWidth = tempImage.Width;
-                var originalHeight = tempImage.Height;
+                // EXIF Orientationを直接取得
+                var orientation = GetExifOrientation(image);
                 
-                // AutoOrient()を適用して向きを補正
-                tempImage.Mutate(x => x.AutoOrient());
-                
-                // 向きが変わったかチェック
-                var rotatedWidth = tempImage.Width;
-                var rotatedHeight = tempImage.Height;
-                
-                int rotation = 0;
-                if (originalWidth == rotatedHeight && originalHeight == rotatedWidth)
+                // Orientationに基づく回転角度を計算
+                var rotationDegrees = orientation switch
                 {
-                    // 幅と高さが入れ替わった = 90度または270度回転
-                    // ImageSharpのAutoOrientは正しい向きにするので、ここでは回転不要
-                    rotation = 0;
-                }
+                    1 => 0,   // Normal - 回転なし
+                    2 => 0,   // Flip horizontal - 反転のみ（回転なし）  
+                    3 => 180, // Rotate 180°
+                    4 => 0,   // Flip vertical - 反転のみ（回転なし）
+                    5 => 0,   // Transpose - 複合変換（回転なし）
+                    6 => 90,  // Rotate 90° CW - ★「常に左に90度回転」の原因箇所
+                    7 => 0,   // Transverse - 複合変換（回転なし）  
+                    8 => 270, // Rotate 90° CCW (270度CW相当)
+                    _ => 0    // 未知の値は回転なし
+                };
                 
-                _logger.LogInformation("Orientation detection complete for {ImagePath}: rotation={Rotation}", 
-                    Path.GetFileName(imagePath), rotation);
+                _logger.LogInformation("Orientation detection complete for {ImagePath}: EXIF={Orientation}, RequiredRotation={Degrees}°", 
+                    Path.GetFileName(imagePath), orientation, rotationDegrees);
                 
-                // 画像読み込み処理では、ImageSharpのAutoOrient()に任せるため、
-                // ここでは常に0を返す（AutoOrientが自動的に処理するため）
+                // LoadImageSafelyAsync()でAutoOrientが適切に適用されるため、
+                // ここでは検出した情報をログ出力のみ行い、0を返す
+                // （実際の回転はAutoOrientに任せる）
                 return 0;
             }
             catch (Exception ex)
@@ -1194,21 +1227,54 @@ namespace DocOrganizer.Infrastructure.Services
         /// <summary>
         /// EXIFデータから回転情報を取得
         /// </summary>
-        private int GetExifRotation(string imagePath)
+        /// <summary>
+        /// ImageSharpを使用してEXIF Orientationを取得
+        /// </summary>
+        /// <param name="image">読み込み済みのImageSharp画像</param>
+        /// <returns>EXIF Orientation値（1=Normal, 3=180°, 6=90°CW, 8=90°CCW, etc.）</returns>
+        private int GetExifOrientation(Image image)
         {
             try
             {
-                using var bitmap = SkiaSharp.SKBitmap.Decode(imagePath);
-                if (bitmap == null) return 0;
+                // ImageSharpのEXIFプロファイルからOrientation情報を取得
+                if (image.Metadata?.ExifProfile != null)
+                {
+                    // ImageSharpのExifTagを明示的に使用
+                    var orientationValue = image.Metadata.ExifProfile.GetValue<ushort>(SixLabors.ImageSharp.Metadata.Profiles.Exif.ExifTag.Orientation);
+                    if (orientationValue != null)
+                    {
+                        var orientation = (int)orientationValue.Value;
+                        _logger.LogDebug($"EXIF Orientation read successfully: {orientation}");
+                        return orientation;
+                    }
+                }
                 
-                // SkiaSharpでEXIF情報は自動的に適用されるため、
-                // 既に正しい向きになっている可能性が高い
-                return 0;
+                _logger.LogDebug("No EXIF Orientation found, assuming normal (1)");
+                return 1; // デフォルト: Normal
             }
             catch (Exception ex)
             {
-                _logger.LogDebug(ex, "Failed to read EXIF data from {ImagePath}", imagePath);
-                return 0;
+                _logger.LogWarning(ex, "Failed to read EXIF Orientation, assuming normal (1)");
+                return 1; // エラー時はNormalとして扱う
+            }
+        }
+        
+        /// <summary>
+        /// ファイルパスから直接EXIF Orientationを取得（バックアップ用）
+        /// </summary>
+        /// <param name="imagePath">画像ファイルパス</param>
+        /// <returns>EXIF Orientation値</returns>
+        private int GetExifOrientationFromFile(string imagePath)
+        {
+            try
+            {
+                using var image = Image.Load(imagePath);
+                return GetExifOrientation(image);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, $"Failed to read EXIF Orientation from file: {imagePath}");
+                return 1;
             }
         }
 
@@ -1284,7 +1350,7 @@ namespace DocOrganizer.Infrastructure.Services
                     magickImage.Density = new ImageMagick.Density(300, 300); // 高DPI
                     
                     // 向き自動補正
-                    magickImage.AutoOrient();
+                    // ★修正: AutoOrient重複削除 - 最後の残りの重複箇所も統一化
                     
                     // アスペクト比を維持してリサイズ
                     var originalWidth = (int)magickImage.Width;

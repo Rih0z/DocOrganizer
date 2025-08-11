@@ -779,6 +779,7 @@ namespace DocOrganizer.UI.ViewModels
             }
         }
 
+        [RelayCommand(CanExecute = nameof(HasSelectedPages))]
         private async Task RotateLeft()
         {
             System.Diagnostics.Debug.WriteLine("[RotateLeft] Command executed");
@@ -786,6 +787,7 @@ namespace DocOrganizer.UI.ViewModels
             await RotateSelectedPages(270); // 左回転 = 270度（反時計回り）
         }
 
+        [RelayCommand(CanExecute = nameof(HasSelectedPages))]
         private async Task RotateRight()
         {
             System.Diagnostics.Debug.WriteLine("[RotateRight] Command executed");
@@ -851,8 +853,33 @@ namespace DocOrganizer.UI.ViewModels
                     await Task.WhenAll(regenerationTasks);
                     System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] 全サムネイル再生成完了");
                     
-                    // サムネイル再生成完了後にUI更新
+                    // ★修正: サムネイル再生成完了後に個別プロパティ更新を強制実行
+                    System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] 個別プロパティ強制更新開始");
+                    foreach (var pageVm in selectedPages)
+                    {
+                        // 各PageViewModelのThumbnailImageプロパティ変更を強制通知
+                        pageVm.OnPropertyChanged(nameof(PageViewModel.ThumbnailImage));
+                        System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] ページ {pageVm.PageNumber} ThumbnailImage強制更新");
+                    }
+                    
+                    // CollectionView全体のリフレッシュ（個別更新後に実行）
+                    System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] CollectionView全体リフレッシュ開始");
                     ForceCompleteCollectionRefresh();
+                    
+                    // ★追加: 更なる保険としてDispatcher.BeginInvokeで遅延実行
+                    System.Windows.Application.Current.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, new Action(() =>
+                    {
+                        System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] 遅延追加リフレッシュ実行");
+                        var collectionView = System.Windows.Data.CollectionViewSource.GetDefaultView(Pages);
+                        collectionView?.Refresh();
+                        
+                        // 各アイテムの再通知
+                        foreach (var pageVm in selectedPages)
+                        {
+                            pageVm.OnPropertyChanged(nameof(PageViewModel.ThumbnailImage));
+                        }
+                        System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] 遅延追加リフレッシュ完了");
+                    }));
                     
                     // 現在選択ページのプレビュー更新
                     if (currentSelectedPage != null)

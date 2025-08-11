@@ -9,6 +9,7 @@ namespace DocOrganizer.Application.Interfaces
         Task<PdfDocument> ConvertImageToPdfAsync(string imagePath);
         Task<PdfDocument> ConvertImagesToPdfAsync(IEnumerable<string> imagePaths);
         Task<byte[]> GetImageThumbnailAsync(string imagePath, int width = 150, int height = 150);
+        Task<byte[]> GetImageThumbnailAsync(string imagePath, int width, int height, int rotationDegrees);
         Task<bool> IsValidImageAsync(string imagePath);
         Task<string> GetImageInfoAsync(string imagePath);
         Task<SkiaSharp.SKBitmap?> GenerateHighQualityPreviewAsync(string imagePath, int maxWidth = 1200, int maxHeight = 1600);

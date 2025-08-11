@@ -86,6 +86,17 @@
                         <TextBlock Text="🗑" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
+                <Separator/>
+                <MenuItem Header="上に移動(_U)" Command="{Binding MovePageUpCommand}">
+                    <MenuItem.Icon>
+                        <TextBlock Text="▲" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="下に移動(_N)" Command="{Binding MovePageDownCommand}">
+                    <MenuItem.Icon>
+                        <TextBlock Text="▼" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </MenuItem.Icon>
+                </MenuItem>
             </MenuItem>
             
             <MenuItem Header="文書(_D)">
@@ -152,6 +163,17 @@
                 <Button Command="{Binding DeleteCommand}" ToolTip="削除 (Delete)" Padding="4"
                         IsEnabled="{Binding HasSelectedPages}">
                     <TextBlock Text="🗑" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Button>
+                <Separator/>
+                
+                <!-- ページ順序変更 -->
+                <Button Command="{Binding MovePageUpCommand}" ToolTip="上に移動" Padding="4" Width="30" Height="24"
+                        IsEnabled="{Binding CanMoveUp}">
+                    <TextBlock Text="▲" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Button>
+                <Button Command="{Binding MovePageDownCommand}" ToolTip="下に移動" Padding="4" Width="30" Height="24"
+                        IsEnabled="{Binding CanMoveDown}">
+                    <TextBlock Text="▼" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
                 <Separator/>
                 
