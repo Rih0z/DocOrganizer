@@ -97,8 +97,7 @@ namespace DocOrganizer.UI.ViewModels
                     GenerateRotatedPlaceholder();
                 }
                 
-                // プロパティ変更通知を明示的に発火
-                OnPropertyChanged(nameof(ThumbnailImage));
+                // [ObservableProperty]による自動PropertyChanged通知に依存
                 OnPropertyChanged(nameof(PreviewImage));
             }
             catch (Exception ex)
@@ -426,9 +425,8 @@ namespace DocOrganizer.UI.ViewModels
                         }
                     }
                     
-                    // 確実にnull設定
+                    // 確実にnull設定 - [ObservableProperty]自動通知のみ
                     ThumbnailImage = null;
-                    OnPropertyChanged(nameof(ThumbnailImage));
                     
                     System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotationAsync] ページ {PageNumber} null化完了");
                 });
@@ -441,11 +439,8 @@ namespace DocOrganizer.UI.ViewModels
                     // 回転角度を明示的に渡してサムネイル生成
                     await GenerateThumbnailWithRotation(_page.Rotation);
                     
-                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
-                    {
-                        OnPropertyChanged(nameof(ThumbnailImage));
-                        System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotationAsync] ページ {PageNumber} 最終更新完了");
-                    });
+                    // 最終更新 - [ObservableProperty]自動通知のみ（手動通知削除）
+                    System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotationAsync] ページ {PageNumber} 最終更新完了");
                 }
                 catch (Exception ex)
                 {
@@ -551,8 +546,7 @@ namespace DocOrganizer.UI.ViewModels
             {
                 System.Diagnostics.Debug.WriteLine($"[FallbackThumbnailRegeneration] ページ {PageNumber} フォールバック実行");
                 
-                ThumbnailImage = null;
-                OnPropertyChanged(nameof(ThumbnailImage));
+                ThumbnailImage = null; // [ObservableProperty]自動通知
                 LoadThumbnail(); // 従来の方法で再試行
             }
             catch (Exception ex)
