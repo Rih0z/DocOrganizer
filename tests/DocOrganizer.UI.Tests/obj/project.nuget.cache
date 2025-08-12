@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "K6GDfcyh4XiqpnTopj4GWZvgIRZn1FbhikcC8M+q5z3bJNLUROfKBLY0iDDNQwYLlDO24M0Km/907C6z+9OKng==",
+  "dgSpecHash": "9IbgrC+DPt5URILhToeV78P0LfflWW4mmJlNkn/HnUygdVh/agRxMiu2JZpref/QmEHfMFicQLkYmISZkoLKZQ==",
   "success": true,
   "projectFilePath": "C:\\Users\\217216X721451\\github\\DocOrganizer\\tests\\DocOrganizer.UI.Tests\\DocOrganizer.UI.Tests.csproj",
   "expectedPackageFiles": [
@@ -71,7 +71,7 @@
     "C:\\Users\\217216X721451\\.nuget\\packages\\serilog.sinks.file\\5.0.0\\serilog.sinks.file.5.0.0.nupkg.sha512",
     "C:\\Users\\217216X721451\\.nuget\\packages\\sharpziplib\\1.4.2\\sharpziplib.1.4.2.nupkg.sha512",
     "C:\\Users\\217216X721451\\.nuget\\packages\\sixlabors.fonts\\1.0.0-beta17\\sixlabors.fonts.1.0.0-beta17.nupkg.sha512",
-    "C:\\Users\\217216X721451\\.nuget\\packages\\sixlabors.imagesharp\\1.0.4\\sixlabors.imagesharp.1.0.4.nupkg.sha512",
+    "C:\\Users\\217216X721451\\.nuget\\packages\\sixlabors.imagesharp\\3.1.11\\sixlabors.imagesharp.3.1.11.nupkg.sha512",
     "C:\\Users\\217216X721451\\.nuget\\packages\\skiasharp\\2.88.8\\skiasharp.2.88.8.nupkg.sha512",
     "C:\\Users\\217216X721451\\.nuget\\packages\\skiasharp.nativeassets.macos\\2.88.8\\skiasharp.nativeassets.macos.2.88.8.nupkg.sha512",
     "C:\\Users\\217216X721451\\.nuget\\packages\\skiasharp.nativeassets.win32\\2.88.8\\skiasharp.nativeassets.win32.2.88.8.nupkg.sha512",

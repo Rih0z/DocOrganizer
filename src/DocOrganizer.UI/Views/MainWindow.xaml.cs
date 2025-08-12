@@ -286,17 +286,9 @@ namespace DocOrganizer.UI.Views
                             }
                             catch (Exception ex)
                             {
-                                _logger?.LogError(ex, "Failed to process images");
-                                var errorMsg = $"画像変換エラー: {ex.Message}";
-                                if (ex.InnerException != null)
-                                {
-                                    errorMsg += $" 内部エラー: {ex.InnerException.Message}";
-                                    _logger?.LogError(ex.InnerException, "Inner exception");
-                                }
-                                ViewModel.StatusMessage = errorMsg;
-                                
-                                // スタックトレースをログに記録
-                                _logger?.LogError($"Stack trace: {ex.StackTrace}");
+                                System.Diagnostics.Debug.WriteLine($"[MainWindow] Image processing error: {ex.Message}");
+                                // シンプルなエラーメッセージ（ログエラーを回避）
+                                ViewModel.StatusMessage = "画像変換エラーが発生しました";
                             }
                         }
                         
@@ -441,17 +433,9 @@ namespace DocOrganizer.UI.Views
                             }
                             catch (Exception ex)
                             {
-                                _logger?.LogError(ex, "Failed to process images");
-                                var errorMsg = $"画像変換エラー: {ex.Message}";
-                                if (ex.InnerException != null)
-                                {
-                                    errorMsg += $" 内部エラー: {ex.InnerException.Message}";
-                                    _logger?.LogError(ex.InnerException, "Inner exception");
-                                }
-                                ViewModel.StatusMessage = errorMsg;
-                                
-                                // スタックトレースをログに記録
-                                _logger?.LogError($"Stack trace: {ex.StackTrace}");
+                                System.Diagnostics.Debug.WriteLine($"[MainWindow] Image processing error: {ex.Message}");
+                                // シンプルなエラーメッセージ（ログエラーを回避）
+                                ViewModel.StatusMessage = "画像変換エラーが発生しました";
                             }
                         }
                         
@@ -563,13 +547,17 @@ namespace DocOrganizer.UI.Views
 
         private bool IsImageFile(string filePath)
         {
-            var extension = Path.GetExtension(filePath).ToLowerInvariant();
+            var extension = Path.GetExtension(filePath);
             // HEIC形式を再有効化（ImageMagick変換対応済み）
-            return extension == ".jpg" || extension == ".jpeg" || 
-                   extension == ".png" || extension == ".heic" || 
-                   extension == ".heif" || extension == ".bmp" || 
-                   extension == ".tiff" || extension == ".gif" || 
-                   extension == ".webp";
+            return extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase) || 
+                   extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase) || 
+                   extension.Equals(".png", StringComparison.OrdinalIgnoreCase) || 
+                   extension.Equals(".heic", StringComparison.OrdinalIgnoreCase) || 
+                   extension.Equals(".heif", StringComparison.OrdinalIgnoreCase) || 
+                   extension.Equals(".bmp", StringComparison.OrdinalIgnoreCase) || 
+                   extension.Equals(".tiff", StringComparison.OrdinalIgnoreCase) || 
+                   extension.Equals(".gif", StringComparison.OrdinalIgnoreCase) || 
+                   extension.Equals(".webp", StringComparison.OrdinalIgnoreCase);
         }
 
         #endregion

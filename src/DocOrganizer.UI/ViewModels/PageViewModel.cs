@@ -190,7 +190,7 @@ namespace DocOrganizer.UI.ViewModels
         private string? _heicTempJpegPath; // HEIC変換時の一時ファイルパス（PDF発行まで保持）
                 // 🚀 Phase 2最適化: 静的キャッシュ廃止・WeakReference活用
         private WeakReference<byte[]>? _optimizedThumbnailCache; // 最適化サムネイルキャッシュ（GC対応）
-        private WeakReference<BitmapSource>? _optimizedPreviewCache; // 最適化プレビューキャッシュ（GC対応） // HEICファイルパス → JPEGパスのキャッシュ
+        private WeakReference<System.Windows.Media.Imaging.BitmapSource>? _optimizedPreviewCache; // 最適化プレビューキャッシュ（GC対応） // HEICファイルパス → JPEGパスのキャッシュ
                 private readonly object _heicProcessingLock = new object(); // HEIC処理の排他制御（インスタンス別）
 
         private async void LoadThumbnailFromImage()
@@ -236,41 +236,60 @@ namespace DocOrganizer.UI.ViewModels
         /// </summary>
         private async Task ProcessHeicOptimizedAsync(string heicPath, CancellationToken cancellationToken)
         {
-            lock (_heicProcessingLock)
-            {
-                // キャッシュからの高速取得を試行
-                if (_optimizedThumbnailCache?.TryGetTarget(out var cachedThumbnail) == true)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] キャッシュからサムネイル取得");
-                    DisplayCachedThumbnail(cachedThumbnail);
-                    return;
-                }
-            }
-            
             try
             {
-                // ImageProcessingServiceの最適化版を使用（直接バイト配列取得）
-                var thumbnailData = await _imageProcessingService.GetImageThumbnailAsync(heicPath, 150, 150);
+                System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] HEIC左側サムネイル専用処理開始: {Path.GetFileName(heicPath)}");
                 
-                if (cancellationToken.IsCancellationRequested)
+                // ⭐修正: 左側サムネイル専用（150x200）
+                var thumbnailBitmap = await _imageProcessingService.GenerateHighQualityPreviewAsync(heicPath, 150, 200);
+                
+                if (cancellationToken.IsCancellationRequested || thumbnailBitmap == null)
                     return;
                 
-                // WeakReferenceキャッシュに保存
-                _optimizedThumbnailCache = new WeakReference<byte[]>(thumbnailData);
+                // ⭐修正: 回転処理も左側サムネイル用
+                var finalBitmap = thumbnailBitmap;
+                if (_page.Rotation != 0)
+                {
+                    finalBitmap = ApplyRotationOptimized(thumbnailBitmap, _page.Rotation);
+                }
                 
-                // UI更新
+                // ⭐修正: 左側ThumbnailImageのみ設定（PreviewImageは右側で独自生成）
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     if (cancellationToken.IsCancellationRequested)
                         return;
                         
-                    var bitmap = CreateBitmapFromBytes(thumbnailData);
-                    ThumbnailImage = bitmap;
-                    // PreviewImageはnullのままにして、MainViewModelで高品質プレビューを生成する
-                    
-                    System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] HEIC最適化完了: {Path.GetFileName(heicPath)}");
-                    // [ObservableProperty]自動通知に依存
+                    try
+                    {
+                        // 左側サムネイル用のWPF BitmapImage変換
+                        using var data = finalBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+                        var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                        bitmap.BeginInit();
+                        bitmap.StreamSource = new System.IO.MemoryStream(data.ToArray());
+                        bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                        bitmap.EndInit();
+                        bitmap.Freeze();
+                        
+                        ThumbnailImage = bitmap; // 左側サムネイル専用
+                        // ⭐修正: PreviewImageは設定しない（右側で独自に高解像度生成）
+                        
+                        // WeakReferenceキャッシュはサムネイル用のみ保存
+                        _optimizedThumbnailCache = new WeakReference<byte[]>(data.ToArray());
+                        
+                        System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] 左側HEICサムネイル完了 - 回転 {_page.Rotation}度: {Path.GetFileName(heicPath)}");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] WPF変換エラー: {ex.Message}");
+                    }
                 });
+                
+                // メモリ適切解放
+                if (finalBitmap != thumbnailBitmap)
+                {
+                    finalBitmap?.Dispose();
+                }
+                thumbnailBitmap?.Dispose();
             }
             catch (Exception ex)
             {
@@ -286,25 +305,55 @@ namespace DocOrganizer.UI.ViewModels
         {
             try
             {
-                // ★修正案C: 回転角度を明示的に渡してサムネイル生成
-                var thumbnailData = await _imageProcessingService.GetImageThumbnailAsync(imagePath, 150, 150, _page.Rotation);
+                System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] 左側サムネイル専用処理開始: {Path.GetFileName(imagePath)}");
                 
-                if (cancellationToken.IsCancellationRequested || thumbnailData == null)
+                // ⭐修正: 左側サムネイル専用（150x200）
+                var thumbnailBitmap = await _imageProcessingService.GenerateHighQualityPreviewAsync(imagePath, 150, 200);
+                
+                if (cancellationToken.IsCancellationRequested || thumbnailBitmap == null)
                     return;
                 
-                // UI更新
+                // ⭐修正: 回転処理も左側サムネイル用
+                var finalBitmap = thumbnailBitmap;
+                if (_page.Rotation != 0)
+                {
+                    finalBitmap = ApplyRotationOptimized(thumbnailBitmap, _page.Rotation);
+                }
+                
+                // ⭐修正: 左側ThumbnailImageのみ設定（PreviewImageは右側で独自生成）
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     if (cancellationToken.IsCancellationRequested)
                         return;
                         
-                    var bitmap = CreateBitmapFromBytes(thumbnailData);
-                    ThumbnailImage = bitmap;
-                    // PreviewImageは設定せず、高品質プレビューはMainViewModelで生成
-                    
-                    System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] 修正版C - 回転角度 {_page.Rotation}度 完了: {Path.GetFileName(imagePath)}");
-                    // [ObservableProperty]自動通知に依存
+                    try
+                    {
+                        // 左側サムネイル用のWPF BitmapImage変換
+                        using var data = finalBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+                        var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                        bitmap.BeginInit();
+                        bitmap.StreamSource = new System.IO.MemoryStream(data.ToArray());
+                        bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                        bitmap.EndInit();
+                        bitmap.Freeze();
+                        
+                        ThumbnailImage = bitmap; // 左側サムネイル専用
+                        // ⭐修正: PreviewImageは設定しない（右側で独自に高解像度生成）
+                        
+                        System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] 左側サムネイル完了 - 回転 {_page.Rotation}度: {Path.GetFileName(imagePath)}");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] WPF変換エラー: {ex.Message}");
+                    }
                 });
+                
+                // メモリ適切解放
+                if (finalBitmap != thumbnailBitmap)
+                {
+                    finalBitmap.Dispose();
+                }
+                thumbnailBitmap.Dispose();
             }
             catch (Exception ex)
             {
@@ -319,8 +368,62 @@ namespace DocOrganizer.UI.ViewModels
         /// </summary>
         private async Task ProcessImageFallbackAsync(string imagePath, CancellationToken cancellationToken)
         {
-            System.Diagnostics.Debug.WriteLine($"[ProcessImageFallbackAsync] フォールバック処理実行: {Path.GetFileName(imagePath)}");
-            // 基本的な処理のみ実行（詳細実装は省略）
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"[ProcessImageFallbackAsync] フォールバック処理（左側サムネイル専用）: {Path.GetFileName(imagePath)}");
+                
+                // ⭐修正: 左側サムネイル専用（150x200）
+                var bitmap = await _imageProcessingService.GenerateHighQualityPreviewAsync(imagePath, 150, 200);
+                
+                if (cancellationToken.IsCancellationRequested || bitmap == null)
+                    return;
+                
+                // ⭐修正: 回転処理も左側サムネイル用
+                var finalBitmap = bitmap;
+                if (_page.Rotation != 0)
+                {
+                    finalBitmap = ApplyRotationOptimized(bitmap, _page.Rotation);
+                }
+                
+                // ⭐修正: 左側ThumbnailImageのみ設定（PreviewImageは右側で独自生成）
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+                        
+                    try
+                    {
+                        // 左側サムネイル用のWPF BitmapImage変換
+                        using var data = finalBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+                        var thumbnailImage = new System.Windows.Media.Imaging.BitmapImage();
+                        thumbnailImage.BeginInit();
+                        thumbnailImage.StreamSource = new System.IO.MemoryStream(data.ToArray());
+                        thumbnailImage.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                        thumbnailImage.EndInit();
+                        thumbnailImage.Freeze();
+                        
+                        ThumbnailImage = thumbnailImage; // 左側サムネイル専用
+                        // ⭐修正: PreviewImageは設定しない（右側で独自に高解像度生成）
+                        
+                        System.Diagnostics.Debug.WriteLine($"[ProcessImageFallbackAsync] フォールバック左側サムネイル完了: {Path.GetFileName(imagePath)}");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[ProcessImageFallbackAsync] WPF変換エラー: {ex.Message}");
+                    }
+                });
+                
+                // メモリ適切解放
+                if (finalBitmap != bitmap)
+                {
+                    finalBitmap?.Dispose();
+                }
+                bitmap?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ProcessImageFallbackAsync] フォールバックエラー: {ex.Message}");
+            }
         }
         
         /// <summary>
@@ -491,49 +594,63 @@ namespace DocOrganizer.UI.ViewModels
         /// <summary>
         /// 回転角度を考慮したサムネイル生成
         /// </summary>
-        private async Task GenerateThumbnailWithRotation(int rotationDegrees)
+        private async Task GenerateThumbnailWithRotation(string imagePath, int rotationAngle)
         {
-            if (_imageProcessingService == null || string.IsNullOrEmpty(_page.SourceImagePath))
-            {
-                System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] 必要な情報が不足");
-                return;
-            }
-            
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] ページ {PageNumber} 回転 {rotationDegrees}度でサムネイル生成");
+                System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] 左側サムネイル専用処理開始: {Path.GetFileName(imagePath)}, 回転: {rotationAngle}度");
                 
-                // 回転角度を明示的に渡してサムネイル生成
-                var thumbnailData = await _imageProcessingService.GetImageThumbnailAsync(
-                    _page.SourceImagePath, 150, 150, rotationDegrees);
+                // ⭐修正: 左側サムネイル専用（150x200）
+                var bitmap = await _imageProcessingService.GenerateHighQualityPreviewAsync(imagePath, 150, 200);
                 
-                if (thumbnailData != null && thumbnailData.Length > 0)
+                if (bitmap == null)
                 {
-                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] プレビュー生成失敗: {imagePath}");
+                    return;
+                }
+                
+                // ⭐修正: 回転処理も左側サムネイル用
+                var rotatedBitmap = bitmap;
+                if (rotationAngle != 0)
+                {
+                    rotatedBitmap = ApplyRotationOptimized(bitmap, rotationAngle);
+                }
+                
+                // ⭐修正: 左側ThumbnailImageのみ設定（PreviewImageは右側で独自生成）
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    try
                     {
-                        try
-                        {
-                            var bitmap = CreateBitmapFromBytes(thumbnailData);
-                            ThumbnailImage = bitmap;
-                            
-                            System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] ページ {PageNumber} 新しいサムネイル設定完了");
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] Bitmap作成エラー: {ex.Message}");
-                            throw;
-                        }
-                    });
-                }
-                else
+                        // 左側サムネイル用のWPF BitmapImage変換
+                        using var data = rotatedBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+                        var thumbnailImage = new System.Windows.Media.Imaging.BitmapImage();
+                        thumbnailImage.BeginInit();
+                        thumbnailImage.StreamSource = new System.IO.MemoryStream(data.ToArray());
+                        thumbnailImage.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                        thumbnailImage.EndInit();
+                        thumbnailImage.Freeze();
+                        
+                        ThumbnailImage = thumbnailImage; // 左側サムネイル専用
+                        // ⭐修正: PreviewImageは設定しない（右側で独自に高解像度生成）
+                        
+                        System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] 左側サムネイル完了 - 回転 {rotationAngle}度: {Path.GetFileName(imagePath)}");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] WPF変換エラー: {ex.Message}");
+                    }
+                });
+                
+                // メモリ適切解放
+                if (rotatedBitmap != bitmap)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] サムネイルデータが空");
+                    rotatedBitmap?.Dispose();
                 }
+                bitmap?.Dispose();
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] エラー: {ex.Message}");
-                throw;
             }
         }
         

@@ -422,7 +422,7 @@ namespace DocOrganizer.UI.ViewModels
                     // PageViewModelに既にPreviewImageがある場合はそれを使用（HEIC最適化処理済み）
                     if (pageViewModel.PreviewImage != null)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[UpdatePreview] PageViewModelのPreviewImageを使用");
+                        System.Diagnostics.Debug.WriteLine($"[UpdatePreview] 左右統一処理済みPreviewImageを使用");
                         
                         // UI スレッドで実行
                         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
@@ -1377,21 +1377,27 @@ namespace DocOrganizer.UI.ViewModels
 
         public async Task OpenMultipleImageFilesAsync(IEnumerable<string> filePaths)
         {
+            var imageFiles = filePaths.Where(f => IsImageFile(f)).ToList();
+            if (!imageFiles.Any()) return;
+
             try
             {
-                var imageFiles = filePaths.Where(f => IsImageFile(f)).ToList();
-                if (!imageFiles.Any()) return;
-
                 StatusMessage = $"{imageFiles.Count} 個の画像を変換中...";
                 ProgressVisibility = "Visible";
+                
+                System.Diagnostics.Debug.WriteLine($"[OpenMultipleImageFilesAsync] Processing {imageFiles.Count} images");
                 
                 // 複数画像を1つのPDFに変換（非同期処理）
                 var pdfDocument = await _imageProcessingService.ConvertImagesToPdfAsync(imageFiles);
                 
                 if (pdfDocument == null)
                 {
-                    throw new InvalidOperationException("画像からPDFドキュメントの作成に失敗しました");
+                    System.Diagnostics.Debug.WriteLine("[OpenMultipleImageFilesAsync] PDF creation failed - null result");
+                    StatusMessage = "画像変換に失敗しました";
+                    return;
                 }
+                
+                System.Diagnostics.Debug.WriteLine($"[OpenMultipleImageFilesAsync] PDF created successfully with {pdfDocument.Pages.Count} pages");
                 
                 _openDocuments.Add(pdfDocument);
                 
@@ -1403,20 +1409,33 @@ namespace DocOrganizer.UI.ViewModels
                 
                 UpdateUI();
                 StatusMessage = $"{imageFiles.Count} 個の画像を1つのPDFに変換完了";
+                
+                System.Diagnostics.Debug.WriteLine("[OpenMultipleImageFilesAsync] Operation completed successfully");
             }
             catch (Exception ex)
             {
-                var errorMessage = $"複数画像の変換エラー:\n{ex.Message}";
-                if (ex.InnerException != null)
+                System.Diagnostics.Debug.WriteLine($"[OpenMultipleImageFilesAsync] Error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[OpenMultipleImageFilesAsync] StackTrace: {ex.StackTrace}");
+                
+                // シンプルなエラーメッセージでDialogServiceエラーを回避
+                var errorMessage = "複数画像の変換でエラーが発生しました";
+                
+                try
                 {
-                    errorMessage += $"\n内部エラー: {ex.InnerException.Message}";
+                    _dialogService.ShowError(errorMessage);
                 }
-                _dialogService.ShowError(errorMessage);
+                catch (Exception dialogEx)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[OpenMultipleImageFilesAsync] Dialog error: {dialogEx.Message}");
+                    // DialogServiceがエラーの場合はStatusMessageのみ更新
+                }
+                
                 StatusMessage = "複数画像変換エラー";
             }
             finally
             {
                 ProgressVisibility = "Collapsed";
+                System.Diagnostics.Debug.WriteLine("[OpenMultipleImageFilesAsync] Progress visibility collapsed");
             }
         }
 
@@ -1428,13 +1447,17 @@ namespace DocOrganizer.UI.ViewModels
 
         private bool IsImageFile(string filePath)
         {
-            var extension = Path.GetExtension(filePath).ToLowerInvariant();
+            var extension = Path.GetExtension(filePath);
             // HEIC形式を再有効化（ImageMagick変換対応済み）
-            return extension == ".jpg" || extension == ".jpeg" || 
-                   extension == ".png" || extension == ".heic" || 
-                   extension == ".heif" || extension == ".bmp" || 
-                   extension == ".tiff" || extension == ".gif" || 
-                   extension == ".webp";
+            return extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase) || 
+                   extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase) || 
+                   extension.Equals(".png", StringComparison.OrdinalIgnoreCase) || 
+                   extension.Equals(".heic", StringComparison.OrdinalIgnoreCase) || 
+                   extension.Equals(".heif", StringComparison.OrdinalIgnoreCase) || 
+                   extension.Equals(".bmp", StringComparison.OrdinalIgnoreCase) || 
+                   extension.Equals(".tiff", StringComparison.OrdinalIgnoreCase) || 
+                   extension.Equals(".gif", StringComparison.OrdinalIgnoreCase) || 
+                   extension.Equals(".webp", StringComparison.OrdinalIgnoreCase);
         }
 
         [RelayCommand]
@@ -1535,8 +1558,9 @@ namespace DocOrganizer.UI.ViewModels
         private static bool IsHeicFile(string filePath)
         {
             if (string.IsNullOrEmpty(filePath)) return false;
-            var extension = Path.GetExtension(filePath).ToLowerInvariant();
-            return extension == ".heic" || extension == ".heif";
+            var extension = Path.GetExtension(filePath);
+            return extension.Equals(".heic", StringComparison.OrdinalIgnoreCase) || 
+                   extension.Equals(".heif", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

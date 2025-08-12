@@ -639,8 +639,9 @@ namespace DocOrganizer.Infrastructure.Services
         /// </summary>
         private static bool IsHeicFile(string filePath)
         {
-            var extension = Path.GetExtension(filePath)?.ToLowerInvariant();
-            return extension == ".heic" || extension == ".heif";
+            var extension = Path.GetExtension(filePath);
+            return extension.Equals(".heic", StringComparison.OrdinalIgnoreCase) || 
+                   extension.Equals(".heif", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

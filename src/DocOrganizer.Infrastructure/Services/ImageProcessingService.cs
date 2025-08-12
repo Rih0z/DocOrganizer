@@ -117,63 +117,73 @@ namespace DocOrganizer.Infrastructure.Services
 
         public async Task<PdfDocument> ConvertImagesToPdfAsync(IEnumerable<string> imagePaths)
         {
+            System.Diagnostics.Debug.WriteLine("[ConvertImagesToPdfAsync] Starting conversion");
+            
             try
             {
-                var validPaths = new List<string>();
-                foreach (var path in imagePaths)
-                {
-                    if (await IsValidImageAsync(path))
-                    {
-                        validPaths.Add(path);
-                    }
-                }
+                // シンプルな基本検証のみ
+                var validPaths = imagePaths
+                    .Where(path => !string.IsNullOrEmpty(path) && File.Exists(path))
+                    .ToList();
+
+                System.Diagnostics.Debug.WriteLine($"[ConvertImagesToPdfAsync] Valid paths: {validPaths.Count}");
 
                 if (!validPaths.Any())
                 {
                     throw new ArgumentException("No valid image files found");
                 }
 
-                // 仮想的なPDFドキュメントを作成（実際のPDFファイルは作成しない）
+                // 最小限のPDFドキュメント作成
                 var pdfDocument = new PdfDocument()
                 {
                     IsTemporaryFromImages = true,
                     FilePath = Path.Combine(Path.GetTempPath(), $"images_{DateTime.Now:yyyyMMddHHmmss}.pdf")
                 };
+                
                 pdfDocument.SourceImagePaths.AddRange(validPaths);
                 
                 int pageNumber = 1;
                 foreach (var imagePath in validPaths)
                 {
-                    // 向き自動補正を実行
-                    var correctedRotation = await DetectAndCorrectOrientationAsync(imagePath);
-                    
-                    // ページを作成（自動補正された回転角度を設定）
-                    var page = new PdfPage(pageNumber++)
+                    try
                     {
-                        SourceImagePath = imagePath,
-                        Rotation = correctedRotation
-                    };
-                    
-                    // A4サイズの寸法を設定
-                    const float pageWidth = 595;
-                    const float pageHeight = 842;
-                    page.SetDimensions(pageWidth, pageHeight);
-                    
-                    // サムネイルは後で生成（高速化のため）
-                    
-                    pdfDocument.AddPage(page);
-                    
-                    _logger.LogInformation("Image loaded without auto-rotation: {ImagePath}", 
-                        Path.GetFileName(imagePath));
+                        System.Diagnostics.Debug.WriteLine($"[ConvertImagesToPdfAsync] Processing: {Path.GetFileName(imagePath)}");
+                        
+                        // 最小限のページ作成（複雑な処理を完全除去）
+                        var page = new PdfPage(pageNumber++)
+                        {
+                            SourceImagePath = imagePath,
+                            Rotation = 0  // 固定値
+                        };
+                        
+                        // 固定サイズ設定
+                        page.SetDimensions(595, 842); // A4サイズ
+                        
+                        pdfDocument.AddPage(page);
+                        
+                        System.Diagnostics.Debug.WriteLine($"[ConvertImagesToPdfAsync] Added page {pageNumber - 1}");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[ConvertImagesToPdfAsync] Skipped {imagePath}: {ex.Message}");
+                        // 個別エラーは無視して継続
+                    }
                 }
+                
+                if (pdfDocument.Pages.Count == 0)
+                {
+                    throw new InvalidOperationException("No pages could be created");
+                }
+                
+                System.Diagnostics.Debug.WriteLine($"[ConvertImagesToPdfAsync] Created PDF with {pdfDocument.Pages.Count} pages");
                 
                 pdfDocument.ClearModifiedFlag();
                 return pdfDocument;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to load images");
-                throw;
+                System.Diagnostics.Debug.WriteLine($"[ConvertImagesToPdfAsync] Error: {ex.Message}");
+                throw new InvalidOperationException($"Failed to convert images: {ex.Message}", ex);
             }
         }
 
@@ -204,16 +214,24 @@ namespace DocOrganizer.Infrastructure.Services
                 // 通常の画像ファイル処理（HEIC以外）
                 using var image = await LoadImageSafelyAsync(imagePath);
                 
-                // ★修正: 初回読み込み時（rotationDegrees = 0）は手動回転をスキップ
-                // LoadImageSafelyAsync()で既にAutoOrient適用済みのため、0度回転で元に戻すことを防ぐ
+                // ⭐修正: 手動回転がある場合はAutoOrientを無効化し、手動回転のみ適用
                 if (rotationDegrees != 0)
                 {
+                    // EXIF Orientationをリセットして自動回転を無効化
+                    if (image.Metadata?.ExifProfile != null)
+                    {
+                        // ImageSharp 3.x API: SetValue使用でOrientation=1（Normal）に設定
+                        image.Metadata.ExifProfile.SetValue(SixLabors.ImageSharp.Metadata.Profiles.Exif.ExifTag.Orientation, (ushort)1);
+                        _logger.LogDebug($"EXIF Orientation reset to 1 (Normal) for manual rotation: {Path.GetFileName(imagePath)}");
+                    }
+                    
+                    // 手動回転を適用（AutoOrientは既にLoadImageSafelyAsyncで適用済み）
                     image.Mutate(x => x.Rotate(rotationDegrees));
                     _logger.LogDebug($"Manual rotation applied: {rotationDegrees}° for {Path.GetFileName(imagePath)}");
                 }
                 else
                 {
-                    _logger.LogDebug($"Skipping manual rotation (0°) - using AutoOrient result: {Path.GetFileName(imagePath)}");
+                    _logger.LogDebug($"Using AutoOrient result only (0° manual rotation): {Path.GetFileName(imagePath)}");
                 }
                 
                 // リサイズ処理
@@ -1240,9 +1258,8 @@ namespace DocOrganizer.Infrastructure.Services
                 // ImageSharpのEXIFプロファイルからOrientation情報を取得
                 if (image.Metadata?.ExifProfile != null)
                 {
-                    // ImageSharpのExifTagを明示的に使用
-                    var orientationValue = image.Metadata.ExifProfile.GetValue<ushort>(SixLabors.ImageSharp.Metadata.Profiles.Exif.ExifTag.Orientation);
-                    if (orientationValue != null)
+                    // ImageSharp 3.x API: TryGetValueを使用
+                    if (image.Metadata.ExifProfile.TryGetValue(SixLabors.ImageSharp.Metadata.Profiles.Exif.ExifTag.Orientation, out var orientationValue) && orientationValue != null)
                     {
                         var orientation = (int)orientationValue.Value;
                         _logger.LogDebug($"EXIF Orientation read successfully: {orientation}");
