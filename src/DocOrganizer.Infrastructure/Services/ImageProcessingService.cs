@@ -149,11 +149,15 @@ namespace DocOrganizer.Infrastructure.Services
                     {
                         System.Diagnostics.Debug.WriteLine($"[ConvertImagesToPdfAsync] Processing: {Path.GetFileName(imagePath)}");
                         
-                        // 最小限のページ作成（複雑な処理を完全除去）
+                        // ⭐修正: EXIF Orientationに基づく正しい回転角度を取得
+                        var correctedRotation = await DetectAndCorrectOrientationAsync(imagePath);
+                        System.Diagnostics.Debug.WriteLine($"[ConvertImagesToPdfAsync] Detected rotation: {correctedRotation}° for {Path.GetFileName(imagePath)}");
+                        
+                        // 正しい回転角度でページ作成
                         var page = new PdfPage(pageNumber++)
                         {
                             SourceImagePath = imagePath,
-                            Rotation = 0  // 固定値
+                            Rotation = correctedRotation  // ⭐修正: 0固定から正しい値に変更
                         };
                         
                         // 固定サイズ設定
@@ -161,7 +165,7 @@ namespace DocOrganizer.Infrastructure.Services
                         
                         pdfDocument.AddPage(page);
                         
-                        System.Diagnostics.Debug.WriteLine($"[ConvertImagesToPdfAsync] Added page {pageNumber - 1}");
+                        System.Diagnostics.Debug.WriteLine($"[ConvertImagesToPdfAsync] Added page {pageNumber - 1} with rotation {correctedRotation}°");
                     }
                     catch (Exception ex)
                     {
@@ -770,29 +774,9 @@ namespace DocOrganizer.Infrastructure.Services
                 _logger.LogDebug($"Attempting basic ImageSharp load for: {imagePath}");
                 var image = await Image.LoadAsync(imagePath);
                 
-                // ★Phase 1修正: EXIF Orientationに基づく条件付きAutoOrient適用
-                var orientation = GetExifOrientation(image);
-                _logger.LogDebug($"EXIF Orientation detected: {orientation} for {Path.GetFileName(imagePath)}");
-                
-                // HEICファイルの特別処理（MagickNetで既に処理済みの可能性を考慮）
-                bool isHeicFile = Path.GetExtension(imagePath).ToLowerInvariant() is ".heic" or ".heif";
-                bool isHeicConvertedFile = Path.GetExtension(imagePath).Equals(".jpg", StringComparison.OrdinalIgnoreCase) && 
-                                         imagePath.Contains(Path.GetTempPath());
-                
-                if (!isHeicFile && !isHeicConvertedFile && orientation != 1)
-                {
-                    // 一般的な画像ファイル（JPG, PNG等）で、Normal以外の向きの場合のみAutoOrient適用
-                    image.Mutate(x => x.AutoOrient());
-                    _logger.LogInformation($"AutoOrient applied for orientation {orientation}: {Path.GetFileName(imagePath)}");
-                }
-                else if (isHeicFile || isHeicConvertedFile)
-                {
-                    _logger.LogDebug($"Skipping AutoOrient for HEIC/converted file: {Path.GetFileName(imagePath)}");
-                }
-                else
-                {
-                    _logger.LogDebug($"Skipping AutoOrient for normal orientation (1): {Path.GetFileName(imagePath)}");
-                }
+                // ⭐廃止: EXIF Orientationによる自動回転を完全無効化
+                // OCRベース回転機能で手動制御するため、AutoOrientは使用しない
+                _logger.LogDebug($"AutoOrient disabled - all rotation will be handled by OCR-based system: {Path.GetFileName(imagePath)}");
                 
                 return image;
             }
@@ -805,19 +789,7 @@ namespace DocOrganizer.Infrastructure.Services
                     throw new NotSupportedException($"Image file format not supported or corrupted: {imagePath}", ex);
                 }
                 
-                // 具体的な"attempt to access missing method"エラーのキャッチ
-                var isMissingMethodError = ex.Message.Contains("attempt to access", StringComparison.OrdinalIgnoreCase) || 
-                                         ex.Message.Contains("missing method", StringComparison.OrdinalIgnoreCase) ||
-                                         ex.GetType().Name.Contains("MissingMethod");
-                
-                if (isMissingMethodError)
-                {
-                    _logger.LogError($"MISSING METHOD ERROR detected for {imagePath}: {ex.GetType().Name} - {ex.Message}");
-                }
-                else
-                {
-                    _logger.LogWarning($"Basic ImageSharp load failed for {imagePath}: {ex.GetType().Name} - {ex.Message}");
-                }
+                _logger.LogWarning($"Basic ImageSharp load failed for {imagePath}: {ex.GetType().Name} - {ex.Message}");
                 
                 // Step 2: バイト配列経由での読み込みを試行
                 try
@@ -833,15 +805,8 @@ namespace DocOrganizer.Infrastructure.Services
                     using var stream = new MemoryStream(imageBytes);
                     var image = await Image.LoadAsync(stream);
                     
-                    // バイト配列読み込みでも同様のEXIF処理を適用
-                    var orientation = GetExifOrientation(image);
-                    bool isHeicFile = Path.GetExtension(imagePath).ToLowerInvariant() is ".heic" or ".heif";
-                    
-                    if (!isHeicFile && orientation != 1)
-                    {
-                        image.Mutate(x => x.AutoOrient());
-                        _logger.LogInformation($"AutoOrient applied to byte-loaded image (orientation {orientation}): {Path.GetFileName(imagePath)}");
-                    }
+                    // ⭐廃止: バイト配列読み込みでもAutoOrientは無効化
+                    _logger.LogDebug($"AutoOrient disabled for byte-loaded image: {Path.GetFileName(imagePath)}");
                     
                     return image;
                 }
@@ -1188,7 +1153,7 @@ namespace DocOrganizer.Infrastructure.Services
                     3 => 180, // Rotate 180°
                     4 => 0,   // Flip vertical - 反転のみ（回転なし）
                     5 => 0,   // Transpose - 複合変換（回転なし）
-                    6 => 90,  // Rotate 90° CW - ★「常に左に90度回転」の原因箇所
+                    6 => 90,  // Rotate 90° CW - 「常に左に90度回転」の原因箇所
                     7 => 0,   // Transverse - 複合変換（回転なし）  
                     8 => 270, // Rotate 90° CCW (270度CW相当)
                     _ => 0    // 未知の値は回転なし
@@ -1197,16 +1162,56 @@ namespace DocOrganizer.Infrastructure.Services
                 _logger.LogInformation("Orientation detection complete for {ImagePath}: EXIF={Orientation}, RequiredRotation={Degrees}°", 
                     Path.GetFileName(imagePath), orientation, rotationDegrees);
                 
-                // LoadImageSafelyAsync()でAutoOrientが適切に適用されるため、
-                // ここでは検出した情報をログ出力のみ行い、0を返す
-                // （実際の回転はAutoOrientに任せる）
-                return 0;
+                // ⭐修正: 計算した回転角度を正しく返す（0固定を廃止）
+                return rotationDegrees;
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to detect orientation for {ImagePath}", imagePath);
                 return 0; // エラー時は回転なし
             }
+        }
+
+        /// <summary>
+        /// 統一回転処理 - 一時的回転関数の代替
+        /// </summary>
+        public SkiaSharp.SKBitmap RotateImage(SkiaSharp.SKBitmap source, int rotationDegrees)
+        {
+            if (rotationDegrees == 0 || source == null) return source;
+            
+            // 回転角度を正規化（0, 90, 180, 270のみ対応）
+            var normalizedRotation = ((rotationDegrees % 360) + 360) % 360;
+            if (normalizedRotation % 90 != 0)
+            {
+                _logger.LogWarning($"Invalid rotation angle: {rotationDegrees}. Using 0 degrees.");
+                return source;
+            }
+            
+            if (normalizedRotation == 0) return source;
+            
+            // 回転後のサイズを計算
+            int newWidth = (normalizedRotation == 90 || normalizedRotation == 270) ? source.Height : source.Width;
+            int newHeight = (normalizedRotation == 90 || normalizedRotation == 270) ? source.Width : source.Height;
+            
+            var rotatedBitmap = new SkiaSharp.SKBitmap(newWidth, newHeight, source.ColorType, source.AlphaType);
+            
+            using (var canvas = new SkiaSharp.SKCanvas(rotatedBitmap))
+            {
+                // キャンバスの中心を回転の基点とする
+                float centerX = newWidth / 2f;
+                float centerY = newHeight / 2f;
+                
+                canvas.Translate(centerX, centerY);
+                canvas.RotateDegrees(normalizedRotation);
+                
+                // 元画像を中心に配置して描画
+                float drawX = -source.Width / 2f;
+                float drawY = -source.Height / 2f;
+                canvas.DrawBitmap(source, drawX, drawY);
+            }
+            
+            _logger.LogDebug($"Image rotated {normalizedRotation}° - {source.Width}x{source.Height} → {newWidth}x{newHeight}");
+            return rotatedBitmap;
         }
         
         /// <summary>

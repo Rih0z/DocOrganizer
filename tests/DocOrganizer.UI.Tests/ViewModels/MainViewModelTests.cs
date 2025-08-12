@@ -15,6 +15,7 @@ namespace DocOrganizer.UI.Tests.ViewModels
         private readonly Mock<IPdfEditorService> _mockEditorService;
         private readonly Mock<IDialogService> _mockDialogService;
         private readonly Mock<IImageProcessingService> _mockImageService;
+        private readonly Mock<ITextOrientationService> _mockTextOrientationService;
         private readonly MainViewModel _viewModel;
 
         public MainViewModelTests()
@@ -22,7 +23,8 @@ namespace DocOrganizer.UI.Tests.ViewModels
             _mockEditorService = new Mock<IPdfEditorService>();
             _mockDialogService = new Mock<IDialogService>();
             _mockImageService = new Mock<IImageProcessingService>();
-            _viewModel = new MainViewModel(_mockEditorService.Object, _mockDialogService.Object, _mockImageService.Object);
+            _mockTextOrientationService = new Mock<ITextOrientationService>();
+            _viewModel = new MainViewModel(_mockEditorService.Object, _mockDialogService.Object, _mockImageService.Object, _mockTextOrientationService.Object);
         }
 
         [Fact]
@@ -39,6 +41,7 @@ namespace DocOrganizer.UI.Tests.ViewModels
             _viewModel.DeleteCommand.Should().NotBeNull();
             _viewModel.RotateLeftCommand.Should().NotBeNull();
             _viewModel.RotateRightCommand.Should().NotBeNull();
+            _viewModel.AutoCorrectAllPagesOrientationCommand.Should().NotBeNull();
         }
 
         [Fact]

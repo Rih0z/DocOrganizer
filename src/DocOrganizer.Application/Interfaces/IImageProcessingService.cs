@@ -13,5 +13,10 @@ namespace DocOrganizer.Application.Interfaces
         Task<bool> IsValidImageAsync(string imagePath);
         Task<string> GetImageInfoAsync(string imagePath);
         Task<SkiaSharp.SKBitmap?> GenerateHighQualityPreviewAsync(string imagePath, int maxWidth = 1200, int maxHeight = 1600);
+        
+        /// <summary>
+        /// 統一回転処理 - 一時的回転関数の代替
+        /// </summary>
+        SkiaSharp.SKBitmap RotateImage(SkiaSharp.SKBitmap source, int rotationDegrees);
     }
 }

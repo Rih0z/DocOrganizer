@@ -15,6 +15,7 @@ namespace DocOrganizer.UI.ViewModels
     {
         private readonly PdfPage _page;
         private readonly IImageProcessingService? _imageProcessingService;
+        private readonly ITextOrientationService? _textOrientationService;
         
         // プロパティ変更通知を外部から呼び出せるようにする
         public new void OnPropertyChanged(string? propertyName)
@@ -42,10 +43,11 @@ namespace DocOrganizer.UI.ViewModels
         [ObservableProperty]
         private int rotation;
 
-        public PageViewModel(PdfPage page, IImageProcessingService? imageProcessingService = null)
+        public PageViewModel(PdfPage page, IImageProcessingService? imageProcessingService = null, ITextOrientationService? textOrientationService = null)
         {
             _page = page;
             _imageProcessingService = imageProcessingService;
+            _textOrientationService = textOrientationService;
             pageNumber = page.PageNumber;
             rotation = page.Rotation;
             
@@ -250,7 +252,7 @@ namespace DocOrganizer.UI.ViewModels
                 var finalBitmap = thumbnailBitmap;
                 if (_page.Rotation != 0)
                 {
-                    finalBitmap = ApplyRotationOptimized(thumbnailBitmap, _page.Rotation);
+                    finalBitmap = _imageProcessingService.RotateImage(thumbnailBitmap, _page.Rotation);
                 }
                 
                 // ⭐修正: 左側ThumbnailImageのみ設定（PreviewImageは右側で独自生成）
@@ -317,7 +319,7 @@ namespace DocOrganizer.UI.ViewModels
                 var finalBitmap = thumbnailBitmap;
                 if (_page.Rotation != 0)
                 {
-                    finalBitmap = ApplyRotationOptimized(thumbnailBitmap, _page.Rotation);
+                    finalBitmap = _imageProcessingService.RotateImage(thumbnailBitmap, _page.Rotation);
                 }
                 
                 // ⭐修正: 左側ThumbnailImageのみ設定（PreviewImageは右側で独自生成）
@@ -382,7 +384,7 @@ namespace DocOrganizer.UI.ViewModels
                 var finalBitmap = bitmap;
                 if (_page.Rotation != 0)
                 {
-                    finalBitmap = ApplyRotationOptimized(bitmap, _page.Rotation);
+                    finalBitmap = _imageProcessingService.RotateImage(bitmap, _page.Rotation);
                 }
                 
                 // ⭐修正: 左側ThumbnailImageのみ設定（PreviewImageは右側で独自生成）
@@ -487,6 +489,76 @@ namespace DocOrganizer.UI.ViewModels
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[UpdateRotationSync] エラー: {ex.Message}");
+            }
+        }
+
+        
+        /// <summary>
+        /// 文字向きを自動検出・補正する（OCRベース）
+        /// </summary>
+        public async Task AutoCorrectOrientationAsync()
+        {
+            if (_textOrientationService == null)
+            {
+                System.Diagnostics.Debug.WriteLine("[AutoCorrectOrientationAsync] TextOrientationService not available");
+                return;
+            }
+
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"[AutoCorrectOrientationAsync] Starting auto-correction for page {_page.PageNumber}");
+                
+                // 文字が読み取れるかチェック
+                var hasText = await _textOrientationService.HasReadableTextAsync(_page.SourceImagePath);
+                if (!hasText)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[AutoCorrectOrientationAsync] No readable text found in page {_page.PageNumber}");
+                    return;
+                }
+                
+                // 最適な向きを検出（並列処理で高速化）
+                var optimalRotation = await _textOrientationService.DetectOptimalOrientationParallelAsync(_page.SourceImagePath);
+                
+                System.Diagnostics.Debug.WriteLine($"[AutoCorrectOrientationAsync] Page {_page.PageNumber}: Current={_page.Rotation}°, Optimal={optimalRotation}°");
+                
+                if (optimalRotation != _page.Rotation)
+                {
+                    // 回転値を更新
+                    _page.Rotation = optimalRotation;
+                    Rotation = optimalRotation;
+                    
+                    // サムネイル再生成
+                    await RegenerateThumbnailAfterRotationAsync();
+                    
+                    System.Diagnostics.Debug.WriteLine($"[AutoCorrectOrientationAsync] Page {_page.PageNumber} corrected to {optimalRotation}°");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"[AutoCorrectOrientationAsync] Page {_page.PageNumber} already in optimal orientation");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AutoCorrectOrientationAsync] Error for page {_page.PageNumber}: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// 文字認識信頼度を取得（デバッグ用）
+        /// </summary>
+        public async Task<double> GetTextConfidenceAsync(int rotationDegrees = 0)
+        {
+            if (_textOrientationService == null)
+                return 0.0;
+                
+            try
+            {
+                return await _textOrientationService.GetTextConfidenceAsync(_page.SourceImagePath, rotationDegrees);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[GetTextConfidenceAsync] Error: {ex.Message}");
+                return 0.0;
             }
         }
 
@@ -613,7 +685,7 @@ namespace DocOrganizer.UI.ViewModels
                 var rotatedBitmap = bitmap;
                 if (rotationAngle != 0)
                 {
-                    rotatedBitmap = ApplyRotationOptimized(bitmap, rotationAngle);
+                    rotatedBitmap = _imageProcessingService.RotateImage(bitmap, rotationAngle);
                 }
                 
                 // ⭐修正: 左側ThumbnailImageのみ設定（PreviewImageは右側で独自生成）
@@ -810,7 +882,7 @@ namespace DocOrganizer.UI.ViewModels
                 SkiaSharp.SKBitmap processedBitmap = originalBitmap;
                 if (_page.Rotation != 0)
                 {
-                    processedBitmap = ApplyRotationOptimized(originalBitmap, _page.Rotation);
+                    processedBitmap = _imageProcessingService.RotateImage(originalBitmap, _page.Rotation);
                 }
                 
                 // WPFで表示可能な形式に変換（メモリ効率重視）
@@ -848,52 +920,7 @@ namespace DocOrganizer.UI.ViewModels
         }
 
         /// <summary>
-        /// 最適化された回転処理（メモリ効率重視）
-        /// </summary>
-        private SkiaSharp.SKBitmap ApplyRotationOptimized(SkiaSharp.SKBitmap originalBitmap, float rotationDegrees)
-        {
-            try
-            {
-                var radians = (float)(rotationDegrees * Math.PI / 180.0);
-                
-                // 回転後のサイズを計算
-                var cosA = Math.Abs(Math.Cos(radians));
-                var sinA = Math.Abs(Math.Sin(radians));
-                var newWidth = (int)(originalBitmap.Width * cosA + originalBitmap.Height * sinA);
-                var newHeight = (int)(originalBitmap.Width * sinA + originalBitmap.Height * cosA);
-                
-                // 新しいビットマップを作成
-                var rotatedBitmap = new SkiaSharp.SKBitmap(newWidth, newHeight);
-                
-                using (var canvas = new SkiaSharp.SKCanvas(rotatedBitmap))
-                {
-                    // 背景をクリア
-                    canvas.Clear(SkiaSharp.SKColors.White);
-                    
-                    // 中央に移動してから回転
-                    canvas.Translate(newWidth / 2f, newHeight / 2f);
-                    canvas.RotateDegrees(rotationDegrees);
-                    canvas.Translate(-originalBitmap.Width / 2f, -originalBitmap.Height / 2f);
-                    
-                    // 高品質描画
-                    using var paint = new SkiaSharp.SKPaint()
-                    {
-                        IsAntialias = true,
-                        FilterQuality = SkiaSharp.SKFilterQuality.High
-                    };
-                    
-                    canvas.DrawBitmap(originalBitmap, 0, 0, paint);
-                }
-                
-                return rotatedBitmap;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[ApplyRotationOptimized] 回転処理エラー: {ex.Message}");
-                // エラー時は元のビットマップを返す
-                return originalBitmap;
-            }
-        }
+        
         
         public void ClearPreviewImage() { PreviewImage = null; }
         /// <summary>

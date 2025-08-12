@@ -20,6 +20,7 @@ namespace DocOrganizer.UI.ViewModels
         private readonly IPdfEditorService _pdfEditorService;
         private readonly IDialogService _dialogService;
         private readonly IImageProcessingService _imageProcessingService;
+        private readonly ITextOrientationService _textOrientationService;
         private readonly IUpdateService? _updateService;
         
         [ObservableProperty]
@@ -77,11 +78,12 @@ namespace DocOrganizer.UI.ViewModels
         private readonly ObservableCollection<PdfDocument> _openDocuments = new();
         private PageViewModel? _selectedPage;
 
-        public MainViewModel(IPdfEditorService pdfEditorService, IDialogService dialogService, IImageProcessingService imageProcessingService, IUpdateService? updateService = null)
+        public MainViewModel(IPdfEditorService pdfEditorService, IDialogService dialogService, IImageProcessingService imageProcessingService, ITextOrientationService textOrientationService, IUpdateService? updateService = null)
         {
             _pdfEditorService = pdfEditorService;
             _dialogService = dialogService;
             _imageProcessingService = imageProcessingService;
+            _textOrientationService = textOrientationService;
             _updateService = updateService;
             
             System.Diagnostics.Debug.WriteLine("[MainViewModel] Constructor called");
@@ -199,7 +201,7 @@ namespace DocOrganizer.UI.ViewModels
             // まずPageViewModelを作成
             foreach (var page in document.Pages)
             {
-                var pageVm = new PageViewModel(page, _imageProcessingService);
+                var pageVm = new PageViewModel(page, _imageProcessingService, _textOrientationService);
                 pageVm.PropertyChanged += PageViewModel_PropertyChanged;
                 Pages.Add(pageVm);
             }
@@ -479,7 +481,7 @@ namespace DocOrganizer.UI.ViewModels
                                         var finalBitmap = highQualityBitmap;
                                         if (page.Rotation != 0)
                                         {
-                                            finalBitmap = RotateSkBitmap(highQualityBitmap, page.Rotation);
+                                            finalBitmap = _imageProcessingService.RotateImage(highQualityBitmap, page.Rotation);
                                         }
                                         
                                         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
@@ -885,6 +887,206 @@ namespace DocOrganizer.UI.ViewModels
                 System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] エラー: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] スタックトレース: {ex.StackTrace}");
                 _dialogService.ShowError($"回転エラー: {ex.Message}");
+            }
+        }
+
+        
+        /// <summary>
+        /// 全ページの文字向きを自動補正（OCRベース）
+        /// </summary>
+        [RelayCommand(CanExecute = nameof(HasDocument))]
+        private async Task AutoCorrectAllPagesOrientation()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("[AutoCorrectAllPagesOrientationAsync] Starting auto-correction for all pages");
+                
+                if (Pages == null || !Pages.Any())
+                {
+                    StatusMessage = "補正対象のページがありません";
+                    return;
+                }
+                
+                StatusMessage = "文字を含むページを検索中...";
+                ProgressVisibility = "Visible";
+                
+                // 文字を含むページを特定
+                var pagesWithText = new List<PageViewModel>();
+                var totalPages = Pages.Count;
+                var processedPages = 0;
+                
+                foreach (var page in Pages)
+                {
+                    try
+                    {
+                        var hasText = await page.GetTextConfidenceAsync() > 30.0;
+                        if (hasText)
+                        {
+                            pagesWithText.Add(page);
+                        }
+                        
+                        processedPages++;
+                        ProgressValue = (int)((double)processedPages / totalPages * 100);
+                        StatusMessage = $"文字検出中... {processedPages}/{totalPages}ページ";
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[AutoCorrectAllPagesOrientationAsync] Error checking text for page {page.PageNumber}: {ex.Message}");
+                    }
+                }
+                
+                if (!pagesWithText.Any())
+                {
+                    StatusMessage = "文字を含むページが見つかりませんでした";
+                    await Task.Delay(2000);
+                    StatusMessage = "準備完了";
+                    ProgressVisibility = "Collapsed";
+                    return;
+                }
+                
+                System.Diagnostics.Debug.WriteLine($"[AutoCorrectAllPagesOrientationAsync] Found {pagesWithText.Count} pages with text");
+                
+                // 文字向きを自動補正
+                StatusMessage = $"{pagesWithText.Count}ページの文字向きを自動補正中...";
+                var correctedPages = 0;
+                processedPages = 0;
+                
+                foreach (var page in pagesWithText)
+                {
+                    try
+                    {
+                        var originalRotation = page.Rotation;
+                        await page.AutoCorrectOrientationAsync();
+                        
+                        if (page.Rotation != originalRotation)
+                        {
+                            correctedPages++;
+                        }
+                        
+                        processedPages++;
+                        ProgressValue = (int)((double)processedPages / pagesWithText.Count * 100);
+                        StatusMessage = $"文字向き補正中... {processedPages}/{pagesWithText.Count}ページ";
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[AutoCorrectAllPagesOrientationAsync] Error correcting page {page.PageNumber}: {ex.Message}");
+                    }
+                }
+                
+                // 結果表示
+                if (correctedPages > 0)
+                {
+                    StatusMessage = $"{correctedPages}ページの文字向きを自動補正しました";
+                    
+                    // UI更新
+                    ForceCompleteCollectionRefresh();
+                    
+                    // 最初に補正されたページを選択
+                    var firstCorrectedPage = pagesWithText.FirstOrDefault(p => p.Rotation != 0);
+                    if (firstCorrectedPage != null)
+                    {
+                        UpdateCurrentPagePreview(firstCorrectedPage);
+                    }
+                }
+                else
+                {
+                    StatusMessage = "全ページが既に最適な向きでした";
+                }
+                
+                System.Diagnostics.Debug.WriteLine($"[AutoCorrectAllPagesOrientationAsync] Completed: {correctedPages}/{pagesWithText.Count} pages corrected");
+                
+                await Task.Delay(3000);
+                StatusMessage = "準備完了";
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AutoCorrectAllPagesOrientationAsync] Error: {ex.Message}");
+                StatusMessage = $"自動補正エラー: {ex.Message}";
+                _dialogService.ShowError($"文字向き自動補正エラー: {ex.Message}");
+            }
+            finally
+            {
+                ProgressVisibility = "Collapsed";
+                ProgressValue = 0;
+            }
+        }
+        
+        /// <summary>
+        /// 選択ページの文字向きを自動補正
+        /// </summary>
+        public async Task AutoCorrectSelectedPagesOrientationAsync()
+        {
+            try
+            {
+                var selectedPages = Pages.Where(p => p.IsSelected).ToList();
+                
+                if (!selectedPages.Any())
+                {
+                    StatusMessage = "補正対象のページが選択されていません";
+                    return;
+                }
+                
+                StatusMessage = $"{selectedPages.Count}ページの文字向きを自動補正中...";
+                ProgressVisibility = "Visible";
+                
+                var correctedPages = 0;
+                var processedPages = 0;
+                
+                foreach (var page in selectedPages)
+                {
+                    try
+                    {
+                        var originalRotation = page.Rotation;
+                        await page.AutoCorrectOrientationAsync();
+                        
+                        if (page.Rotation != originalRotation)
+                        {
+                            correctedPages++;
+                        }
+                        
+                        processedPages++;
+                        ProgressValue = (int)((double)processedPages / selectedPages.Count * 100);
+                        StatusMessage = $"文字向き補正中... {processedPages}/{selectedPages.Count}ページ";
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[AutoCorrectSelectedPagesOrientationAsync] Error correcting page {page.PageNumber}: {ex.Message}");
+                    }
+                }
+                
+                // 結果表示
+                if (correctedPages > 0)
+                {
+                    StatusMessage = $"{correctedPages}ページの文字向きを自動補正しました";
+                    
+                    // UI更新
+                    ForceCompleteCollectionRefresh();
+                    
+                    // 最初に補正されたページを選択
+                    var firstCorrectedPage = selectedPages.FirstOrDefault();
+                    if (firstCorrectedPage != null)
+                    {
+                        UpdateCurrentPagePreview(firstCorrectedPage);
+                    }
+                }
+                else
+                {
+                    StatusMessage = "選択ページは既に最適な向きでした";
+                }
+                
+                await Task.Delay(2000);
+                StatusMessage = "準備完了";
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AutoCorrectSelectedPagesOrientationAsync] Error: {ex.Message}");
+                StatusMessage = $"自動補正エラー: {ex.Message}";
+                _dialogService.ShowError($"文字向き自動補正エラー: {ex.Message}");
+            }
+            finally
+            {
+                ProgressVisibility = "Collapsed";
+                ProgressValue = 0;
             }
         }
         
@@ -1566,43 +1768,6 @@ namespace DocOrganizer.UI.ViewModels
         /// <summary>
         /// SkiaSharp SKBitmapの回転処理
         /// </summary>
-        private static SkiaSharp.SKBitmap RotateSkBitmap(SkiaSharp.SKBitmap original, int rotation)
-        {
-            if (rotation == 0) return original;
-            
-            var rotationAngle = rotation % 360;
-            if (rotationAngle == 0) return original;
-            
-            // 回転後のサイズを計算
-            int newWidth, newHeight;
-            if (rotationAngle == 90 || rotationAngle == 270)
-            {
-                newWidth = original.Height;
-                newHeight = original.Width;
-            }
-            else
-            {
-                newWidth = original.Width;
-                newHeight = original.Height;
-            }
-            
-            var rotatedBitmap = new SkiaSharp.SKBitmap(newWidth, newHeight);
-            using (var canvas = new SkiaSharp.SKCanvas(rotatedBitmap))
-            {
-                // 中心を基準に回転
-                canvas.Translate(newWidth / 2f, newHeight / 2f);
-                canvas.RotateDegrees(rotationAngle);
-                canvas.Translate(-original.Width / 2f, -original.Height / 2f);
-                
-                using (var paint = new SkiaSharp.SKPaint())
-                {
-                    paint.IsAntialias = true;
-                    paint.FilterQuality = SkiaSharp.SKFilterQuality.High;
-                    canvas.DrawBitmap(original, 0, 0, paint);
-                }
-            }
-            
-            return rotatedBitmap;
-        }
+        
     }
 }

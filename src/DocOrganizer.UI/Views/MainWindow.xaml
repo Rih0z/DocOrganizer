@@ -81,6 +81,12 @@
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
+                <MenuItem Header="全ページ自動回転(_A)" Command="{Binding AutoCorrectAllPagesOrientationCommand}">
+                    <MenuItem.Icon>
+                        <TextBlock Text="📖" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
                 <MenuItem Header="削除(_D)" Command="{Binding DeleteCommand}" InputGestureText="Delete">
                     <MenuItem.Icon>
                         <TextBlock Text="🗑" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -163,6 +169,16 @@
                 <Button Command="{Binding DeleteCommand}" ToolTip="削除 (Delete)" Padding="4"
                         IsEnabled="{Binding HasSelectedPages}">
                     <TextBlock Text="🗑" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Button>
+                <Separator/>
+                
+                <!-- 📖 全ページ自動回転ボタン -->
+                <Button Command="{Binding AutoCorrectAllPagesOrientationCommand}" ToolTip="全ページの文字向きを自動補正" Padding="6,4"
+                        IsEnabled="{Binding HasDocument}" Background="#E3F2FD" BorderBrush="#1976D2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="📖" FontSize="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="自動回転" FontSize="11" VerticalAlignment="Center" FontWeight="Bold" Foreground="#1976D2"/>
+                    </StackPanel>
                 </Button>
                 <Separator/>
                 

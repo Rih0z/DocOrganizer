@@ -46,6 +46,7 @@ namespace DocOrganizer.UI
                     services.AddSingleton<IPdfService, PdfService>();
                     services.AddSingleton<IPdfEditorService, PdfEditorService>();
                     services.AddSingleton<IImageProcessingService, ImageProcessingService>();
+                    services.AddSingleton<ITextOrientationService, SafeIronOcrTextOrientationService>();
                     
                     // アップデートサービスの登録
                     services.AddHttpClient<IUpdateService, GitHubUpdateService>();

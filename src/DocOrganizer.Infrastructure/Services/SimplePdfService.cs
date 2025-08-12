@@ -531,7 +531,7 @@ namespace DocOrganizer.Infrastructure.Services
                         var finalBitmap = originalBitmap;
                         if (page.Rotation != 0)
                         {
-                            finalBitmap = ApplyRotation(originalBitmap, page.Rotation);
+                            finalBitmap = RotateImageStatic(originalBitmap, page.Rotation);
                         }
 
                         // プレビューサイズにリサイズ
@@ -587,7 +587,7 @@ namespace DocOrganizer.Infrastructure.Services
                         var finalBitmap = originalBitmap;
                         if (page.Rotation != 0)
                         {
-                            finalBitmap = ApplyRotation(originalBitmap, page.Rotation);
+                            finalBitmap = RotateImageStatic(originalBitmap, page.Rotation);
                         }
 
                         // サムネイルサイズにリサイズ
@@ -611,26 +611,40 @@ namespace DocOrganizer.Infrastructure.Services
             });
         }
 
-        private static SKBitmap ApplyRotation(SKBitmap originalBitmap, int rotation)
+        
+
+        /// <summary>
+        /// 統一回転処理（静的版） - ApplyRotationの代替
+        /// </summary>
+        private static SKBitmap RotateImageStatic(SKBitmap source, int rotationDegrees)
         {
-            if (rotation == 0) return originalBitmap;
-
-            var rotatedInfo = new SKImageInfo(
-                rotation == 90 || rotation == 270 ? originalBitmap.Height : originalBitmap.Width,
-                rotation == 90 || rotation == 270 ? originalBitmap.Width : originalBitmap.Height,
-                originalBitmap.ColorType,
-                originalBitmap.AlphaType
-            );
-
-            var rotatedBitmap = new SKBitmap(rotatedInfo);
-            using var canvas = new SKCanvas(rotatedBitmap);
+            if (rotationDegrees == 0 || source == null) return source;
             
-            canvas.Clear(SKColors.White);
-            canvas.Translate(rotatedInfo.Width / 2f, rotatedInfo.Height / 2f);
-            canvas.RotateDegrees(rotation);
-            canvas.Translate(-originalBitmap.Width / 2f, -originalBitmap.Height / 2f);
-            canvas.DrawBitmap(originalBitmap, 0, 0);
-
+            // 回転角度を正規化（0, 90, 180, 270のみ対応）
+            var normalizedRotation = ((rotationDegrees % 360) + 360) % 360;
+            if (normalizedRotation % 90 != 0 || normalizedRotation == 0) return source;
+            
+            // 回転後のサイズを計算
+            int newWidth = (normalizedRotation == 90 || normalizedRotation == 270) ? source.Height : source.Width;
+            int newHeight = (normalizedRotation == 90 || normalizedRotation == 270) ? source.Width : source.Height;
+            
+            var rotatedBitmap = new SKBitmap(newWidth, newHeight, source.ColorType, source.AlphaType);
+            
+            using (var canvas = new SKCanvas(rotatedBitmap))
+            {
+                // キャンバスの中心を回転の基点とする
+                float centerX = newWidth / 2f;
+                float centerY = newHeight / 2f;
+                
+                canvas.Translate(centerX, centerY);
+                canvas.RotateDegrees(normalizedRotation);
+                
+                // 元画像を中心に配置して描画
+                float drawX = -source.Width / 2f;
+                float drawY = -source.Height / 2f;
+                canvas.DrawBitmap(source, drawX, drawY);
+            }
+            
             return rotatedBitmap;
         }
 
