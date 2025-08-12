@@ -160,25 +160,11 @@ namespace DocOrganizer.UI.ViewModels
                     
                     ThumbnailImage = bitmap;
                     
-                    // プレビュー画像も設定されていれば使用
-                    if (_page.PreviewImage != null)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[LoadThumbnailFromPdfPage] プレビュー画像も変換 - Size: {_page.PreviewImage.Width}x{_page.PreviewImage.Height}");
-                        using var previewData = _page.PreviewImage.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
-                        var previewStream = new System.IO.MemoryStream(previewData.ToArray());
-                        
-                        var previewBitmap = new System.Windows.Media.Imaging.BitmapImage();
-                        previewBitmap.BeginInit();
-                        previewBitmap.StreamSource = previewStream;
-                        previewBitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                        previewBitmap.EndInit();
-                        previewBitmap.Freeze();
-                        
-                        PreviewImage = previewBitmap;
-                    }
-                    // PreviewImageは設定せず、MainViewModelで高品質プレビューを生成
+                    // ⭐修正: PreviewImage設定を完全削除（ドキュメント通り）
+                    // 理由: PageViewModelでPreviewImageを設定すると右側の高解像度プレビューが劣化する
+                    // → MainViewModelで独自に高解像度プレビューを生成する必要がある
                     
-                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnailFromPdfPage] サムネイルとプレビュー設定完了");
+                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnailFromPdfPage] 左側サムネイルのみ設定完了 - PreviewImageは右側で独自生成");
                 }
             }
             catch (Exception ex)
@@ -885,7 +871,11 @@ namespace DocOrganizer.UI.ViewModels
                     processedBitmap = _imageProcessingService.RotateImage(originalBitmap, _page.Rotation);
                 }
                 
-                // WPFで表示可能な形式に変換（メモリ効率重視）
+                // ⭐修正: PreviewImage設定を完全削除（ドキュメント通り）
+                // 理由: PageViewModelでPreviewImageを設定すると右側の高解像度プレビューが劣化する
+                // → MainViewModelで独自に高解像度プレビューを生成する必要がある
+                
+                // WeakReferenceキャッシュのみ更新（内部処理用）
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     try 
@@ -893,17 +883,14 @@ namespace DocOrganizer.UI.ViewModels
                         using var encodedData = processedBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 85);
                         var wpfBitmap = CreateBitmapFromBytes(encodedData.ToArray());
                         
-                        // WeakReferenceキャッシュに保存
+                        // WeakReferenceキャッシュに保存（PreviewImageは設定しない）
                         _optimizedPreviewCache = new WeakReference<BitmapSource>(wpfBitmap);
                         
-                        PreviewImage = wpfBitmap;
-                        // [ObservableProperty]自動通知に依存
-                        
-                        System.Diagnostics.Debug.WriteLine($"[UpdateRotatedHeicPreviewAsync] HEIC回転プレビュー最適化完了");
+                        System.Diagnostics.Debug.WriteLine($"[UpdateRotatedHeicPreviewAsync] HEICキャッシュ更新完了 - PreviewImageは右側で独自生成");
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[UpdateRotatedHeicPreviewAsync] WPF更新エラー: {ex.Message}");
+                        System.Diagnostics.Debug.WriteLine($"[UpdateRotatedHeicPreviewAsync] キャッシュ更新エラー: {ex.Message}");
                     }
                 });
                 
