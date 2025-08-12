@@ -540,7 +540,7 @@ namespace DocOrganizer.UI.ViewModels
                     System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotationAsync] ページ {PageNumber} サムネイル再生成開始");
                     
                     // 回転角度を明示的に渡してサムネイル生成
-                    await GenerateThumbnailWithRotation(_page.Rotation);
+                    await GenerateThumbnailWithRotation(_page.SourceImagePath ?? "", _page.Rotation);
                     
                     // 最終更新 - [ObservableProperty]自動通知のみ（手動通知削除）
                     System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotationAsync] ページ {PageNumber} 最終更新完了");
