@@ -693,8 +693,9 @@ namespace DocOrganizer.Infrastructure.Services
 
         private bool IsHeicFile(string imagePath)
         {
-            var extension = Path.GetExtension(imagePath).ToLowerInvariant();
-            return extension == ".heic" || extension == ".heif";
+            var extension = Path.GetExtension(imagePath);
+            return extension.Equals(".heic", StringComparison.OrdinalIgnoreCase) ||
+                   extension.Equals(".heif", StringComparison.OrdinalIgnoreCase);
         }
 
         private (int width, int height) CalculateOptimalSize(int originalWidth, int originalHeight)
