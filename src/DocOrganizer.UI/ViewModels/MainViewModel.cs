@@ -206,6 +206,13 @@ namespace DocOrganizer.UI.ViewModels
                 Pages.Add(pageVm);
             }
             
+            // ⭐修正: 全PageViewModelで回転角度を強制同期（左右プレビュー不一致修正）
+            foreach (var pageVm in Pages)
+            {
+                pageVm.UpdateRotationSync();
+                System.Diagnostics.Debug.WriteLine($"[SetCurrentDocument] Page {pageVm.PageNumber} rotation sync: {pageVm.Rotation}°");
+            }
+            
             EmptyStateVisibility = "Collapsed";
             UpdateUI();
             
