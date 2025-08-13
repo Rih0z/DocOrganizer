@@ -24,7 +24,8 @@ namespace DocOrganizer.UI.Tests.ViewModels
             _mockDialogService = new Mock<IDialogService>();
             _mockImageService = new Mock<IImageProcessingService>();
             _mockTextOrientationService = new Mock<ITextOrientationService>();
-            _viewModel = new MainViewModel(_mockEditorService.Object, _mockDialogService.Object, _mockImageService.Object, _mockTextOrientationService.Object);
+            var mockUpdateService = new Mock<IUpdateService>();
+            _viewModel = new MainViewModel(_mockEditorService.Object, _mockDialogService.Object, _mockImageService.Object, _mockTextOrientationService.Object, mockUpdateService.Object);
         }
 
         [Fact]

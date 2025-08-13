@@ -21,7 +21,8 @@ namespace DocOrganizer.Application.Tests.Services
         {
             _loggerMock = new Mock<ILogger<ImageProcessingService>>();
             _pdfServiceMock = new Mock<IPdfService>();
-            _imageProcessingService = new ImageProcessingService(_loggerMock.Object, _pdfServiceMock.Object);
+            var rotationServiceMock = new Mock<IRotationService>();
+            _imageProcessingService = new ImageProcessingService(_loggerMock.Object, _pdfServiceMock.Object, rotationServiceMock.Object);
             _testDataPath = Path.Combine(Path.GetTempPath(), "ImageProcessingServiceTests");
             Directory.CreateDirectory(_testDataPath);
         }
