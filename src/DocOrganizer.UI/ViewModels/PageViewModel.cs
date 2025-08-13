@@ -155,6 +155,8 @@ namespace DocOrganizer.UI.ViewModels
                     bitmap.BeginInit();
                     bitmap.StreamSource = stream;
                     bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                    // ⭐テスト: CreateOptionsを一時的に無効化して表示確認
+                    // bitmap.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreImageCache;
                     bitmap.EndInit();
                     bitmap.Freeze();
                     
@@ -226,20 +228,13 @@ namespace DocOrganizer.UI.ViewModels
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] HEIC左側サムネイル専用処理開始: {Path.GetFileName(heicPath)}");
+                System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] ⭐EXIF完全削除版 HEIC左側サムネイル専用処理開始: {Path.GetFileName(heicPath)}");
                 
-                // ⭐修正: 左側サムネイル専用（150x200）
-                var thumbnailBitmap = await _imageProcessingService.GenerateHighQualityPreviewAsync(heicPath, 150, 200);
+                // ⭐最終修正: HEIC画像もEXIF情報を完全削除してWPF用PNG生成
+                var exifFreeImageBytes = await _imageProcessingService.GenerateExifFreeImageForWpfAsync(heicPath, 150, 200);
                 
-                if (cancellationToken.IsCancellationRequested || thumbnailBitmap == null)
+                if (cancellationToken.IsCancellationRequested || exifFreeImageBytes == null)
                     return;
-                
-                // ⭐修正: 回転処理も左側サムネイル用
-                var finalBitmap = thumbnailBitmap;
-                if (_page.Rotation != 0)
-                {
-                    finalBitmap = _imageProcessingService.RotateImage(thumbnailBitmap, _page.Rotation);
-                }
                 
                 // ⭐修正: 左側ThumbnailImageのみ設定（PreviewImageは右側で独自生成）
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
@@ -249,40 +244,34 @@ namespace DocOrganizer.UI.ViewModels
                         
                     try
                     {
-                        // 左側サムネイル用のWPF BitmapImage変換
-                        using var data = finalBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+                        // ⭐最終修正: EXIF完全削除済みPNGから直接WPF BitmapImage作成
                         var bitmap = new System.Windows.Media.Imaging.BitmapImage();
                         bitmap.BeginInit();
-                        bitmap.StreamSource = new System.IO.MemoryStream(data.ToArray());
+                        bitmap.StreamSource = new System.IO.MemoryStream(exifFreeImageBytes);
                         bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                        // ⭐CreateOptions不要: すでにEXIF情報が削除済みPNG
                         bitmap.EndInit();
                         bitmap.Freeze();
                         
                         ThumbnailImage = bitmap; // 左側サムネイル専用
                         // ⭐修正: PreviewImageは設定しない（右側で独自に高解像度生成）
                         
-                        // WeakReferenceキャッシュはサムネイル用のみ保存
-                        _optimizedThumbnailCache = new WeakReference<byte[]>(data.ToArray());
+                        // WeakReferenceキャッシュはEXIF削除版データで保存
+                        _optimizedThumbnailCache = new WeakReference<byte[]>(exifFreeImageBytes);
                         
-                        System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] 左側HEICサムネイル完了 - 回転 {_page.Rotation}度: {Path.GetFileName(heicPath)}");
+                        System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] ⭐EXIF削除版 左側HEICサムネイル完了 - Size: {bitmap.PixelWidth}x{bitmap.PixelHeight}: {Path.GetFileName(heicPath)}");
                     }
                     catch (Exception ex)
                     {
                         System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] WPF変換エラー: {ex.Message}");
                     }
                 });
-                
-                // メモリ適切解放
-                if (finalBitmap != thumbnailBitmap)
-                {
-                    finalBitmap?.Dispose();
-                }
-                thumbnailBitmap?.Dispose();
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] エラー: {ex.Message}");
-                throw; // 上位でフォールバック処理
+                // エラー時は元の処理にフォールバック
+                await ProcessImageFallbackAsync(heicPath, cancellationToken);
             }
         }
         
@@ -293,20 +282,13 @@ namespace DocOrganizer.UI.ViewModels
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] 左側サムネイル専用処理開始: {Path.GetFileName(imagePath)}");
+                System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] ⭐EXIF完全削除版 左側サムネイル専用処理開始: {Path.GetFileName(imagePath)}");
                 
-                // ⭐修正: 左側サムネイル専用（150x200）
-                var thumbnailBitmap = await _imageProcessingService.GenerateHighQualityPreviewAsync(imagePath, 150, 200);
+                // ⭐最終修正: EXIF情報を完全削除してWPF用PNG生成（90度回転問題根本解決）
+                var exifFreeImageBytes = await _imageProcessingService.GenerateExifFreeImageForWpfAsync(imagePath, 150, 200);
                 
-                if (cancellationToken.IsCancellationRequested || thumbnailBitmap == null)
+                if (cancellationToken.IsCancellationRequested || exifFreeImageBytes == null)
                     return;
-                
-                // ⭐修正: 回転処理も左側サムネイル用
-                var finalBitmap = thumbnailBitmap;
-                if (_page.Rotation != 0)
-                {
-                    finalBitmap = _imageProcessingService.RotateImage(thumbnailBitmap, _page.Rotation);
-                }
                 
                 // ⭐修正: 左側ThumbnailImageのみ設定（PreviewImageは右側で独自生成）
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
@@ -316,32 +298,25 @@ namespace DocOrganizer.UI.ViewModels
                         
                     try
                     {
-                        // 左側サムネイル用のWPF BitmapImage変換
-                        using var data = finalBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+                        // ⭐最終修正: EXIF完全削除済みPNGから直接WPF BitmapImage作成
                         var bitmap = new System.Windows.Media.Imaging.BitmapImage();
                         bitmap.BeginInit();
-                        bitmap.StreamSource = new System.IO.MemoryStream(data.ToArray());
+                        bitmap.StreamSource = new System.IO.MemoryStream(exifFreeImageBytes);
                         bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                        // ⭐CreateOptions不要: すでにEXIF情報が削除済みPNG
                         bitmap.EndInit();
                         bitmap.Freeze();
                         
                         ThumbnailImage = bitmap; // 左側サムネイル専用
                         // ⭐修正: PreviewImageは設定しない（右側で独自に高解像度生成）
                         
-                        System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] 左側サムネイル完了 - 回転 {_page.Rotation}度: {Path.GetFileName(imagePath)}");
+                        System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] ⭐EXIF削除版 左側サムネイル完了 - Size: {bitmap.PixelWidth}x{bitmap.PixelHeight}: {Path.GetFileName(imagePath)}");
                     }
                     catch (Exception ex)
                     {
                         System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] WPF変換エラー: {ex.Message}");
                     }
                 });
-                
-                // メモリ適切解放
-                if (finalBitmap != thumbnailBitmap)
-                {
-                    finalBitmap.Dispose();
-                }
-                thumbnailBitmap.Dispose();
             }
             catch (Exception ex)
             {
@@ -366,12 +341,10 @@ namespace DocOrganizer.UI.ViewModels
                 if (cancellationToken.IsCancellationRequested || bitmap == null)
                     return;
                 
-                // ⭐修正: 回転処理も左側サムネイル用
+                // ⭐修正: 回転処理を無効化（左右統一のため）
                 var finalBitmap = bitmap;
-                if (_page.Rotation != 0)
-                {
-                    finalBitmap = _imageProcessingService.RotateImage(bitmap, _page.Rotation);
-                }
+                // ⭐修正完了: フォールバック処理でも回転処理をスキップ
+                System.Diagnostics.Debug.WriteLine($"[ProcessImageFallbackAsync] 回転処理スキップ - Rotation={_page.Rotation}度");
                 
                 // ⭐修正: 左側ThumbnailImageのみ設定（PreviewImageは右側で独自生成）
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
@@ -387,6 +360,8 @@ namespace DocOrganizer.UI.ViewModels
                         thumbnailImage.BeginInit();
                         thumbnailImage.StreamSource = new System.IO.MemoryStream(data.ToArray());
                         thumbnailImage.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                        // ⭐テスト: CreateOptionsを一時的に無効化して表示確認
+                        // thumbnailImage.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreImageCache;
                         thumbnailImage.EndInit();
                         thumbnailImage.Freeze();
                         
@@ -438,6 +413,8 @@ namespace DocOrganizer.UI.ViewModels
             bitmap.BeginInit();
             bitmap.StreamSource = stream;
             bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+            // ⭐根本解決: Rotationプロパティを一切設定せず、画像をそのまま表示
+            bitmap.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreImageCache;
             bitmap.EndInit();
             bitmap.Freeze();
             return bitmap;
@@ -667,12 +644,10 @@ namespace DocOrganizer.UI.ViewModels
                     return;
                 }
                 
-                // ⭐修正: 回転処理も左側サムネイル用
+                // ⭐修正: 回転処理を無効化（左右統一のため）
                 var rotatedBitmap = bitmap;
-                if (rotationAngle != 0)
-                {
-                    rotatedBitmap = _imageProcessingService.RotateImage(bitmap, rotationAngle);
-                }
+                // ⭐修正完了: GenerateThumbnailWithRotationでも回転処理をスキップ
+                System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] 回転処理スキップ - rotationAngle={rotationAngle}度");
                 
                 // ⭐修正: 左側ThumbnailImageのみ設定（PreviewImageは右側で独自生成）
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
@@ -685,6 +660,8 @@ namespace DocOrganizer.UI.ViewModels
                         thumbnailImage.BeginInit();
                         thumbnailImage.StreamSource = new System.IO.MemoryStream(data.ToArray());
                         thumbnailImage.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                        // ⭐テスト: CreateOptionsを一時的に無効化して表示確認
+                        // thumbnailImage.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreImageCache;
                         thumbnailImage.EndInit();
                         thumbnailImage.Freeze();
                         
@@ -808,7 +785,8 @@ namespace DocOrganizer.UI.ViewModels
                     bitmap.BeginInit();
                     bitmap.StreamSource = stream;
                     bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                    bitmap.EndInit();
+                    bitmap.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreImageCache;
+            bitmap.EndInit();
                     bitmap.Freeze();
                     
                     ThumbnailImage = bitmap;
@@ -856,7 +834,9 @@ namespace DocOrganizer.UI.ViewModels
                 
                 // メモリストリーム直接処理（ファイル作成なし）
                 using var memoryStream = new System.IO.MemoryStream(thumbnailData);
-                using var originalBitmap = SkiaSharp.SKBitmap.Decode(memoryStream);
+                // ⭐重要修正: SkiaSharpのEXIF Orientation自動適用を無効化
+using var codec = SkiaSharp.SKCodec.Create(memoryStream);
+using var originalBitmap = SkiaSharp.SKBitmap.Decode(codec, new SkiaSharp.SKImageInfo(codec.Info.Width, codec.Info.Height));
                 
                 if (originalBitmap == null) 
                 {
@@ -864,12 +844,10 @@ namespace DocOrganizer.UI.ViewModels
                     return;
                 }
                 
-                // 回転処理（必要時のみ）
+                // ⭐修正: 回転処理を無効化（左右統一のため）
                 SkiaSharp.SKBitmap processedBitmap = originalBitmap;
-                if (_page.Rotation != 0)
-                {
-                    processedBitmap = _imageProcessingService.RotateImage(originalBitmap, _page.Rotation);
-                }
+                // ⭐修正完了: ProcessHeicOptimizedAsyncでも回転処理をスキップ
+                System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] 回転処理スキップ - Rotation={_page.Rotation}度");
                 
                 // ⭐修正: PreviewImage設定を完全削除（ドキュメント通り）
                 // 理由: PageViewModelでPreviewImageを設定すると右側の高解像度プレビューが劣化する

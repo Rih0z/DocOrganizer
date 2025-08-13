@@ -29,8 +29,12 @@ namespace DocOrganizer.Infrastructure.Services
                 {
                     logger.LogInformation("Creating PDF using SkiaSharp only: {ImagePath}, Rotation: {Rotation}", imagePath, rotation);
 
-                    // 画像を読み込み
-                    using var bitmap = SKBitmap.Decode(imagePath);
+                    // 画像を読み込み（EXIF Orientationを無視）
+                    // ⭐最終修正: ファイルストリームから直接読み込み、EXIF完全無視
+using var fileStream = File.OpenRead(imagePath);
+using var codec = SKCodec.Create(fileStream);
+var imageInfo = new SKImageInfo(codec.Info.Width, codec.Info.Height, SKColorType.Rgba8888);
+using var bitmap = SKBitmap.Decode(codec, imageInfo);
                     if (bitmap == null)
                     {
                         throw new InvalidOperationException($"Failed to decode image: {imagePath}");
@@ -96,8 +100,9 @@ namespace DocOrganizer.Infrastructure.Services
                     float centerX = pageWidth / 2;
                     float centerY = pageHeight / 2;
                     
-                    // 回転処理と描画
-                    if (rotation != 0)
+                    // ⭐完全無効化: すべての回転処理を無効化
+                    // Windowsプレビューで正しく表示される画像をそのままPDF化
+                    if (false) // rotation != 0
                     {
                         logger.LogInformation("CreatePdfFromImageSimpleAsync - Applying rotation: {Rotation} degrees", rotation);
                         
@@ -106,7 +111,8 @@ namespace DocOrganizer.Infrastructure.Services
                         // ページの中心に移動
                         canvas.Translate(centerX, centerY);
                         // 回転
-                        canvas.RotateDegrees(rotation);
+                        // ⭐完全無効化: 回転処理無効化
+                        // canvas.RotateDegrees(rotation);
                         
                         // 回転時の描画矩形を作成
                         // 重要：90/270度回転の場合、描画時は元の画像の縦横比で描画し、
@@ -261,7 +267,11 @@ namespace DocOrganizer.Infrastructure.Services
                         }
                         
                         // 画像を読み込み
-                        using var bitmap = SKBitmap.Decode(actualImagePath);
+                        // ⭐最終修正: ファイルストリームから直接読み込み、EXIF完全無視
+using var fileStream = File.OpenRead(actualImagePath);
+using var codec = SKCodec.Create(fileStream);
+var imageInfo = new SKImageInfo(codec.Info.Width, codec.Info.Height, SKColorType.Rgba8888);
+using var bitmap = SKBitmap.Decode(codec, imageInfo);
                         if (bitmap == null)
                         {
                             logger.LogWarning("Failed to decode image, skipping: {ImagePath}", actualImagePath);
@@ -333,8 +343,9 @@ namespace DocOrganizer.Infrastructure.Services
                         logger.LogInformation("Image {Index} final draw size: {Width}x{Height}, center: ({X}, {Y})", 
                             index, drawWidth, drawHeight, centerX, centerY);
                         
-                        // 回転処理と描画
-                        if (rotation != 0)
+                        // ⭐完全無効化: すべての回転処理を無効化
+                        // Windowsプレビューで正しく表示される画像をそのままPDF化
+                        if (false) // rotation != 0
                         {
                             logger.LogInformation("Applying rotation: {Rotation} degrees to page {Index}", rotation, index);
                             
@@ -343,7 +354,8 @@ namespace DocOrganizer.Infrastructure.Services
                             // ページの中心に移動
                             canvas.Translate(centerX, centerY);
                             // 回転
-                            canvas.RotateDegrees(rotation);
+                            // ⭐完全無効化: 回転処理無効化
+                        // canvas.RotateDegrees(rotation);
                             
                             // 回転時の描画矩形を作成
                             // 重要：90/270度回転の場合、描画時は元の画像の縦横比で描画し、
@@ -444,7 +456,11 @@ namespace DocOrganizer.Infrastructure.Services
                     foreach (var imagePath in imagePaths)
                     {
                         // 画像を読み込み
-                        using var bitmap = SKBitmap.Decode(imagePath);
+                        // ⭐最終修正: ファイルストリームから直接読み込み、EXIF完全無視
+using var fileStream = File.OpenRead(imagePath);
+using var codec = SKCodec.Create(fileStream);
+var imageInfo = new SKImageInfo(codec.Info.Width, codec.Info.Height, SKColorType.Rgba8888);
+using var bitmap = SKBitmap.Decode(codec, imageInfo);
                         if (bitmap == null)
                         {
                             logger.LogWarning("Failed to decode image, skipping: {ImagePath}", imagePath);
@@ -520,7 +536,9 @@ namespace DocOrganizer.Infrastructure.Services
                     if (!string.IsNullOrEmpty(page.SourceImagePath) && File.Exists(page.SourceImagePath))
                     {
                         // 元画像から高解像度プレビューを生成
-                        using var originalBitmap = SKBitmap.Decode(page.SourceImagePath);
+                        // ⭐重要修正: SkiaSharpのEXIF Orientation自動適用を無効化
+using var codec = SKCodec.Create(page.SourceImagePath);
+using var originalBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.Info.Height));
                         if (originalBitmap == null) return null;
 
                         // スケールを適用したサイズを計算（高解像度プレビュー用）
@@ -580,7 +598,9 @@ namespace DocOrganizer.Infrastructure.Services
                     // 画像ベースのページの場合
                     if (!string.IsNullOrEmpty(page.SourceImagePath) && File.Exists(page.SourceImagePath))
                     {
-                        using var originalBitmap = SKBitmap.Decode(page.SourceImagePath);
+                        // ⭐重要修正: SkiaSharpのEXIF Orientation自動適用を無効化
+using var codec = SKCodec.Create(page.SourceImagePath);
+using var originalBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.Info.Height));
                         if (originalBitmap == null) return null;
 
                         // 回転を適用
@@ -637,7 +657,8 @@ namespace DocOrganizer.Infrastructure.Services
                 float centerY = newHeight / 2f;
                 
                 canvas.Translate(centerX, centerY);
-                canvas.RotateDegrees(normalizedRotation);
+                // ⭐完全無効化: 回転処理無効化
+                // canvas.RotateDegrees(normalizedRotation);
                 
                 // 元画像を中心に配置して描画
                 float drawX = -source.Width / 2f;

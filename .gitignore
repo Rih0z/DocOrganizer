@@ -244,3 +244,7 @@ release/output/
 *.JPG
 *.JPEG
 *.PNG
+
+# Exclude temporary files and debug analysis
+tmp/
+.serena/cache/

@@ -278,7 +278,9 @@ namespace DocOrganizer.UI.ViewModels
                                         try
                                         {
                                             using var stream = new MemoryStream(thumbnailData);
-                                            var skBitmap = SKBitmap.Decode(stream);
+                                            // ⭐重要修正: SkiaSharpのEXIF Orientation自動適用を無効化
+using var codec = SKCodec.Create(stream);
+var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.Info.Height));
                                             
                                             if (skBitmap == null)
                                             {
@@ -480,27 +482,21 @@ namespace DocOrganizer.UI.ViewModels
                                 try
                                 {
                                     // 新しい高品質プレビューサービスを使用
-                                    var highQualityBitmap = await _imageProcessingService.GenerateHighQualityPreviewAsync(page.SourceImagePath, 1200, 1600);
+                                    // ⭐最終修正: 右側プレビューもEXIF情報を完全削除（90度回転問題根本解決）
+                                    var exifFreeImageBytes = await _imageProcessingService.GenerateExifFreeImageForWpfAsync(page.SourceImagePath, 1200, 1600);
                                     
-                                    if (highQualityBitmap != null)
+                                    if (exifFreeImageBytes != null)
                                     {
-                                        // 回転を適用
-                                        var finalBitmap = highQualityBitmap;
-                                        if (page.Rotation != 0)
-                                        {
-                                            finalBitmap = _imageProcessingService.RotateImage(highQualityBitmap, page.Rotation);
-                                        }
-                                        
                                         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                                         {
                                             try
                                             {
-                                                // 無圧縮PNG形式で変換（最高品質）
-                                                using var data = finalBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+                                                // ⭐最終修正: EXIF完全削除済みPNGから直接WPF BitmapImage作成
                                                 var bitmap = new System.Windows.Media.Imaging.BitmapImage();
                                                 bitmap.BeginInit();
-                                                bitmap.StreamSource = new System.IO.MemoryStream(data.ToArray());
+                                                bitmap.StreamSource = new System.IO.MemoryStream(exifFreeImageBytes);
                                                 bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                                                // ⭐CreateOptions不要: すでにEXIF情報が削除済みPNG
                                                 bitmap.EndInit();
                                                 bitmap.Freeze();
                                                 
@@ -523,7 +519,7 @@ namespace DocOrganizer.UI.ViewModels
                                                 PreviewWidth = displayWidth;
                                                 PreviewHeight = displayHeight;
                                                 
-                                                System.Diagnostics.Debug.WriteLine($"[UpdatePreview] 高品質プレビュー完了 - Size: {PreviewWidth}x{PreviewHeight}");
+                                                System.Diagnostics.Debug.WriteLine($"[UpdatePreview] ⭐EXIF削除版 高品質プレビュー完了 - Size: {PreviewWidth}x{PreviewHeight}");
                                             }
                                             catch (Exception uiEx)
                                             {
@@ -531,11 +527,6 @@ namespace DocOrganizer.UI.ViewModels
                                             }
                                         });
                                         
-                                        if (finalBitmap != highQualityBitmap)
-                                        {
-                                            finalBitmap.Dispose();
-                                        }
-                                        highQualityBitmap.Dispose();
                                         return; // 高品質プレビュー完了、PDFプレビューをスキップ
                                     }
                                 }
@@ -565,6 +556,8 @@ namespace DocOrganizer.UI.ViewModels
                                         bitmap.BeginInit();
                                         bitmap.StreamSource = new System.IO.MemoryStream(data.ToArray());
                                         bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                                        // ⭐テスト: CreateOptionsを一時的に無効化して表示確認
+                                        // bitmap.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreImageCache;
                                         bitmap.EndInit();
                                         bitmap.Freeze();
                                         

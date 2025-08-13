@@ -18,5 +18,15 @@ namespace DocOrganizer.Application.Interfaces
         /// 統一回転処理 - 一時的回転関数の代替
         /// </summary>
         SkiaSharp.SKBitmap RotateImage(SkiaSharp.SKBitmap source, int rotationDegrees);
+        
+        /// <summary>
+        /// 画像をEXIF情報完全削除して読み込み（90度回転問題完全解決）
+        /// </summary>
+        Task<SkiaSharp.SKBitmap?> LoadImageWithoutExifAsync(string imagePath);
+        
+        /// <summary>
+        /// WPF用にEXIF完全削除済み画像を生成（PNG再エンコード）
+        /// </summary>
+        Task<byte[]?> GenerateExifFreeImageForWpfAsync(string imagePath, int targetWidth = 600, int targetHeight = 800);
     }
 }

@@ -43,6 +43,7 @@ namespace DocOrganizer.UI
 
                     // サービスの登録
                     services.AddSingleton<IDialogService, DialogService>();
+                    services.AddSingleton<IRotationService, RotationService>(); // ★統一回転サービス追加
                     services.AddSingleton<IPdfService, PdfService>();
                     services.AddSingleton<IPdfEditorService, PdfEditorService>();
                     services.AddSingleton<IImageProcessingService, ImageProcessingService>();

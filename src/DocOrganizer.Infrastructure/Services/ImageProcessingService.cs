@@ -1512,5 +1512,104 @@ var skBitmap = SkiaSharp.SKBitmap.Decode(codec, new SkiaSharp.SKImageInfo(codec.
                 }
             });
         }
+
+        /// <summary>
+        /// 画像をEXIF情報完全削除して読み込み（90度回転問題完全解決）
+        /// ピクセルをそのまま表示するため、すべてのメタデータを削除
+        /// </summary>
+        public Task<SkiaSharp.SKBitmap?> LoadImageWithoutExifAsync(string imagePath)
+        {
+            try
+            {
+                _logger.LogInformation("[LoadImageWithoutExifAsync] EXIF完全削除読み込み開始: {ImagePath}", Path.GetFileName(imagePath));
+                
+                // SkiaSharpでEXIF情報を無視して読み込み
+                using var codec = SkiaSharp.SKCodec.Create(imagePath);
+                if (codec == null)
+                {
+                    _logger.LogWarning("[LoadImageWithoutExifAsync] SKCodec作成失敗: {ImagePath}", imagePath);
+                    return null;
+                }
+                
+                // 元画像のピクセルをそのまま取得（EXIF Orientationを無視）
+                var info = new SkiaSharp.SKImageInfo(codec.Info.Width, codec.Info.Height, SkiaSharp.SKColorType.Rgba8888);
+                var bitmap = new SkiaSharp.SKBitmap(info);
+                
+                // EXIF情報を無視してデコード
+                var result = codec.GetPixels(bitmap.Info, bitmap.GetPixels());
+                if (result != SkiaSharp.SKCodecResult.Success)
+                {
+                    _logger.LogWarning("[LoadImageWithoutExifAsync] ピクセル取得失敗: {Result} for {ImagePath}", result, imagePath);
+                    bitmap.Dispose();
+                    return null;
+                }
+                
+                _logger.LogInformation("[LoadImageWithoutExifAsync] EXIF完全削除成功 - Size: {Width}x{Height} for {ImagePath}", 
+                    bitmap.Width, bitmap.Height, Path.GetFileName(imagePath));
+                
+                return Task.FromResult<SkiaSharp.SKBitmap?>(bitmap);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[LoadImageWithoutExifAsync] EXIF削除読み込みエラー: {ImagePath}", imagePath);
+                return Task.FromResult<SkiaSharp.SKBitmap?>(null);
+            }
+        }
+
+        /// <summary>
+        /// WPF用にEXIF完全削除済み画像を生成（PNG再エンコード）
+        /// CreateOptionsを使用せずに90度回転問題を根本解決
+        /// </summary>
+        public async Task<byte[]?> GenerateExifFreeImageForWpfAsync(string imagePath, int targetWidth = 600, int targetHeight = 800)
+        {
+            try
+            {
+                _logger.LogInformation("[GenerateExifFreeImageForWpfAsync] WPF用EXIF削除画像生成開始: {ImagePath}", Path.GetFileName(imagePath));
+                
+                // EXIF情報を完全削除して読み込み
+                using var originalBitmap = await LoadImageWithoutExifAsync(imagePath);
+                if (originalBitmap == null) return null;
+                
+                // 適切なサイズにリサイズ
+                var aspectRatio = (double)originalBitmap.Width / originalBitmap.Height;
+                int finalWidth, finalHeight;
+                
+                if (aspectRatio > 1)
+                {
+                    finalWidth = Math.Min(targetWidth, originalBitmap.Width);
+                    finalHeight = (int)(finalWidth / aspectRatio);
+                }
+                else
+                {
+                    finalHeight = Math.Min(targetHeight, originalBitmap.Height);
+                    finalWidth = (int)(finalHeight * aspectRatio);
+                }
+                
+                // 高品質リサイズ
+                var resizedInfo = new SkiaSharp.SKImageInfo(finalWidth, finalHeight, SkiaSharp.SKColorType.Rgba8888);
+                using var resizedBitmap = originalBitmap.Resize(resizedInfo, SkiaSharp.SKFilterQuality.High);
+                
+                if (resizedBitmap == null)
+                {
+                    _logger.LogWarning("[GenerateExifFreeImageForWpfAsync] リサイズ失敗: {ImagePath}", imagePath);
+                    return null;
+                }
+                
+                // PNG形式でエンコード（EXIF情報なし）
+                using var image = SkiaSharp.SKImage.FromBitmap(resizedBitmap);
+                using var data = image.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+                
+                var result = data.ToArray();
+                _logger.LogInformation("[GenerateExifFreeImageForWpfAsync] EXIF削除PNG生成完了 - Size: {Width}x{Height}, Bytes: {Size} for {ImagePath}", 
+                    finalWidth, finalHeight, result.Length, Path.GetFileName(imagePath));
+                
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[GenerateExifFreeImageForWpfAsync] WPF用EXIF削除画像生成エラー: {ImagePath}", imagePath);
+                return null;
+            }
+        }
     }
 }

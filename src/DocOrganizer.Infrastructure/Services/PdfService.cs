@@ -347,7 +347,9 @@ namespace DocOrganizer.Infrastructure.Services
                     // 画像ベースのページで元画像がある場合は、それを使用
                     if (!string.IsNullOrEmpty(page.SourceImagePath) && File.Exists(page.SourceImagePath))
                     {
-                        using var originalBitmap = SKBitmap.Decode(page.SourceImagePath);
+                        // ⭐重要修正: SkiaSharpのEXIF Orientation自動適用を無効化
+using var codec = SKCodec.Create(page.SourceImagePath);
+using var originalBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.Info.Height));
                         if (originalBitmap != null)
                         {
                             // 回転を適用
@@ -512,7 +514,9 @@ namespace DocOrganizer.Infrastructure.Services
                         using (var graphics = PdfSharpCore.Drawing.XGraphics.FromPdfPage(page))
                         {
                             // メモリストリーム経由で画像を読み込み（ImageSharp依存を回避）
-                        using (var bitmap = SKBitmap.Decode(imagePath))
+                        // ⭐重要修正: SkiaSharpのEXIF Orientation自動適用を無効化
+using var codec = SKCodec.Create(imagePath);
+using (var bitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.Info.Height)))
                         {
                             var tempPath = Path.GetTempFileName() + ".png";
                             try
@@ -603,7 +607,8 @@ namespace DocOrganizer.Infrastructure.Services
             {
                 canvas.Clear(SKColors.Transparent);
                 canvas.Translate(rotatedWidth / 2, rotatedHeight / 2);
-                canvas.RotateDegrees(degrees);
+                // ⭐完全無効化: 回転処理無効化
+                // canvas.RotateDegrees(degrees);
                 canvas.Translate(-originalWidth / 2, -originalHeight / 2);
                 canvas.DrawBitmap(source, 0, 0);
             }
@@ -621,7 +626,9 @@ namespace DocOrganizer.Infrastructure.Services
                     var page = outputDoc.AddPage();
                     page.Size = PdfSharpCore.PageSize.A4;
 
-                    using (var bitmap = SKBitmap.Decode(imagePath))
+                    // ⭐重要修正: SkiaSharpのEXIF Orientation自動適用を無効化
+using var codec = SKCodec.Create(imagePath);
+using (var bitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.Info.Height)))
                     {
                         using (var graphics = PdfSharpCore.Drawing.XGraphics.FromPdfPage(page))
                         {
