@@ -1,4 +1,5 @@
 using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -17,13 +18,15 @@ namespace DocOrganizer.UI.Views
         private Point _startPoint;
         private bool _isDragging;
         private readonly ILogger<MainWindow>? _logger;
+        
+        // ドラッグ&ドロップ重複処理防止フラグ
+        private bool _isProcessingDrop = false;
 
         public MainWindow(ILogger<MainWindow>? logger = null)
         {
             InitializeComponent();
             _logger = logger;
-            
-            System.Diagnostics.Debug.WriteLine("[MainWindow] Constructor called");
+
             _logger?.LogInformation("MainWindow initialized");
             
             this.Loaded += MainWindow_Loaded;
@@ -34,27 +37,26 @@ namespace DocOrganizer.UI.Views
         
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine("[MainWindow] Window closing - cleaning up HEIC cache");
+
             _logger?.LogInformation("Cleaning up HEIC cache on window close");
             DocOrganizer.UI.ViewModels.PageViewModel.CleanupHeicCache();
         }
         
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine("[MainWindow] Window loaded");
+
             System.Diagnostics.Debug.WriteLine($"[MainWindow] DataContext type: {DataContext?.GetType().Name}");
-            System.Diagnostics.Debug.WriteLine($"[MainWindow] ViewModel is null: {ViewModel == null}");
-            
+
             // Force command refresh
             CommandManager.InvalidateRequerySuggested();
             
             // Add fallback click handler for Open button
             if (this.FindName("OpenButton") is Button openButton)
             {
-                System.Diagnostics.Debug.WriteLine("[MainWindow] OpenButton found, adding click handler");
+
                 openButton.Click += (s, args) =>
                 {
-                    System.Diagnostics.Debug.WriteLine("[MainWindow] OpenButton clicked via event handler");
+
                     if (ViewModel?.OpenCommand != null && ViewModel.OpenCommand.CanExecute(null))
                     {
                         ViewModel.OpenCommand.Execute(null);
@@ -64,11 +66,11 @@ namespace DocOrganizer.UI.Views
             
             if (PageListBox != null)
             {
-                System.Diagnostics.Debug.WriteLine($"[MainWindow] PageListBox found, Items count: {PageListBox.Items.Count}");
+
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine("[MainWindow] PageListBox is null!");
+
             }
             
             // ツールバーのボタンのコマンドバインディングを確認
@@ -81,7 +83,7 @@ namespace DocOrganizer.UI.Views
                 {
                     if (item is Button button)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[MainWindow] Button ToolTip: {button.ToolTip}, Command: {button.Command != null}, IsEnabled: {button.IsEnabled}");
+
                     }
                 }
             }
@@ -98,14 +100,14 @@ namespace DocOrganizer.UI.Views
             };
             testButton.Click += (s, args) =>
             {
-                System.Diagnostics.Debug.WriteLine("[MainWindow] Test button clicked!");
-                MessageBox.Show("テストボタンがクリックされました！", "動作確認", MessageBoxButton.OK);
+
+                // Test MessageBox removed for production
             };
             
             if (this.Content is Grid mainGrid)
             {
                 mainGrid.Children.Add(testButton);
-                System.Diagnostics.Debug.WriteLine("[MainWindow] Test button added to grid");
+
             }
         }
 
@@ -236,12 +238,29 @@ namespace DocOrganizer.UI.Views
 
         private async void PreviewArea_Drop(object sender, DragEventArgs e)
         {
-            // オーバーレイを非表示
-            DropOverlay.Visibility = Visibility.Collapsed;
+            // ⭐重複処理防止チェック
+            if (_isProcessingDrop)
+            {
+                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [WARNING] PreviewArea_Drop: Already processing, skipping duplicate event\n");
+                e.Handled = true;
+                return;
+            }
+            
+            _isProcessingDrop = true;
+            File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [DEBUG] PreviewArea_Drop: Started processing\n");
+            
+            try
+            {
+                // オーバーレイを非表示
+                DropOverlay.Visibility = Visibility.Collapsed;
 
             if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop))
             {
                 string[] droppedItems = (string[])e.Data.GetData(System.Windows.DataFormats.FileDrop);
+                
+                // ⭐修正: 即座にUI状態変化（ユーザー応答性向上）
+                ViewModel.StatusMessage = "ファイルを処理中...";
+                ViewModel.ProgressVisibility = "Visible";
                 
                 // ファイルとフォルダを展開
                 var allFiles = new System.Collections.Generic.List<string>();
@@ -270,8 +289,8 @@ namespace DocOrganizer.UI.Views
                 {
                     try
                     {
+                        // ⭐修正: 詳細状態メッセージに更新（ProgressVisibilityは既に設定済み）
                         ViewModel.StatusMessage = $"{supportedFiles.Count} 個のファイルを処理中...";
-                        ViewModel.ProgressVisibility = "Visible";
                         
                         // PDFファイルと画像ファイルを分離
                         var pdfFiles = supportedFiles.Where(f => IsPdfFile(f)).ToList();
@@ -286,9 +305,12 @@ namespace DocOrganizer.UI.Views
                             }
                             catch (Exception ex)
                             {
-                                System.Diagnostics.Debug.WriteLine($"[MainWindow] Image processing error: {ex.Message}");
+
+
+                                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [CRITICAL ERROR] Image processing failed: {ex.Message}\n");
+                                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [CRITICAL ERROR] StackTrace: {ex.StackTrace}\n");
                                 // シンプルなエラーメッセージ（ログエラーを回避）
-                                ViewModel.StatusMessage = "画像変換エラーが発生しました";
+                                ViewModel.StatusMessage = $"画像変換エラー: {ex.Message}";
                             }
                         }
                         
@@ -318,6 +340,12 @@ namespace DocOrganizer.UI.Views
                 {
                     ViewModel.StatusMessage = "対応していないファイル形式です";
                 }
+            }
+            }
+            finally
+            {
+                _isProcessingDrop = false;
+                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [DEBUG] PreviewArea_Drop: Processing completed, flag reset\n");
             }
             
             e.Handled = true;
@@ -388,7 +416,20 @@ namespace DocOrganizer.UI.Views
 
         private async void Window_Drop(object sender, DragEventArgs e)
         {
-            DropOverlay.Visibility = Visibility.Collapsed;
+            // ⭐重複処理防止チェック
+            if (_isProcessingDrop)
+            {
+                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [WARNING] Window_Drop: Already processing, skipping duplicate event\n");
+                e.Handled = true;
+                return;
+            }
+            
+            _isProcessingDrop = true;
+            File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [DEBUG] Window_Drop: Started processing\n");
+            
+            try
+            {
+                DropOverlay.Visibility = Visibility.Collapsed;
 
             if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop))
             {
@@ -417,8 +458,8 @@ namespace DocOrganizer.UI.Views
                 {
                     try
                     {
+                        // ⭐修正: 詳細状態メッセージに更新（ProgressVisibilityは既に設定済み）
                         ViewModel.StatusMessage = $"{supportedFiles.Count} 個のファイルを処理中...";
-                        ViewModel.ProgressVisibility = "Visible";
                         
                         // PDFファイルと画像ファイルを分離
                         var pdfFiles = supportedFiles.Where(f => IsPdfFile(f)).ToList();
@@ -433,9 +474,12 @@ namespace DocOrganizer.UI.Views
                             }
                             catch (Exception ex)
                             {
-                                System.Diagnostics.Debug.WriteLine($"[MainWindow] Image processing error: {ex.Message}");
+
+
+                                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [CRITICAL ERROR] Image processing failed: {ex.Message}\n");
+                                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [CRITICAL ERROR] StackTrace: {ex.StackTrace}\n");
                                 // シンプルなエラーメッセージ（ログエラーを回避）
-                                ViewModel.StatusMessage = "画像変換エラーが発生しました";
+                                ViewModel.StatusMessage = $"画像変換エラー: {ex.Message}";
                             }
                         }
                         
@@ -470,6 +514,12 @@ namespace DocOrganizer.UI.Views
                     ViewModel.StatusMessage = "準備完了";
                 }
             }
+            }
+            finally
+            {
+                _isProcessingDrop = false;
+                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [DEBUG] Window_Drop: Processing completed, flag reset\n");
+            }
             
             e.Handled = true;
         }
@@ -482,7 +532,7 @@ namespace DocOrganizer.UI.Views
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("[PageListBox_SelectionChanged] Event fired");
+
                 _logger?.LogInformation("PageListBox_SelectionChanged event fired");
                 
                 if (sender is ListBox listBox)
@@ -491,7 +541,7 @@ namespace DocOrganizer.UI.Views
                     
                     if (listBox.SelectedItem is PageViewModel selectedPage)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[PageListBox_SelectionChanged] Selected page: {selectedPage.PageNumber}");
+
                         _logger?.LogInformation($"Selected page: {selectedPage.PageNumber}");
                         
                         // ViewModelのSelectedPageとCurrentPageImageを更新
@@ -504,13 +554,13 @@ namespace DocOrganizer.UI.Views
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine("[PageListBox_SelectionChanged] Sender is not ListBox");
+
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[PageListBox_SelectionChanged] Error: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[PageListBox_SelectionChanged] StackTrace: {ex.StackTrace}");
+
+
                 _logger?.LogError(ex, "Error in PageListBox_SelectionChanged");
             }
         }

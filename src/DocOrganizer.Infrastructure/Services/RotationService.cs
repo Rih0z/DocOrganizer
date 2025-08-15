@@ -1,4 +1,5 @@
 using System;
+using System;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -42,15 +43,14 @@ namespace DocOrganizer.Infrastructure.Services
 
                 if (_loggingEnabled)
                 {
-                    _logger.LogInformation("[RotationService] EXIF分析: {ImagePath} - Orientation={Orientation}, RequiredRotation={Rotation}°", 
-                        Path.GetFileName(imagePath), exifOrientation, requiredRotation);
+                    // LogInformation removed for production
                 }
 
                 return requiredRotation;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[RotationService] EXIF分析エラー: {ImagePath}", imagePath);
+                // Error logging disabled for production
                 return 0;
             }
         }
@@ -70,8 +70,7 @@ namespace DocOrganizer.Infrastructure.Services
 
                 if (_loggingEnabled)
                 {
-                    _logger.LogInformation("[RotationService] 回転処理開始: {Rotation}度, Size={Width}x{Height} ({OperationId})", 
-                        normalizedRotation, source.Width, source.Height, operationId);
+                    // LogInformation removed for production
                 }
 
                 // 回転後のサイズを計算
@@ -102,8 +101,7 @@ namespace DocOrganizer.Infrastructure.Services
 
                 if (_loggingEnabled)
                 {
-                    _logger.LogInformation("[RotationService] 回転完了: {Details} ({OperationId})", 
-                        details, operationId);
+                    // LogInformation removed for production
                 }
 
                 return rotatedBitmap;
@@ -125,8 +123,7 @@ namespace DocOrganizer.Infrastructure.Services
 
                 if (_loggingEnabled)
                 {
-                    _logger.LogInformation("[RotationService] EXIF無視読み込み開始: {ImagePath}", 
-                        Path.GetFileName(imagePath));
+                    // LogInformation removed for production
                 }
 
                 // ファイルから直接読み込み、EXIF Orientationを完全無視
@@ -149,15 +146,14 @@ namespace DocOrganizer.Infrastructure.Services
 
                 if (_loggingEnabled)
                 {
-                    _logger.LogInformation("[RotationService] EXIF無視読み込み完了: {ImagePath} - Size={Width}x{Height}", 
-                        Path.GetFileName(imagePath), bitmap.Width, bitmap.Height);
+                    // LogInformation removed for production
                 }
 
                 return bitmap;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[RotationService] EXIF無視読み込みエラー: {ImagePath}", imagePath);
+                // Error logging disabled for production
                 throw;
             }
         }
@@ -173,7 +169,7 @@ namespace DocOrganizer.Infrastructure.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "[RotationService] EXIF Orientation読み取りエラー: {ImagePath}", imagePath);
+                    // LogWarning removed for production
                     return 1; // TopLeft (回転なし)
                 }
             });
@@ -184,7 +180,7 @@ namespace DocOrganizer.Infrastructure.Services
             _loggingEnabled = enabled;
             if (_loggingEnabled)
             {
-                _logger.LogInformation("[RotationService] ログ出力が有効化されました");
+                // LogInformation removed for production
             }
         }
 

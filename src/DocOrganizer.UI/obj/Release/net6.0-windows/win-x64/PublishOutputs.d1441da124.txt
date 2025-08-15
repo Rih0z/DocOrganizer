@@ -1,5 +1,0 @@
-C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\release\DocOrganizer.pdb
-C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\release\DocOrganizer.Application.pdb
-C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\release\DocOrganizer.Core.pdb
-C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\release\DocOrganizer.Infrastructure.pdb
-C:\Users\koki\ezark\standard-image\Standard-image\v2.2-taxdoc-organizer\release\DocOrganizer.exe

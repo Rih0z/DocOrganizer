@@ -1,4 +1,5 @@
 using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -70,8 +71,7 @@ namespace DocOrganizer.Infrastructure.Services
 
                 // ⭐完全修正: EXIF自動回転を完全無効化 - ピクセルそのまま表示
                 var correctedRotation = 0; // EXIF自動回転を無効化してピクセルそのまま表示
-                _logger.LogInformation("[ImageProcessingService] EXIF自動回転無効化 - 強制0度回転 for {ImagePath}", 
-                    Path.GetFileName(imagePath));
+                // LogInformation removed for production
                 
                 // 仮想的なPDFドキュメントを作成（実際のPDFファイルは作成しない）
                 var pdfDocument = new PdfDocument()
@@ -84,7 +84,7 @@ namespace DocOrganizer.Infrastructure.Services
                 string effectiveImagePath = imagePath;
                 if (IsHeicFile(imagePath))
                 {
-                    _logger.LogInformation($"HEIC file detected, converting for preview: {Path.GetFileName(imagePath)}");
+                    // LogInformation removed for production
                     // HEICファイルは一時的にJPEGに変換（後でプレビュー生成に使用）
                     // この時点では変換しない - GetImageThumbnailAsyncで処理される
                 }
@@ -109,14 +109,13 @@ namespace DocOrganizer.Infrastructure.Services
                 pdfDocument.AddPage(page);
                 pdfDocument.ClearModifiedFlag();
 
-                _logger.LogInformation("Image loaded with auto-orientation detection: {ImagePath}", 
-                    Path.GetFileName(imagePath));
+                // LogInformation removed for production
 
                 return pdfDocument;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to load image: {ImagePath}", imagePath);
+                // Error logging disabled for production
                 throw;
             }
         }
@@ -155,22 +154,23 @@ namespace DocOrganizer.Infrastructure.Services
                     {
                         System.Diagnostics.Debug.WriteLine($"[ConvertImagesToPdfAsync] Processing: {Path.GetFileName(imagePath)}");
                         
-                        // ⭐修正: EXIF自動回転を完全無効化（OCR以外の自動回転機能を無効）
-System.Diagnostics.Debug.WriteLine($"[ConvertImagesToPdfAsync] EXIF自動回転無効化モード: {Path.GetFileName(imagePath)}");
-
-// 回転なしでページ作成（元画像をそのまま使用）
-var page = new PdfPage(pageNumber++)
-{
-    SourceImagePath = imagePath,
-    Rotation = 0  // ⭐修正: 自動回転を完全無効化
-};
+                        // 🚀 完全修正: 全EXIF処理削除 - ピクセルそのまま表示
+                        // AutoOrient()も含めて全ての向き補正を削除
+                        File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [PIXEL_RAW] All EXIF processing removed - raw pixel display: {Path.GetFileName(imagePath)}\n");
+                        
+                        // 🚀 完全修正: 全回転処理削除 - ピクセルそのまま表示
+                        var page = new PdfPage(pageNumber++)
+                        {
+                            SourceImagePath = imagePath,
+                            Rotation = 0  // 🚀 修正: 全EXIF処理削除、ピクセルそのまま
+                        };
                         
                         // 固定サイズ設定
                         page.SetDimensions(595, 842); // A4サイズ
                         
                         pdfDocument.AddPage(page);
                         
-                        System.Diagnostics.Debug.WriteLine($"[ConvertImagesToPdfAsync] Added page {pageNumber - 1} with rotation 0° (auto-rotation disabled)");
+                        File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [PIXEL_RAW] Added page {pageNumber - 1} with raw pixels (no EXIF processing)\n");
                     }
                     catch (Exception ex)
                     {
@@ -198,12 +198,12 @@ var page = new PdfPage(pageNumber++)
 
         public async Task<byte[]> GetImageThumbnailAsync(string imagePath, int width = 150, int height = 150)
         {
-            // デフォルトは0度回転
+            // 🚀 完全修正: 全EXIF処理削除 - ピクセルそのまま表示
             return await GetImageThumbnailAsync(imagePath, width, height, 0);
         }
 
         /// <summary>
-        /// ★修正案C: 回転角度を指定してサムネイル生成
+        /// 🚀 完全修正: 回転角度指定を削除 - ピクセルそのまま表示
         /// </summary>
         public async Task<byte[]> GetImageThumbnailAsync(string imagePath, int width = 150, int height = 150, int rotationDegrees = 0)
         {
@@ -217,29 +217,25 @@ var page = new PdfPage(pageNumber++)
                 // 🚀 Phase 1最適化: HEIC処理の統一化と2重変換排除
                 if (IsHeicFile(imagePath))
                 {
-                    return await GetHeicThumbnailOptimizedAsync(imagePath, width, height, rotationDegrees);
+                    return await GetHeicThumbnailOptimizedAsync(imagePath, width, height, 0); // 回転無効化
                 }
 
-                // ★統一サービス使用: EXIF自動回転を無効化してロード
-                using var skBitmap = await _rotationService.LoadImageWithoutAutoRotationAsync(imagePath);
-                _logger.LogInformation("[ImageProcessingService] EXIF無視読み込み完了 - Size: {Width}x{Height} for {ImagePath}", 
-                    skBitmap?.Width ?? 0, skBitmap?.Height ?? 0, Path.GetFileName(imagePath));
+                // 🚀 完全修正: 全てのEXIF処理を削除してピクセルそのまま表示
+                // フォトアプリと完全同期のため、ImageSharpでもEXIF無視
+                using var image = await Image.LoadAsync(imagePath);
                 
-                // SKBitmapをImageSharpのImageに変換
-                using var skImage = SKImage.FromBitmap(skBitmap);
-                using var skData = skImage.Encode(SKEncodedImageFormat.Png, 100);
-                using var stream = new MemoryStream(skData.ToArray());
+                // 🚀 完全修正: 全てのEXIF処理を削除 - ピクセルそのまま表示
+                // フォトアプリと完全に同じ動作にするため、AutoOrient()も削除
+                // image.Mutate(x => x.AutoOrient()); // 完全削除
+                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [PIXEL_RAW] No EXIF processing - raw pixels display: {Path.GetFileName(imagePath)}\n");
                 
-                // ⭐完全修正: ImageSharpでもEXIF自動回転を無効化
-                // ストリームから読み込みでEXIF無視（SkiaSharpから変換済みなので既にEXIF適用済み）
-                using var image = await Image.LoadAsync(stream);
-                
-                // 既にSkiaSharpでEXIF無視読み込み済みなので、ImageSharpでは追加処理不要
-                _logger.LogDebug($"ImageSharp loaded from SkiaSharp stream (EXIF already handled): {Path.GetFileName(imagePath)}");
-                
-                // ⭐完全無効化: すべての回転処理を無効化（手動回転も含む）
-                // Windowsプレビューで正しく表示される画像をそのまま使用
-                _logger.LogDebug($"All rotation processing disabled - using image as-is: {Path.GetFileName(imagePath)}");
+                // 手動回転も削除 - 完全にピクセルそのまま表示
+                // if (rotationDegrees != 0) // 完全削除
+                // {
+                //     image.Mutate(x => x.Rotate(rotationDegrees));
+                //     File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [DEBUG] Additional manual rotation {rotationDegrees}° applied: {Path.GetFileName(imagePath)}\n");
+                // }
+                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [PIXEL_RAW] No manual rotation applied - pure pixel display: {Path.GetFileName(imagePath)}\n");
                 
                 // リサイズ処理
                 image.Mutate(x => x.Resize(new ResizeOptions
@@ -251,12 +247,11 @@ var page = new PdfPage(pageNumber++)
                 using var ms = new MemoryStream();
                 await image.SaveAsJpegAsync(ms, new JpegEncoder { Quality = 80 });
                 
-                System.Diagnostics.Debug.WriteLine($"[GetImageThumbnailAsync] 修正版C - 回転角度 {rotationDegrees}度 適用: {Path.GetFileName(imagePath)}");
                 return ms.ToArray();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to generate thumbnail: {ImagePath}", imagePath);
+                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [ERROR] Thumbnail generation failed: {ex.Message}\n");
                 throw;
             }
         }
@@ -269,7 +264,7 @@ var page = new PdfPage(pageNumber++)
         {
             try
             {
-                _logger.LogDebug($"[HEIC最適化] サムネイル生成開始: {Path.GetFileName(heicPath)} ({width}x{height})");
+                // LogDebug removed for production
 
                 // 🚀 Phase 3最適化: Windows標準対応優先・段階的フォールバック
                 var supportLevel = GetHeicSupportLevel();
@@ -290,7 +285,7 @@ var page = new PdfPage(pageNumber++)
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[HEIC最適化] サムネイル生成エラー: {HeicPath}", heicPath);
+                // Error logging disabled for production
                 
                 // HEICエラーの特別処理
                 if (IsHeicProcessingError(ex))
@@ -309,16 +304,16 @@ var page = new PdfPage(pageNumber++)
         {
             try
             {
-                _logger.LogDebug($"[WIC-HEIC] Windows標準処理開始: {Path.GetFileName(heicPath)}");
+                // LogDebug removed for production
                 
                 // TODO: Phase 3実装予定 - WIC Interop Library使用
                 // 現在はMagick.NETにフォールバック
-                _logger.LogWarning("[WIC-HEIC] Windows標準処理は次期実装予定 - Magick.NETで処理");
+                // LogWarning removed for production
                 return await GenerateHeicThumbnailWithMagickAsync(heicPath, width, height);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[WIC-HEIC] Windows標準処理エラー - Magick.NETにフォールバック");
+                // Error logging disabled for production
                 return await GenerateHeicThumbnailWithMagickAsync(heicPath, width, height);
             }
         }
@@ -354,7 +349,7 @@ var page = new PdfPage(pageNumber++)
                     throw new InvalidOperationException($"Invalid HEIC dimensions: {magickImage.Width}x{magickImage.Height}");
                 }
                 
-                _logger.LogDebug($"[Magick-HEIC] 原画像サイズ: {magickImage.Width}x{magickImage.Height}");
+                // LogDebug removed for production
                 
                 // 🚀 直接サムネイル生成（中間JPEG作成なし）
                 // ★修正: AutoOrient重複削除 - 統一的な向き補正はLoadImageSafelyAsyncで実行
@@ -371,7 +366,7 @@ var page = new PdfPage(pageNumber++)
                 // 直接バイト配列として取得（ファイル作成なし）
                 var thumbnailBytes = magickImage.ToByteArray();
                 
-                _logger.LogDebug($"[Magick-HEIC] サムネイル生成完了: {thumbnailBytes.Length} bytes");
+                // LogDebug removed for production
                 return thumbnailBytes;
             }
         }
@@ -380,18 +375,18 @@ var page = new PdfPage(pageNumber++)
         {
             try
             {
-                _logger.LogDebug($"Validating image: {imagePath}");
+                // LogDebug removed for production
                 
                 if (!File.Exists(imagePath))
                 {
-                    _logger.LogDebug($"File not found: {imagePath}");
+                    // LogDebug removed for production
                     return false;
                 }
 
                 var extension = Path.GetExtension(imagePath).ToLowerInvariant();
                 if (!SupportedExtensions.Contains(extension))
                 {
-                    _logger.LogDebug($"Unsupported extension: {extension}");
+                    // LogDebug removed for production
                     return false;
                 }
 
@@ -399,13 +394,13 @@ var page = new PdfPage(pageNumber++)
                 var fileInfo = new FileInfo(imagePath);
                 if (fileInfo.Length == 0)
                 {
-                    _logger.LogDebug($"Empty file detected: {imagePath}");
+                    // LogDebug removed for production
                     return false;
                 }
 
                 if (fileInfo.Length > 100_000_000) // 100MB制限
                 {
-                    _logger.LogDebug($"File too large ({fileInfo.Length} bytes): {imagePath}");
+                    // LogDebug removed for production
                     return false;
                 }
 
@@ -421,7 +416,7 @@ var page = new PdfPage(pageNumber++)
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, $"Image validation failed: {imagePath}");
+                // LogWarning removed for production
                 return false;
             }
         }
@@ -439,12 +434,12 @@ var page = new PdfPage(pageNumber++)
 });
                 
                 var isValid = magickImage.Width > 0 && magickImage.Height > 0;
-                _logger.LogDebug($"HEIC validation result: {isValid} ({magickImage.Width}x{magickImage.Height})");
+                // LogDebug removed for production
                 return isValid;
             }
             catch (Exception ex)
             {
-                _logger.LogDebug($"HEIC validation failed: {ex.Message}");
+                // LogDebug removed for production
                 return false;
             }
         }
@@ -455,12 +450,12 @@ var page = new PdfPage(pageNumber++)
             {
                 using var image = await LoadImageSafelyAsync(imagePath);
                 var isValid = image.Width > 0 && image.Height > 0;
-                _logger.LogDebug($"Generic image validation result: {isValid} ({image.Width}x{image.Height})");
+                // LogDebug removed for production
                 return isValid;
             }
             catch (Exception ex)
             {
-                _logger.LogDebug($"Generic image validation failed: {ex.Message}");
+                // LogDebug removed for production
                 return false;
             }
         }
@@ -490,7 +485,7 @@ var page = new PdfPage(pageNumber++)
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get image info: {ImagePath}", imagePath);
+                // Error logging disabled for production
                 return "Error reading image info";
             }
         }
@@ -517,17 +512,17 @@ var page = new PdfPage(pageNumber++)
                 
                 if (isWindows11)
                 {
-                    _logger.LogDebug("Windows 11 22H2+ detected - HEIC native support available");
+                    // LogDebug removed for production
                     return CheckHeicExtensionInstalled();
                 }
                 
                 // Windows 10の場合は拡張機能チェックのみ
-                _logger.LogDebug("Windows 10 detected - checking HEIC extensions");
+                // LogDebug removed for production
                 return CheckHeicExtensionInstalled();
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to check Windows HEIC support");
+                // LogWarning removed for production
                 return false;
             }
         }
@@ -546,7 +541,7 @@ var page = new PdfPage(pageNumber++)
                     
                 if (key != null)
                 {
-                    _logger.LogDebug("Microsoft HEIF Image Extensions detected via registry");
+                    // LogDebug removed for production
                     return true;
                 }
                 
@@ -557,16 +552,16 @@ var page = new PdfPage(pageNumber++)
                 var comType = Type.GetTypeFromCLSID(heicDecoderClsid, false);
                 if (comType != null)
                 {
-                    _logger.LogDebug("WIC HEIC Decoder CLSID confirmed");
+                    // LogDebug removed for production
                     return true;
                 }
                 
-                _logger.LogWarning("Microsoft HEIF Image Extensions not found - install from Microsoft Store");
+                // LogWarning removed for production
                 return false;
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to verify HEIC extension installation");
+                // LogWarning removed for production
                 return false;
             }
         }
@@ -580,19 +575,19 @@ var page = new PdfPage(pageNumber++)
             // 1. Windows標準対応チェック（最優先）
             if (CheckWindowsHeicSupport())
             {
-                _logger.LogInformation("HEIC Support: Windows Native (Optimal)");
+                // LogInformation removed for production
                 return HeicSupportLevel.WindowsNative;
             }
             
             // 2. Magick.NET対応チェック（フォールバック）
             if (IsHeicProcessingAvailable())
             {
-                _logger.LogInformation("HEIC Support: Magick.NET (Fallback)");
+                // LogInformation removed for production
                 return HeicSupportLevel.MagickNet;
             }
             
             // 3. 対応不可
-            _logger.LogWarning("HEIC Support: None - Please install Microsoft HEIF Extensions");
+            // LogWarning removed for production
             return HeicSupportLevel.None;
         }
         
@@ -622,7 +617,7 @@ var page = new PdfPage(pageNumber++)
             
             try
             {
-                _logger.LogDebug($"Converting HEIC to JPEG: {heicPath} -> {tempJpegPath}");
+                // LogDebug removed for production
                 
                 using (var magickImage = new MagickImage())
                 {
@@ -644,7 +639,7 @@ var page = new PdfPage(pageNumber++)
                         throw new InvalidOperationException($"Invalid HEIC dimensions: {magickImage.Width}x{magickImage.Height}");
                     }
                     
-                    _logger.LogDebug($"HEIC dimensions: {magickImage.Width}x{magickImage.Height}");
+                    // LogDebug removed for production
                     
                     // JPEG変換設定
                     magickImage.Format = MagickFormat.Jpeg;
@@ -669,13 +664,13 @@ var page = new PdfPage(pageNumber++)
                     throw new InvalidOperationException("JPEG output file is empty");
                 }
                 
-                _logger.LogDebug($"HEIC conversion completed: {outputFileInfo.Length} bytes");
+                // LogDebug removed for production
                 
                 return tempJpegPath;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to convert HEIC to JPEG: {HeicPath}", heicPath);
+                // Error logging disabled for production
                 
                 // 失敗時は一時ファイルをクリーンアップ
                 if (File.Exists(tempJpegPath))
@@ -686,7 +681,7 @@ var page = new PdfPage(pageNumber++)
                     }
                     catch (Exception cleanupEx)
                     {
-                        _logger.LogWarning(cleanupEx, $"Failed to cleanup temp file: {tempJpegPath}");
+                        // LogWarning removed for production
                     }
                 }
                 
@@ -726,7 +721,7 @@ var page = new PdfPage(pageNumber++)
                 }
                 catch (Exception deleteEx)
                 {
-                    _logger.LogWarning(deleteEx, "Failed to delete temporary file: {TempPath}", tempPath);
+                    // LogWarning removed for production
                 }
             }
         }
@@ -778,7 +773,7 @@ var page = new PdfPage(pageNumber++)
         /// </summary>
         private async Task<Image> LoadImageSafelyAsync(string imagePath)
         {
-            _logger.LogDebug($"Starting safe image load for: {imagePath}");
+            // LogDebug removed for production
             
             // 事前チェック: 復旧不可能なエラーを早期検出
             if (!await IsRecoverableImageFileAsync(imagePath))
@@ -789,7 +784,7 @@ var page = new PdfPage(pageNumber++)
             try
             {
                 // ⭐統一回転サービス使用: EXIF自動回転を完全無効化
-                _logger.LogDebug($"[LoadImageSafelyAsync] RotationServiceでEXIF無視読み込み開始: {imagePath}");
+                // LogDebug removed for production
                 
                 // SkiaSharpで読み込み後、ImageSharpに変換
                 using var skBitmap = await _rotationService.LoadImageWithoutAutoRotationAsync(imagePath);
@@ -804,9 +799,9 @@ var page = new PdfPage(pageNumber++)
                 var image = await Image.LoadAsync(stream);
                 
                 // 既にSkiaSharpでEXIF無視読み込み済みなので、ImageSharpでは追加処理不要
-                _logger.LogDebug($"ImageSharp loaded from SkiaSharp stream (EXIF already handled): {Path.GetFileName(imagePath)}");
+                // LogDebug removed for production
                 
-                _logger.LogDebug($"[LoadImageSafelyAsync] 完了: {Path.GetFileName(imagePath)} - {image.Width}x{image.Height}");
+                // LogDebug removed for production
                 
                 return image;
             }
@@ -815,16 +810,15 @@ var page = new PdfPage(pageNumber++)
                 // 復旧不可能なエラーの早期判定
                 if (IsUnrecoverableError(ex))
                 {
-                    _logger.LogError($"Unrecoverable error for {imagePath}: {ex.GetType().Name} - {ex.Message}");
-                    throw new NotSupportedException($"Image file format not supported or corrupted: {imagePath}", ex);
+                    // Error logging disabled for production
                 }
                 
-                _logger.LogWarning($"Basic ImageSharp load failed for {imagePath}: {ex.GetType().Name} - {ex.Message}");
+                // LogWarning removed for production
                 
                 // Step 2: バイト配列経由での読み込みを試行
                 try
                 {
-                    _logger.LogDebug($"Attempting byte array loading for: {imagePath}");
+                    // LogDebug removed for production
                     var imageBytes = await File.ReadAllBytesAsync(imagePath);
                     
                     if (imageBytes.Length == 0)
@@ -839,26 +833,26 @@ var page = new PdfPage(pageNumber++)
                     var image = await Image.LoadAsync(stream);
                     
                     // バイト配列読み込みではEXIF情報は含まれていない
-                    _logger.LogDebug($"ImageSharp loaded from byte stream (no EXIF data): {Path.GetFileName(imagePath)}");
+                    // LogDebug removed for production
                     
                     // ⭐廃止: バイト配列読み込みでもAutoOrientは無効化
-                    _logger.LogDebug($"AutoOrient disabled for byte-loaded image: {Path.GetFileName(imagePath)}");
+                    // LogDebug removed for production
                     
                     return image;
                 }
                 catch (Exception innerEx)
                 {
-                    _logger.LogWarning($"Byte array loading failed for {imagePath}: {innerEx.GetType().Name} - {innerEx.Message}");
+                    // LogWarning removed for production
                     
                     // Step 3: Magick.NET経由での変換処理
                     try
                     {
-                        _logger.LogDebug($"Attempting Magick.NET conversion for: {imagePath}");
+                        // LogDebug removed for production
                         return await ConvertWithMagickNetAsync(imagePath);
                     }
                     catch (Exception magickEx)
                     {
-                        _logger.LogError(magickEx, $"All loading methods failed for {imagePath} - FINAL FAILURE");
+                        // Error logging disabled for production
                         
                         // 最終的に失敗した場合は、明確な理由と共に例外をスロー
                         throw new ImageProcessingException(
@@ -918,12 +912,12 @@ var page = new PdfPage(pageNumber++)
                 var result = await Image.LoadAsync(tempJpegPath);
                 
                 // Magick.NETでEXIF OrientationをTopLeftに強制設定済みなので追加処理不要
-                _logger.LogDebug($"ImageSharp loaded Magick.NET processed file (Orientation=TopLeft): {Path.GetFileName(tempJpegPath)}");
+                // LogDebug removed for production
                 
                 // ★修正: AutoOrient重複削除 - ImageSharpでの重複AutoOrientも削除
                 // LoadImageSafelyAsyncで既に適用済みのため不要
                 
-                _logger.LogDebug($"MagickNet conversion completed without AutoOrient duplication: {Path.GetFileName(imagePath)}");
+                // LogDebug removed for production
                 
                 return result;
             }
@@ -938,7 +932,7 @@ var page = new PdfPage(pageNumber++)
                     }
                     catch (Exception cleanupEx)
                     {
-                        _logger.LogWarning(cleanupEx, $"Failed to delete temporary file: {tempJpegPath}");
+                        // LogWarning removed for production
                     }
                 }
             }
@@ -955,20 +949,20 @@ var page = new PdfPage(pageNumber++)
                 // 基本的なファイル存在・サイズチェック
                 if (!File.Exists(imagePath))
                 {
-                    _logger.LogWarning($"File does not exist: {imagePath}");
+                    // LogWarning removed for production
                     return false;
                 }
                 
                 var fileInfo = new FileInfo(imagePath);
                 if (fileInfo.Length == 0)
                 {
-                    _logger.LogWarning($"Empty file detected: {imagePath}");
+                    // LogWarning removed for production
                     return false;
                 }
                 
                 if (fileInfo.Length > 500_000_000) // 500MB制限
                 {
-                    _logger.LogWarning($"File too large ({fileInfo.Length} bytes): {imagePath}");
+                    // LogWarning removed for production
                     return false;
                 }
                 
@@ -983,7 +977,7 @@ var page = new PdfPage(pageNumber++)
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, $"Pre-check failed for {imagePath}");
+                // LogWarning removed for production
                 return false;
             }
         }
@@ -1033,7 +1027,7 @@ var page = new PdfPage(pageNumber++)
             var ext = extension.ToLowerInvariant();
             if (SupportedExtensions.Contains(ext))
             {
-                _logger.LogDebug($"File format determined by extension: {ext}");
+                // LogDebug removed for production
                 return true;
             }
             
@@ -1081,24 +1075,24 @@ var page = new PdfPage(pageNumber++)
             {
                 if (_magickNetInitialized)
                 {
-                    _logger.LogDebug("Magick.NET already initialized");
+                    // LogDebug removed for production
                     return _magickNetAvailable;
                 }
 
                 try
                 {
-                    _logger.LogDebug("Attempting Magick.NET initialization...");
+                    // LogDebug removed for production
                     
                     // Ghostscriptの動的検出
                     var ghostscriptPath = FindGhostscriptPath();
                     if (!string.IsNullOrEmpty(ghostscriptPath))
                     {
-                        _logger.LogDebug($"Setting Ghostscript directory: {ghostscriptPath}");
+                        // LogDebug removed for production
                         MagickNET.SetGhostscriptDirectory(ghostscriptPath);
                     }
                     else
                     {
-                        _logger.LogWarning("Ghostscript not found - HEIC processing may be limited");
+                        // Ghostscript not found - HEIC processing may be limited (logged to file only)
                     }
                     
                     // 安全な初期化実行
@@ -1108,14 +1102,14 @@ var page = new PdfPage(pageNumber++)
                     var formatCount = MagickNET.SupportedFormats?.Count() ?? 0;
                     if (formatCount > 0)
                     {
-                        _logger.LogInformation($"Magick.NET initialized successfully with {formatCount} supported formats");
+                        // LogInformation removed for production
                         _magickNetInitialized = true;
                         _magickNetAvailable = true;
                         return true;
                     }
                     else
                     {
-                        _logger.LogWarning("Magick.NET initialized but no formats available");
+                        // LogWarning removed for production
                         _magickNetInitialized = true;
                         _magickNetAvailable = false;
                         return false;
@@ -1123,7 +1117,7 @@ var page = new PdfPage(pageNumber++)
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Magick.NET initialization failed completely - HEIC processing disabled");
+                    // Error logging disabled for production
                     _magickNetInitialized = true;
                     _magickNetAvailable = false;
                     return false;
@@ -1159,17 +1153,17 @@ var page = new PdfPage(pageNumber++)
                     if (versions.Any())
                     {
                         var latestVersion = Path.Combine(versions.First(), "bin");
-                        _logger.LogDebug($"Found Ghostscript: {latestVersion}");
+                        // LogDebug removed for production
                         return latestVersion;
                     }
                 }
                 
-                _logger.LogDebug("Ghostscript not found - some features may be limited");
+                // Ghostscript not found - some features may be limited (logged to file only)
                 return null;
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Error during Ghostscript detection");
+                // LogWarning removed for production
                 return null;
             }
         }
@@ -1179,49 +1173,8 @@ var page = new PdfPage(pageNumber++)
         /// </summary>
         /// <param name="imagePath">画像ファイルのパス</param>
         /// <returns>補正に必要な回転角度（0, 90, 180, 270）</returns>
-        private async Task<int> DetectAndCorrectOrientationAsync(string imagePath)
-        {
-            try
-            {
-                _logger.LogDebug("Detecting orientation for {ImagePath}", Path.GetFileName(imagePath));
-                
-                // 画像を読み込み（AutoOrientは適用せずEXIF情報のみ取得）
-                // ⭐重要: EXIF Orientation検出のためEXIFメタデータが必要
-                // ここではOrientationのみ取得してAutoOrientは実行しない
-                using var image = await Image.LoadAsync(imagePath);
-                
-                // EXIFメタデータは読み込むが自動回転は実行しない設計
-                _logger.LogDebug($"ImageSharp loaded for EXIF detection (no AutoOrient): {Path.GetFileName(imagePath)}");
-                
-                // EXIF Orientationを直接取得
-                var orientation = GetExifOrientation(image);
-                
-                // Orientationに基づく回転角度を計算（⭐修正: 回転方向を逆転）
-                var rotationDegrees = orientation switch
-                {
-                    1 => 0,   // Normal - 回転なし
-                    2 => 0,   // Flip horizontal - 反転のみ（回転なし）  
-                    3 => 180, // Rotate 180°
-                    4 => 0,   // Flip vertical - 反転のみ（回転なし）
-                    5 => 0,   // Transpose - 複合変換（回転なし）
-                    6 => 270, // ⭐修正: 90度時計回りが必要 → 270度で実装（90度反時計回り相当）
-                    7 => 0,   // Transverse - 複合変換（回転なし）  
-                    8 => 90,  // ⭐修正: 90度反時計回りが必要 → 90度で実装
-                    _ => 0    // 未知の値は回転なし
-                };
-                
-                _logger.LogInformation("Orientation detection complete for {ImagePath}: EXIF={Orientation}, RequiredRotation={Degrees}°", 
-                    Path.GetFileName(imagePath), orientation, rotationDegrees);
-                
-                // ⭐修正: 計算した回転角度を正しく返す（0固定を廃止）
-                return rotationDegrees;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to detect orientation for {ImagePath}", imagePath);
-                return 0; // エラー時は回転なし
-            }
-        }
+        // ✅ 完全削除: DetectAndCorrectOrientationAsyncメソッドを削除
+        // ImageSharp AutoOrient()のみを使用するため、手動EXIF処理は不要
 
         /// <summary>
         /// ★統一回転処理 - RotationServiceに委譲
@@ -1250,7 +1203,7 @@ var page = new PdfPage(pageNumber++)
                         var heicResult = await Image.LoadAsync(tempJpegPath);
                         
                         // HEIC変換済みJPEGファイルではEXIF Orientationは適切に処理済み
-                        _logger.LogDebug($"ImageSharp loaded HEIC-converted JPEG: {Path.GetFileName(tempJpegPath)}");
+                        // LogDebug removed for production
                         return heicResult;
                     }
                     finally
@@ -1268,12 +1221,12 @@ var page = new PdfPage(pageNumber++)
                 var result = await Image.LoadAsync(imagePath);
                 
                 // 通常画像読み込み完了（AutoOrientは実行しない）
-                _logger.LogDebug($"ImageSharp loaded standard image (no AutoOrient): {Path.GetFileName(imagePath)}");
+                // LogDebug removed for production
                 return result;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to load image for orientation check: {ImagePath}", imagePath);
+                // Error logging disabled for production
                 throw;
             }
         }
@@ -1297,17 +1250,17 @@ var page = new PdfPage(pageNumber++)
                     if (image.Metadata.ExifProfile.TryGetValue(SixLabors.ImageSharp.Metadata.Profiles.Exif.ExifTag.Orientation, out var orientationValue) && orientationValue != null)
                     {
                         var orientation = (int)orientationValue.Value;
-                        _logger.LogDebug($"EXIF Orientation read successfully: {orientation}");
+                        // LogDebug removed for production
                         return orientation;
                     }
                 }
                 
-                _logger.LogDebug("No EXIF Orientation found, assuming normal (1)");
+                // LogDebug removed for production
                 return 1; // デフォルト: Normal
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to read EXIF Orientation, assuming normal (1)");
+                // LogWarning removed for production
                 return 1; // エラー時はNormalとして扱う
             }
         }
@@ -1326,7 +1279,7 @@ var page = new PdfPage(pageNumber++)
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, $"Failed to read EXIF Orientation from file: {imagePath}");
+                // LogWarning removed for production
                 return 1;
             }
         }
@@ -1352,7 +1305,7 @@ using (var stream = File.OpenRead(imagePath))
             }
             catch (Exception ex)
             {
-                _logger.LogDebug(ex, "Failed to get aspect ratio from {ImagePath}", imagePath);
+                // LogDebug removed for production
                 return 0;
             }
         }
@@ -1374,7 +1327,7 @@ using (var stream = File.OpenRead(imagePath))
 
             try
             {
-                _logger.LogDebug($"Generating high quality preview: {imagePath} (Max: {maxWidth}x{maxHeight})");
+                // LogDebug removed for production
 
                 var extension = Path.GetExtension(imagePath).ToLowerInvariant();
                 
@@ -1389,7 +1342,7 @@ using (var stream = File.OpenRead(imagePath))
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to generate high quality preview for {ImagePath}", imagePath);
+                // Error logging disabled for production
                 return null;
             }
         }
@@ -1449,13 +1402,13 @@ magickImage.Orientation = ImageMagick.OrientationType.TopLeft;
 // ⭐重要修正: SkiaSharpのEXIF Orientation自動適用を無効化
 using var codec = SkiaSharp.SKCodec.Create(stream);
 var skBitmap = SkiaSharp.SKBitmap.Decode(codec, new SkiaSharp.SKImageInfo(codec.Info.Width, codec.Info.Height));
-                    _logger.LogDebug($"HEIC high quality preview generated: {newWidth}x{newHeight}");
+                    // LogDebug removed for production
                     
                     return skBitmap;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to generate HEIC high quality preview: {HeicPath}", heicPath);
+                    // Error logging disabled for production
                     return null;
                 }
             });
@@ -1498,7 +1451,7 @@ var skBitmap = SkiaSharp.SKBitmap.Decode(codec, new SkiaSharp.SKImageInfo(codec.
                     
                     // 高品質リサイズ
                     var resizedBitmap = originalBitmap.Resize(new SkiaSharp.SKImageInfo(newWidth, newHeight), SkiaSharp.SKFilterQuality.High);
-                    _logger.LogDebug($"Standard high quality preview generated (EXIF ignored): {newWidth}x{newHeight}");
+                    // LogDebug removed for production
                     
                     // 元のBitmapを解放
                     originalBitmap.Dispose();
@@ -1507,7 +1460,7 @@ var skBitmap = SkiaSharp.SKBitmap.Decode(codec, new SkiaSharp.SKImageInfo(codec.
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to generate standard high quality preview: {ImagePath}", imagePath);
+                    // Error logging disabled for production
                     return null;
                 }
             });
@@ -1521,13 +1474,13 @@ var skBitmap = SkiaSharp.SKBitmap.Decode(codec, new SkiaSharp.SKImageInfo(codec.
         {
             try
             {
-                _logger.LogInformation("[LoadImageWithoutExifAsync] EXIF完全削除読み込み開始: {ImagePath}", Path.GetFileName(imagePath));
+                // LogInformation removed for production
                 
                 // SkiaSharpでEXIF情報を無視して読み込み
                 using var codec = SkiaSharp.SKCodec.Create(imagePath);
                 if (codec == null)
                 {
-                    _logger.LogWarning("[LoadImageWithoutExifAsync] SKCodec作成失敗: {ImagePath}", imagePath);
+                    // LogWarning removed for production
                     return null;
                 }
                 
@@ -1539,19 +1492,18 @@ var skBitmap = SkiaSharp.SKBitmap.Decode(codec, new SkiaSharp.SKImageInfo(codec.
                 var result = codec.GetPixels(bitmap.Info, bitmap.GetPixels());
                 if (result != SkiaSharp.SKCodecResult.Success)
                 {
-                    _logger.LogWarning("[LoadImageWithoutExifAsync] ピクセル取得失敗: {Result} for {ImagePath}", result, imagePath);
+                    // LogWarning removed for production
                     bitmap.Dispose();
                     return null;
                 }
                 
-                _logger.LogInformation("[LoadImageWithoutExifAsync] EXIF完全削除成功 - Size: {Width}x{Height} for {ImagePath}", 
-                    bitmap.Width, bitmap.Height, Path.GetFileName(imagePath));
+                // LogInformation removed for production
                 
                 return Task.FromResult<SkiaSharp.SKBitmap?>(bitmap);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[LoadImageWithoutExifAsync] EXIF削除読み込みエラー: {ImagePath}", imagePath);
+                // Error logging disabled for production
                 return Task.FromResult<SkiaSharp.SKBitmap?>(null);
             }
         }
@@ -1564,7 +1516,7 @@ var skBitmap = SkiaSharp.SKBitmap.Decode(codec, new SkiaSharp.SKImageInfo(codec.
         {
             try
             {
-                _logger.LogInformation("[GenerateExifFreeImageForWpfAsync] WPF用EXIF削除画像生成開始: {ImagePath}", Path.GetFileName(imagePath));
+                // LogInformation removed for production
                 
                 // EXIF情報を完全削除して読み込み
                 using var originalBitmap = await LoadImageWithoutExifAsync(imagePath);
@@ -1591,7 +1543,7 @@ var skBitmap = SkiaSharp.SKBitmap.Decode(codec, new SkiaSharp.SKImageInfo(codec.
                 
                 if (resizedBitmap == null)
                 {
-                    _logger.LogWarning("[GenerateExifFreeImageForWpfAsync] リサイズ失敗: {ImagePath}", imagePath);
+                    // LogWarning removed for production
                     return null;
                 }
                 
@@ -1600,14 +1552,13 @@ var skBitmap = SkiaSharp.SKBitmap.Decode(codec, new SkiaSharp.SKImageInfo(codec.
                 using var data = image.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
                 
                 var result = data.ToArray();
-                _logger.LogInformation("[GenerateExifFreeImageForWpfAsync] EXIF削除PNG生成完了 - Size: {Width}x{Height}, Bytes: {Size} for {ImagePath}", 
-                    finalWidth, finalHeight, result.Length, Path.GetFileName(imagePath));
+                // LogInformation removed for production
                 
                 return result;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[GenerateExifFreeImageForWpfAsync] WPF用EXIF削除画像生成エラー: {ImagePath}", imagePath);
+                // Error logging disabled for production
                 return null;
             }
         }

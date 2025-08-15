@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -85,20 +86,17 @@ namespace DocOrganizer.UI.ViewModels
             _imageProcessingService = imageProcessingService;
             _textOrientationService = textOrientationService;
             _updateService = updateService;
-            
-            System.Diagnostics.Debug.WriteLine("[MainViewModel] Constructor called");
-            
+
             // コマンドの初期化状態を確認（CommunityToolkit.Mvvmは自動生成するので後で確認）
             System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
-                System.Diagnostics.Debug.WriteLine($"[MainViewModel] OpenCommand: {OpenCommand != null}");
-                System.Diagnostics.Debug.WriteLine($"[MainViewModel] SaveCommand: {SaveCommand != null}");
-                System.Diagnostics.Debug.WriteLine($"[MainViewModel] RotateLeftCommand: {RotateLeftCommand != null}");
-                System.Diagnostics.Debug.WriteLine($"[MainViewModel] RotateRightCommand: {RotateRightCommand != null}");
-                
+
+
+
+
                 // CommandManagerの動作確認
                 CommandManager.InvalidateRequerySuggested();
-                System.Diagnostics.Debug.WriteLine("[MainViewModel] CommandManager.InvalidateRequerySuggested called");
+
             }));
         }
 
@@ -139,7 +137,7 @@ namespace DocOrganizer.UI.ViewModels
         [RelayCommand]
         private async Task OpenAsync()
         {
-            System.Diagnostics.Debug.WriteLine("[OpenAsync] Command executed!");
+
             _dialogService.ShowInformation("Openコマンドが実行されました！");
             var openFileDialog = new Microsoft.Win32.OpenFileDialog
             {
@@ -195,38 +193,73 @@ namespace DocOrganizer.UI.ViewModels
 
         private async void SetCurrentDocument(PdfDocument document)
         {
-            _currentDocument = document;
-            Pages.Clear();
+            // ⭐確認用: ユーザーに明確にわかるメッセージ表示
+            // DEBUG MessageBox removed for production
             
-            // まずPageViewModelを作成
-            foreach (var page in document.Pages)
+            _currentDocument = document;
+            
+            // PropertyChangedイベントハンドラーを削除
+            foreach (var existingPage in Pages.ToList())
             {
-                var pageVm = new PageViewModel(page, _imageProcessingService, _textOrientationService);
-                pageVm.PropertyChanged += PageViewModel_PropertyChanged;
-                Pages.Add(pageVm);
+                existingPage.PropertyChanged -= PageViewModel_PropertyChanged;
             }
+            
+            // ⭐確認用: Pages.Clear()前の状態を表示
+            var beforeCount = Pages.Count;
+            // DEBUG MessageBox removed for production
+            
+            // ⭐根本修正: 完全な新しいObservableCollectionインスタンス作成
+            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                Pages = new ObservableCollection<PageViewModel>();
+            });
+            
+            System.GC.Collect(); // 強制ガベージコレクション
+            await Task.Delay(1); // UI更新待機
+            
+            // ⭐確認用: リセット後の状態を表示
+            // DEBUG MessageBox removed for production
+            
+            // ページ数の確認
+            var expectedPageCount = document.Pages.Count;
+            if (expectedPageCount == 0)
+            {
+                EmptyStateVisibility = "Visible";
+                return;
+            }
+            
+            // PageViewModelを作成（UIスレッドで確実に実行）
+            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                foreach (var page in document.Pages)
+                {
+                    var pageVm = new PageViewModel(page, _imageProcessingService, _textOrientationService);
+                    pageVm.PropertyChanged += PageViewModel_PropertyChanged;
+                    Pages.Add(pageVm);
+                }
+            });
+            
+            // ⭐確認用: 最終結果を表示
+            // DEBUG MessageBox removed for production
             
             // ⭐修正: 全PageViewModelで回転角度を強制同期（左右プレビュー不一致修正）
             foreach (var pageVm in Pages)
             {
                 pageVm.UpdateRotationSync();
-                System.Diagnostics.Debug.WriteLine($"[SetCurrentDocument] Page {pageVm.PageNumber} rotation sync: {pageVm.Rotation}°");
             }
             
             EmptyStateVisibility = "Collapsed";
             UpdateUI();
             
-            // 最初のページを自動選択してプレビューを即座に表示
+            // 最初のページを自動選択
             if (Pages.Any())
             {
                 var firstPage = Pages.First();
                 firstPage.IsSelected = true;
-                
-                // シンプルに即座に表示（全ての画像形式で統一）
                 UpdateSelectedPage(firstPage);
             }
             
-            // サムネイル更新を非同期で実行（UIをブロックしない）
+            // サムネイル更新を非同期で実行
             _ = Task.Run(async () =>
             {
                 try 
@@ -235,9 +268,7 @@ namespace DocOrganizer.UI.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    // エラーは無視（サムネイルは既に設定されている可能性が高い）
-                    System.Diagnostics.Debug.WriteLine($"サムネイル更新エラー: {ex.Message}");
-                    System.Diagnostics.Debug.WriteLine($"スタックトレース: {ex.StackTrace}");
+
                 }
             });
         }
@@ -278,43 +309,42 @@ namespace DocOrganizer.UI.ViewModels
                                         try
                                         {
                                             using var stream = new MemoryStream(thumbnailData);
-                                            // ⭐重要修正: SkiaSharpのEXIF Orientation自動適用を無効化
-using var codec = SKCodec.Create(stream);
-var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.Info.Height));
+                                            // ⭐緊急修正: EXIF処理を完全に削除してSkiaBitmapを直接デコード
+                                            var skBitmap = SKBitmap.Decode(stream);
                                             
                                             if (skBitmap == null)
                                             {
-                                                System.Diagnostics.Debug.WriteLine($"[UpdateAllThumbnailsAsync] Failed to decode bitmap for: {pdfPage.SourceImagePath}");
+
                                                 return; // 現在のタスクを終了
                                             }
                                         
-                                        // HEIC処理はPageViewModelに一元化（重複処理を防止）
-                                        System.Diagnostics.Debug.WriteLine($"[UpdateAllThumbnailsAsync] HEIC processing delegated to PageViewModel for: {Path.GetFileName(pdfPage.SourceImagePath)}");
+                                            System.Diagnostics.Debug.WriteLine($"[UpdateAllThumbnailsAsync] Bitmap decoded successfully: {skBitmap.Width}x{skBitmap.Height} for {Path.GetFileName(pdfPage.SourceImagePath)}");
 
-                                        await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
-                                        {
-                                            pdfPage.SetThumbnailImage(skBitmap);
-                                            
-                                            // ViewModelに通知
-                                            if (pageIndex < Pages.Count)
+                                            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                                             {
-                                                Pages[pageIndex].LoadThumbnail();
-                                            }
-                                        });
-                                    }
-                                    catch (Exception decodeEx)
+                                                pdfPage.SetThumbnailImage(skBitmap);
+                                                
+                                                // ViewModelに通知
+                                                if (pageIndex < Pages.Count)
+                                                {
+                                                    Pages[pageIndex].LoadThumbnail();
+
+                                                }
+                                            });
+                                        }
+                                        catch (Exception decodeEx)
                                         {
-                                            System.Diagnostics.Debug.WriteLine($"[UpdateAllThumbnailsAsync] Failed to decode or set thumbnail for page {pageIndex + 1}: {decodeEx.Message}");
+
                                         }
                                     }
                                     else
                                     {
-                                        System.Diagnostics.Debug.WriteLine($"[UpdateAllThumbnailsAsync] Empty or null thumbnail data for page {pageIndex + 1}: {pdfPage.SourceImagePath}");
+
                                     }
                                 }
                                 catch (Exception ex)
                                 {
-                                    System.Diagnostics.Debug.WriteLine($"[UpdateAllThumbnailsAsync] Failed to generate thumbnail for page {pageIndex + 1}: {ex.Message}");
+
                                 }
                             });
                             
@@ -324,6 +354,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                     
                     // 全サムネイル生成を待機
                     await Task.WhenAll(pageTasks).ConfigureAwait(false);
+
                 }
                 else
                 {
@@ -335,12 +366,13 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                     {
                         pageVm.LoadThumbnail();
                     }
+
                 }
             }
             catch (Exception ex)
             {
                 // Failed to update thumbnails - エラーはUIに表示済み
-                System.Diagnostics.Debug.WriteLine($"[UpdateAllThumbnailsAsync] Failed to update thumbnails: {ex.Message}");
+
             }
         }
 
@@ -357,15 +389,14 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                 System.Windows.Application.Current.Dispatcher.Invoke(() => {
                     var collectionView = System.Windows.Data.CollectionViewSource.GetDefaultView(Pages);
                     collectionView?.Refresh();
-                    System.Diagnostics.Debug.WriteLine($"[PageViewModel_PropertyChanged] ThumbnailImage更新でCollectionView更新");
+
                 });
             }
         }
 
         private void UpdateSelectionState()
         {
-            System.Diagnostics.Debug.WriteLine("[UpdateSelectionState] Called");
-            
+
             var selectedCount = Pages.Count(p => p.IsSelected);
             HasSelectedPages = selectedCount > 0;
             
@@ -385,9 +416,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                 CanMoveUp = false;
                 CanMoveDown = false;
             }
-            
-            System.Diagnostics.Debug.WriteLine($"[UpdateSelectionState] Selected count: {selectedCount}, HasSelectedPages: {HasSelectedPages}, CanMoveUp: {CanMoveUp}, CanMoveDown: {CanMoveDown}");
-            
+
             // 移動コマンドの状態変更を通知
             MovePageUpCommand?.NotifyCanExecuteChanged();
             MovePageDownCommand?.NotifyCanExecuteChanged();
@@ -398,7 +427,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                 if (selectedPage != null)
                 {
                     PageInfo = $"ページ {selectedPage.PageNumber}/{Pages.Count}";
-                    System.Diagnostics.Debug.WriteLine($"[UpdateSelectionState] Single page selected: {selectedPage.PageNumber}");
+
                     // UpdateSelectedPageを使用（UpdatePreviewではなく）
                     UpdateSelectedPage(selectedPage);
                 }
@@ -428,13 +457,11 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                 // forceUpdate、PreviewImageがnull、またはHEICファイルの場合は処理を実行
                 if (forceUpdate || pageViewModel.PreviewImage == null || isHeicSource)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[UpdatePreview] 強制更新またはPreviewImage未設定 - PreviewImage: {pageViewModel.PreviewImage != null}");
-                    
+
                     // PageViewModelに既にPreviewImageがある場合はそれを使用（HEIC最適化処理済み）
                     if (pageViewModel.PreviewImage != null)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[UpdatePreview] 左右統一処理済みPreviewImageを使用");
-                        
+
                         // UI スレッドで実行
                         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                         {
@@ -477,8 +504,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                             // 元画像パスが存在する場合は新しい高品質プレビューサービスを使用
                             if (!string.IsNullOrEmpty(page.SourceImagePath) && System.IO.File.Exists(page.SourceImagePath))
                             {
-                                System.Diagnostics.Debug.WriteLine($"[UpdatePreview] 高品質プレビューサービスで生成: {page.SourceImagePath}");
-                                
+
                                 try
                                 {
                                     // 新しい高品質プレビューサービスを使用
@@ -518,12 +544,11 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                                                 
                                                 PreviewWidth = displayWidth;
                                                 PreviewHeight = displayHeight;
-                                                
-                                                System.Diagnostics.Debug.WriteLine($"[UpdatePreview] ⭐EXIF削除版 高品質プレビュー完了 - Size: {PreviewWidth}x{PreviewHeight}");
+
                                             }
                                             catch (Exception uiEx)
                                             {
-                                                System.Diagnostics.Debug.WriteLine($"高品質プレビューUI更新エラー: {uiEx.Message}");
+
                                             }
                                         });
                                         
@@ -532,14 +557,13 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                                 }
                                 catch (Exception imgEx)
                                 {
-                                    System.Diagnostics.Debug.WriteLine($"高品質プレビュー生成エラー: {imgEx.Message}");
+
                                     // エラーの場合はPDFプレビューにフォールバック
                                 }
                             }
                             
                             // PDFプレビュー生成（フォールバック処理）
-                            System.Diagnostics.Debug.WriteLine($"[UpdatePreview] PDFプレビューから生成");
-                            
+
                             // 最高品質プレビューを生成（スケール3.0倍で高解像度）
                             var previewBitmap = await _pdfEditorService.GetPagePreviewAsync(_currentDocument, pageIndex, 3.0f);
                             
@@ -566,11 +590,11 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                                         // プレビューサイズを更新
                                         PreviewWidth = bitmap.PixelWidth;
                                         PreviewHeight = bitmap.PixelHeight;
-                                        System.Diagnostics.Debug.WriteLine($"[UpdatePreview] PDFプレビュー生成完了 - Size: {PreviewWidth}x{PreviewHeight}");
+
                                     }
                                     catch (Exception uiEx)
                                     {
-                                        System.Diagnostics.Debug.WriteLine($"プレビューUI更新エラー: {uiEx.Message}");
+
                                     }
                                 });
                                 
@@ -582,8 +606,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                 else
                 {
                     // forceUpdate=false かつ PreviewImageが存在する場合（通常ケース）
-                    System.Diagnostics.Debug.WriteLine($"[UpdatePreview] PageViewModelのPreviewImageを使用（通常ケース）");
-                    
+
                     await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                     {
                         CurrentPageImage = pageViewModel.PreviewImage;
@@ -607,7 +630,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                             
                             PreviewWidth = displayWidth;
                             PreviewHeight = displayHeight;
-                            System.Diagnostics.Debug.WriteLine($"[UpdatePreview] CurrentPageImage設定完了（通常） - Original: {bitmapImage.PixelWidth}x{bitmapImage.PixelHeight}, Display: {PreviewWidth}x{PreviewHeight}");
+
                         }
                     });
                 }
@@ -615,8 +638,8 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
             catch (Exception ex)
             {
                 // エラーをログに記録するが、UIには表示しない（プレビュー更新は頻繁に呼ばれるため）
-                System.Diagnostics.Debug.WriteLine($"プレビュー表示エラー: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"スタックトレース: {ex.StackTrace}");
+
+
             }
         }
 
@@ -637,9 +660,8 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
             OnPropertyChanged(nameof(HasSelectedPages));
             
             // コマンドの再評価を強制
-            System.Diagnostics.Debug.WriteLine("[UpdateUI] Forcing command re-evaluation");
-            System.Diagnostics.Debug.WriteLine($"[UpdateUI] HasDocument: {HasDocument}, HasSelectedPages: {HasSelectedPages}");
-            
+
+
             // CommandManagerに再評価を要求
             System.Windows.Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
             {
@@ -658,11 +680,11 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                     MovePageDownCommand?.NotifyCanExecuteChanged();
                     MergeCommand?.NotifyCanExecuteChanged();
                     SplitCommand?.NotifyCanExecuteChanged();
-                    System.Diagnostics.Debug.WriteLine("[UpdateUI] Command notifications sent");
+
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[UpdateUI] Error notifying commands: {ex.Message}");
+
                 }
             }));
         }
@@ -776,34 +798,32 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("[CleanupAllTempFiles] Starting cleanup of HEIC temp files");
-                
+
                 foreach (var page in Pages)
                 {
                     page.CleanupTempFiles();
                 }
-                
-                System.Diagnostics.Debug.WriteLine("[CleanupAllTempFiles] Cleanup completed");
+
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[CleanupAllTempFiles] Error during cleanup: {ex.Message}");
+
             }
         }
 
         [RelayCommand(CanExecute = nameof(HasSelectedPages))]
         private async Task RotateLeft()
         {
-            System.Diagnostics.Debug.WriteLine("[RotateLeft] Command executed");
-            System.Diagnostics.Debug.WriteLine($"[RotateLeft] HasSelectedPages: {HasSelectedPages}");
+
+
             await RotateSelectedPages(270); // 左回転 = 270度（反時計回り）
         }
 
         [RelayCommand(CanExecute = nameof(HasSelectedPages))]
         private async Task RotateRight()
         {
-            System.Diagnostics.Debug.WriteLine("[RotateRight] Command executed");
-            System.Diagnostics.Debug.WriteLine($"[RotateRight] HasSelectedPages: {HasSelectedPages}");
+
+
             await RotateSelectedPages(90); // 右回転 = 90度（時計回り）
         }
 
@@ -811,20 +831,18 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] クリーン版開始: {degrees}度回転");
-                
+
                 if (_currentDocument == null)
                 {
-                    System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] _currentDocument is null");
+
                     return;
                 }
                 
                 var selectedPages = Pages.Where(p => p.IsSelected).ToList();
-                System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] 選択ページ数: {selectedPages.Count}");
-                
+
                 if (!selectedPages.Any())
                 {
-                    System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] 選択ページなし");
+
                     return;
                 }
                 
@@ -834,39 +852,34 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                 // ★シンプル化: UI同期実行（競合状態を排除）
                 await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
                 {
-                    System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] クリーン版UI更新開始 - {selectedPages.Count}ページ");
-                    
+
                     // サムネイル再生成タスクを収集（非同期版のみ使用）
                     var regenerationTasks = new List<Task>();
                     
                     foreach (var pageVm in selectedPages)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] ページ {pageVm.PageNumber} 回転処理開始");
-                        
+
                         // Core層データ更新（回転角度計算）
                         var newRotation = (pageVm.Page.Rotation + degrees) % 360;
                         if (newRotation < 0) newRotation += 360;
                         
                         pageVm.Page.Rotation = newRotation;
-                        System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] ページ {pageVm.PageNumber} 新回転値: {newRotation}度");
-                        
+
                         // ★クリーン化: 同期更新のみ（古い処理は実行しない）
                         pageVm.UpdateRotationSync();
                         
                         // 非同期サムネイル再生成タスクを収集（新しい処理のみ）
                         var task = pageVm.RegenerateThumbnailAfterRotationAsync();
                         regenerationTasks.Add(task);
-                        
-                        System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] ページ {pageVm.PageNumber} タスク登録完了");
+
                     }
                     
                     // 全サムネイル再生成完了を待機
                     System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] 全サムネイル再生成待機開始 ({regenerationTasks.Count}タスク)");
                     await Task.WhenAll(regenerationTasks);
-                    System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] 全サムネイル再生成完了");
-                    
+
                     // ★シンプル化: 基本的なCollectionView更新のみ
-                    System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] CollectionView更新開始");
+
                     ForceCompleteCollectionRefresh();
                     
                     // 現在選択ページのプレビュー更新
@@ -874,18 +887,17 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                     {
                         UpdateCurrentPagePreview(currentSelectedPage);
                     }
-                    
-                    System.Diagnostics.Debug.WriteLine("[RotateSelectedPages] クリーン版処理完了");
+
                 });
                 
                 // 成功メッセージ
                 StatusMessage = $"{selectedPages.Count} ページを{Math.Abs(degrees)}度回転しました";
-                System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] 処理成功: {selectedPages.Count}ページ {degrees}度回転完了");
+
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] エラー: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[RotateSelectedPages] スタックトレース: {ex.StackTrace}");
+
+
                 _dialogService.ShowError($"回転エラー: {ex.Message}");
             }
         }
@@ -899,8 +911,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("[AutoCorrectAllPagesOrientationAsync] Starting auto-correction for all pages");
-                
+
                 if (Pages == null || !Pages.Any())
                 {
                     StatusMessage = "補正対象のページがありません";
@@ -931,7 +942,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[AutoCorrectAllPagesOrientationAsync] Error checking text for page {page.PageNumber}: {ex.Message}");
+
                     }
                 }
                 
@@ -943,9 +954,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                     ProgressVisibility = "Collapsed";
                     return;
                 }
-                
-                System.Diagnostics.Debug.WriteLine($"[AutoCorrectAllPagesOrientationAsync] Found {pagesWithText.Count} pages with text");
-                
+
                 // 文字向きを自動補正
                 StatusMessage = $"{pagesWithText.Count}ページの文字向きを自動補正中...";
                 var correctedPages = 0;
@@ -969,7 +978,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[AutoCorrectAllPagesOrientationAsync] Error correcting page {page.PageNumber}: {ex.Message}");
+
                     }
                 }
                 
@@ -992,15 +1001,13 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                 {
                     StatusMessage = "全ページが既に最適な向きでした";
                 }
-                
-                System.Diagnostics.Debug.WriteLine($"[AutoCorrectAllPagesOrientationAsync] Completed: {correctedPages}/{pagesWithText.Count} pages corrected");
-                
+
                 await Task.Delay(3000);
                 StatusMessage = "準備完了";
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[AutoCorrectAllPagesOrientationAsync] Error: {ex.Message}");
+
                 StatusMessage = $"自動補正エラー: {ex.Message}";
                 _dialogService.ShowError($"文字向き自動補正エラー: {ex.Message}");
             }
@@ -1050,7 +1057,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[AutoCorrectSelectedPagesOrientationAsync] Error correcting page {page.PageNumber}: {ex.Message}");
+
                     }
                 }
                 
@@ -1079,7 +1086,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[AutoCorrectSelectedPagesOrientationAsync] Error: {ex.Message}");
+
                 StatusMessage = $"自動補正エラー: {ex.Message}";
                 _dialogService.ShowError($"文字向き自動補正エラー: {ex.Message}");
             }
@@ -1097,8 +1104,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("[ForceCompleteCollectionRefresh] 強制コレクション更新開始");
-                
+
                 // ★新アプローチ: ObservableCollectionの構造変更を偽装して強制更新
                 // WPFバインディングエンジンに「コレクションが変更された」と錯覚させる
                 if (Pages.Count > 0)
@@ -1107,8 +1113,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                     var lastPage = Pages.Last();
                     Pages.RemoveAt(Pages.Count - 1);
                     Pages.Add(lastPage);
-                    
-                    System.Diagnostics.Debug.WriteLine("[ForceCompleteCollectionRefresh] ObservableCollection構造変更による強制更新完了");
+
                 }
                 
                 // 従来の方法も併用して確実性を高める
@@ -1120,11 +1125,11 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                 }
                 
                 OnPropertyChanged(nameof(Pages));
-                System.Diagnostics.Debug.WriteLine("[ForceCompleteCollectionRefresh] 強制更新完了");
+
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[ForceCompleteCollectionRefresh] エラー: {ex.Message}");
+
             }
         }
         
@@ -1135,20 +1140,18 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[UpdateCurrentPagePreview] ページ {selectedPage.PageNumber} プレビュー更新");
-                
+
                 // 右側プレビューの強制更新
                 UpdateSelectedPage(selectedPage);
                 
                 // 追加: 選択状態の強制リフレッシュ
                 selectedPage.OnPropertyChanged(nameof(PageViewModel.IsSelected));
                 selectedPage.OnPropertyChanged(nameof(PageViewModel.ThumbnailImage));
-                
-                System.Diagnostics.Debug.WriteLine($"[UpdateCurrentPagePreview] ページ {selectedPage.PageNumber} プレビュー更新完了");
+
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[UpdateCurrentPagePreview] エラー: {ex.Message}");
+
             }
         }
 
@@ -1181,8 +1184,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
         [RelayCommand(CanExecute = nameof(CanMoveUp))]
         private void MovePageUp()
         {
-            System.Diagnostics.Debug.WriteLine("[MovePageUp] Command executed");
-            
+
             if (_currentDocument == null || !CanMoveUp) return;
             
             var selectedPage = Pages.FirstOrDefault(p => p.IsSelected);
@@ -1207,14 +1209,13 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
             UpdateSelectionState();
             
             StatusMessage = $"ページ {selectedPage.PageNumber} を上に移動しました";
-            System.Diagnostics.Debug.WriteLine($"[MovePageUp] Page moved from {currentIndex + 1} to {currentIndex}");
+
         }
 
         [RelayCommand(CanExecute = nameof(CanMoveDown))]
         private void MovePageDown()
         {
-            System.Diagnostics.Debug.WriteLine("[MovePageDown] Command executed");
-            
+
             if (_currentDocument == null || !CanMoveDown) return;
             
             var selectedPage = Pages.FirstOrDefault(p => p.IsSelected);
@@ -1239,7 +1240,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
             UpdateSelectionState();
             
             StatusMessage = $"ページ {selectedPage.PageNumber} を下に移動しました";
-            System.Diagnostics.Debug.WriteLine($"[MovePageDown] Page moved from {currentIndex + 1} to {currentIndex + 2}");
+
         }
 
         private void UpdatePageNumbers()
@@ -1356,7 +1357,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
         [RelayCommand]
         private void ZoomIn()
         {
-            System.Diagnostics.Debug.WriteLine("[ZoomIn] Command executed!");
+
             // TODO: 拡大機能の実装
             StatusMessage = "拡大機能は実装中です";
             _dialogService.ShowInformation("ZoomInコマンドが実行されました！");
@@ -1365,7 +1366,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
         [RelayCommand]
         private void ZoomOut()
         {
-            System.Diagnostics.Debug.WriteLine("[ZoomOut] Command executed!");
+
             // TODO: 縮小機能の実装
             StatusMessage = "縮小機能は実装中です";
             _dialogService.ShowInformation("ZoomOutコマンドが実行されました！");
@@ -1417,11 +1418,10 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[UpdateSelectedPage] Called with page: {selectedPage?.PageNumber}");
-                
+
                 if (selectedPage == null)
                 {
-                    System.Diagnostics.Debug.WriteLine("[UpdateSelectedPage] selectedPage is null, returning");
+
                     return;
                 }
                 
@@ -1432,8 +1432,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                 }
                     
                 _selectedPage = selectedPage;
-                System.Diagnostics.Debug.WriteLine($"[UpdateSelectedPage] Selected page set to: {_selectedPage.PageNumber}");
-                
+
                 // 新しい選択ページの監視を開始
                 selectedPage.PropertyChanged += OnSelectedPagePropertyChanged;
                 
@@ -1441,13 +1440,12 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                 UpdatePreview(selectedPage, forceUpdate: true);
                 
                 UpdateUI();
-                
-                System.Diagnostics.Debug.WriteLine("[UpdateSelectedPage] Completed successfully");
+
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[UpdateSelectedPage] Error: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[UpdateSelectedPage] StackTrace: {ex.StackTrace}");
+
+
                 _dialogService.ShowError($"ページ選択エラー: {ex.Message}");
             }
         }
@@ -1456,8 +1454,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
         {
             if (e.PropertyName == nameof(PageViewModel.PreviewImage) && sender is PageViewModel pageViewModel)
             {
-                System.Diagnostics.Debug.WriteLine($"[OnSelectedPagePropertyChanged] PreviewImage updated for page {pageViewModel.PageNumber}");
-                
+
                 // 選択中のページのみ更新（非選択ページのプレビュー更新を無視）
                 if (pageViewModel.IsSelected && pageViewModel == _selectedPage)
                 {
@@ -1467,17 +1464,17 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                         if (pageViewModel.PreviewImage != null)
                         {
                             CurrentPageImage = pageViewModel.PreviewImage;
-                            System.Diagnostics.Debug.WriteLine($"[OnSelectedPagePropertyChanged] CurrentPageImage updated successfully for selected page {pageViewModel.PageNumber}");
+
                         }
                         else
                         {
-                            System.Diagnostics.Debug.WriteLine($"[OnSelectedPagePropertyChanged] PreviewImage is null for page {pageViewModel.PageNumber}, keeping current preview");
+
                         }
                     });
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine($"[OnSelectedPagePropertyChanged] Ignoring PreviewImage update for non-selected page {pageViewModel.PageNumber}");
+
                 }
             }
         }
@@ -1585,39 +1582,46 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
             try
             {
                 StatusMessage = $"{imageFiles.Count} 個の画像を変換中...";
+                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [DEBUG] OpenMultipleImageFilesAsync starting with {imageFiles.Count} files\n");
                 ProgressVisibility = "Visible";
-                
-                System.Diagnostics.Debug.WriteLine($"[OpenMultipleImageFilesAsync] Processing {imageFiles.Count} images");
-                
+
                 // 複数画像を1つのPDFに変換（非同期処理）
+                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [DEBUG] Calling ConvertImagesToPdfAsync\n");
                 var pdfDocument = await _imageProcessingService.ConvertImagesToPdfAsync(imageFiles);
+                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [DEBUG] ConvertImagesToPdfAsync completed\n");
                 
                 if (pdfDocument == null)
                 {
-                    System.Diagnostics.Debug.WriteLine("[OpenMultipleImageFilesAsync] PDF creation failed - null result");
+
+                    File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [CRITICAL ERROR] PDF creation failed - ConvertImagesToPdfAsync returned null\n");
                     StatusMessage = "画像変換に失敗しました";
                     return;
                 }
-                
-                System.Diagnostics.Debug.WriteLine($"[OpenMultipleImageFilesAsync] PDF created successfully with {pdfDocument.Pages.Count} pages");
-                
-                _openDocuments.Add(pdfDocument);
-                
+
                 if (_currentDocument == null)
                 {
-                    // UIスレッドで実行
+                    // 初回: 新規ドキュメントとして設定
                     SetCurrentDocument(pdfDocument);
+                    _openDocuments.Add(pdfDocument);
+
+                }
+                else
+                {
+                    // 継続追加: 既存ドキュメントにページを統合
+                    await AppendPagesToCurrentDocumentAsync(pdfDocument);
+
                 }
                 
                 UpdateUI();
                 StatusMessage = $"{imageFiles.Count} 個の画像を1つのPDFに変換完了";
-                
-                System.Diagnostics.Debug.WriteLine("[OpenMultipleImageFilesAsync] Operation completed successfully");
+
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[OpenMultipleImageFilesAsync] Error: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[OpenMultipleImageFilesAsync] StackTrace: {ex.StackTrace}");
+
+
+                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [CRITICAL ERROR] OpenMultipleImageFilesAsync failed: {ex.Message}\n");
+                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [CRITICAL ERROR] StackTrace: {ex.StackTrace}\n");
                 
                 // シンプルなエラーメッセージでDialogServiceエラーを回避
                 var errorMessage = "複数画像の変換でエラーが発生しました";
@@ -1628,7 +1632,7 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
                 }
                 catch (Exception dialogEx)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[OpenMultipleImageFilesAsync] Dialog error: {dialogEx.Message}");
+
                     // DialogServiceがエラーの場合はStatusMessageのみ更新
                 }
                 
@@ -1637,7 +1641,68 @@ var skBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.In
             finally
             {
                 ProgressVisibility = "Collapsed";
-                System.Diagnostics.Debug.WriteLine("[OpenMultipleImageFilesAsync] Progress visibility collapsed");
+
+            }
+        }
+
+        
+        /// <summary>
+        /// 継続ページ追加：既存ドキュメントに新しいページを統合
+        /// </summary>
+        private async Task AppendPagesToCurrentDocumentAsync(PdfDocument sourceDocument)
+        {
+            if (_currentDocument == null || sourceDocument == null) return;
+            
+            try
+            {
+
+                // 1. ソースドキュメントのページを既存ドキュメントに統一処理で移動（重複削除）
+                foreach (var page in sourceDocument.Pages.ToList()) // ToList()でコレクション変更を安全に
+                {
+                    // ページを既存ドキュメントに追加
+                    _currentDocument.AddPage(page);
+                    
+                    // 同じループ内でPageViewModelを作成・追加（重複防止）
+                    var pageVm = new PageViewModel(page, _imageProcessingService, _textOrientationService);
+                    pageVm.PropertyChanged += PageViewModel_PropertyChanged;
+                    Pages.Add(pageVm);
+
+                }
+                
+                // 3. UI更新
+                UpdateUI();
+                UpdatePageNumbers(); // 既存メソッド活用
+                
+                // 4. サムネイル更新（非同期）
+                _ = Task.Run(async () =>
+                {
+                    try 
+                    {
+                        // 新しく追加されたページのサムネイルのみ更新
+                        var newPageViewModels = Pages.Skip(Pages.Count - sourceDocument.Pages.Count);
+                        foreach (var pageVm in newPageViewModels)
+                        {
+                            pageVm.LoadThumbnail(); // 同期メソッドを使用
+                        }
+
+                    }
+                    catch (Exception ex)
+                    {
+
+                    }
+                });
+                
+                StatusMessage = $"{sourceDocument.Pages.Count}ページを追加しました（合計: {_currentDocument.Pages.Count}ページ）";
+
+            }
+            catch (Exception ex)
+            {
+
+
+                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [CRITICAL ERROR] AppendPagesToCurrentDocumentAsync failed: {ex.Message}\n");
+                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [CRITICAL ERROR] StackTrace: {ex.StackTrace}\n");
+                StatusMessage = $"ページ追加エラー: {ex.Message}";
+                throw;
             }
         }
 

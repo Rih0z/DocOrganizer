@@ -59,8 +59,7 @@ namespace DocOrganizer.UI.ViewModels
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] ページ {_page.PageNumber} 開始 - Rotation: {_page.Rotation}");
-                
+
                 // HEICファイルの場合は既存のサムネイルを無視して強制再生成
                 bool isSourceHeic = !string.IsNullOrEmpty(_page.SourceImagePath) && 
                                    (System.IO.Path.GetExtension(_page.SourceImagePath).Equals(".heic", StringComparison.OrdinalIgnoreCase) ||
@@ -68,7 +67,7 @@ namespace DocOrganizer.UI.ViewModels
                 
                 if (isSourceHeic && System.IO.File.Exists(_page.SourceImagePath))
                 {
-                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] HEIC強制再生成: {_page.SourceImagePath}");
+
                     // キャッシュをクリア
                     ClearOptimizedCache();
                     _ = Task.Run(() => LoadThumbnailFromImage());
@@ -78,23 +77,23 @@ namespace DocOrganizer.UI.ViewModels
                 // まずPdfPageに既にサムネイル画像があるか確認（非HEIC画像の場合のみ）
                 if (_page.ThumbnailImage != null && !isSourceHeic)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] PDF既存サムネイル使用");
+
                     LoadThumbnailFromPdfPage();
                 }
                 // 画像ファイルから直接サムネイルを生成（HEIC以外）
                 else if (!string.IsNullOrEmpty(_page.SourceImagePath) && System.IO.File.Exists(_page.SourceImagePath))
                 {
-                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] 画像ファイルから生成: {_page.SourceImagePath}");
+
                     _ = Task.Run(() => LoadThumbnailFromImage());
                 }
                 // PDFページの場合
                 else if (_page.ThumbnailImage == null && _page.PageNumber > 0)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] PDFページサムネイル待機中");
+
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] サムネイルなし - プレースホルダー生成");
+
                     // サムネイルがない場合はプレースホルダーを生成
                     GenerateRotatedPlaceholder();
                 }
@@ -105,8 +104,8 @@ namespace DocOrganizer.UI.ViewModels
             catch (Exception ex)
             {
                 // サムネイル読み込みエラーをログに記録
-                System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] エラー Page {_page.PageNumber}: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] スタックトレース: {ex.StackTrace}");
+
+
                 ThumbnailImage = null;
                 PreviewImage = null;
             }
@@ -130,12 +129,11 @@ namespace DocOrganizer.UI.ViewModels
                 
                 // ★修正案B: UI強制更新
                 ThumbnailImage = null;
-                
-                System.Diagnostics.Debug.WriteLine($"[ClearOptimizedCache] キャッシュクリア完了（修正版B - WPFキャッシュ含む）");
+
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[ClearOptimizedCache] エラー: {ex.Message}");
+
             }
         }
         
@@ -145,8 +143,7 @@ namespace DocOrganizer.UI.ViewModels
             {
                 if (_page.ThumbnailImage != null)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnailFromPdfPage] PDFページのサムネイル変換 - Size: {_page.ThumbnailImage.Width}x{_page.ThumbnailImage.Height}");
-                    
+
                     // SkiaSharpのSKBitmapをWPFで表示可能な形式に変換
                     using var data = _page.ThumbnailImage.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
                     var stream = new System.IO.MemoryStream(data.ToArray());
@@ -165,13 +162,12 @@ namespace DocOrganizer.UI.ViewModels
                     // ⭐修正: PreviewImage設定を完全削除（ドキュメント通り）
                     // 理由: PageViewModelでPreviewImageを設定すると右側の高解像度プレビューが劣化する
                     // → MainViewModelで独自に高解像度プレビューを生成する必要がある
-                    
-                    System.Diagnostics.Debug.WriteLine($"[LoadThumbnailFromPdfPage] 左側サムネイルのみ設定完了 - PreviewImageは右側で独自生成");
+
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[LoadThumbnailFromPdfPage] エラー: {ex.Message}");
+
             }
         }
         
@@ -214,8 +210,7 @@ namespace DocOrganizer.UI.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[LoadThumbnailFromImage] 最適化エラー: {ex.Message}");
-                
+
                 // エラー発生時は基本処理にフォールバック
                 await ProcessImageFallbackAsync(_page.SourceImagePath, cancellationToken);
             }
@@ -263,13 +258,13 @@ namespace DocOrganizer.UI.ViewModels
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] WPF変換エラー: {ex.Message}");
+
                     }
                 });
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] エラー: {ex.Message}");
+
                 // エラー時は元の処理にフォールバック
                 await ProcessImageFallbackAsync(heicPath, cancellationToken);
             }
@@ -314,13 +309,13 @@ namespace DocOrganizer.UI.ViewModels
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] WPF変換エラー: {ex.Message}");
+
                     }
                 });
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] エラー: {ex.Message}");
+
                 // エラー時は元の処理にフォールバック
                 await ProcessImageFallbackAsync(imagePath, cancellationToken);
             }
@@ -344,8 +339,7 @@ namespace DocOrganizer.UI.ViewModels
                 // ⭐修正: 回転処理を無効化（左右統一のため）
                 var finalBitmap = bitmap;
                 // ⭐修正完了: フォールバック処理でも回転処理をスキップ
-                System.Diagnostics.Debug.WriteLine($"[ProcessImageFallbackAsync] 回転処理スキップ - Rotation={_page.Rotation}度");
-                
+
                 // ⭐修正: 左側ThumbnailImageのみ設定（PreviewImageは右側で独自生成）
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -372,7 +366,7 @@ namespace DocOrganizer.UI.ViewModels
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[ProcessImageFallbackAsync] WPF変換エラー: {ex.Message}");
+
                     }
                 });
                 
@@ -385,7 +379,7 @@ namespace DocOrganizer.UI.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[ProcessImageFallbackAsync] フォールバックエラー: {ex.Message}");
+
             }
         }
         
@@ -425,7 +419,7 @@ namespace DocOrganizer.UI.ViewModels
         /// </summary>
         private void LoadPreviewFromImage()
         {
-            System.Diagnostics.Debug.WriteLine($"[LoadPreviewFromImage] プレビューはサムネイル処理で統一済み - HEIC/JPEG同等処理");
+
             // LoadThumbnailFromImage()で既にPreviewImageも設定されているため、重複処理は不要
         }
 
@@ -435,14 +429,12 @@ namespace DocOrganizer.UI.ViewModels
             try
             {
                 // 回転値を更新
+                // ✅ 正しい修正: Windows標準アプリと同じ表示のため、EXIF回転角度を表示
                 Rotation = _page.Rotation;
-                System.Diagnostics.Debug.WriteLine($"[UpdateRotationSync] ページ {_page.PageNumber} 回転更新: {_page.Rotation}度");
-                
+
                 // ★修正: キャッシュクリアのみ実行、サムネイル再生成は削除
                 ClearOptimizedCache();
-                
-                System.Diagnostics.Debug.WriteLine($"[UpdateRotationSync] ページ {_page.PageNumber} キャッシュクリア完了 - サムネイル再生成はRegenerateThumbnailAfterRotationAsyncに委任");
-                
+
                 // ★削除: LoadThumbnail()呼び出しを完全削除（競合状態の原因）
                 // 理由: RegenerateThumbnailAfterRotationAsync()と重複実行され、古い状態で上書きされる
                 
@@ -451,7 +443,7 @@ namespace DocOrganizer.UI.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[UpdateRotationSync] エラー: {ex.Message}");
+
             }
         }
 
@@ -463,27 +455,24 @@ namespace DocOrganizer.UI.ViewModels
         {
             if (_textOrientationService == null)
             {
-                System.Diagnostics.Debug.WriteLine("[AutoCorrectOrientationAsync] TextOrientationService not available");
+
                 return;
             }
 
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[AutoCorrectOrientationAsync] Starting auto-correction for page {_page.PageNumber}");
-                
+
                 // 文字が読み取れるかチェック
                 var hasText = await _textOrientationService.HasReadableTextAsync(_page.SourceImagePath);
                 if (!hasText)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[AutoCorrectOrientationAsync] No readable text found in page {_page.PageNumber}");
+
                     return;
                 }
                 
                 // 最適な向きを検出（並列処理で高速化）
                 var optimalRotation = await _textOrientationService.DetectOptimalOrientationParallelAsync(_page.SourceImagePath);
-                
-                System.Diagnostics.Debug.WriteLine($"[AutoCorrectOrientationAsync] Page {_page.PageNumber}: Current={_page.Rotation}°, Optimal={optimalRotation}°");
-                
+
                 if (optimalRotation != _page.Rotation)
                 {
                     // 回転値を更新
@@ -492,17 +481,16 @@ namespace DocOrganizer.UI.ViewModels
                     
                     // サムネイル再生成
                     await RegenerateThumbnailAfterRotationAsync();
-                    
-                    System.Diagnostics.Debug.WriteLine($"[AutoCorrectOrientationAsync] Page {_page.PageNumber} corrected to {optimalRotation}°");
+
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine($"[AutoCorrectOrientationAsync] Page {_page.PageNumber} already in optimal orientation");
+
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[AutoCorrectOrientationAsync] Error for page {_page.PageNumber}: {ex.Message}");
+
             }
         }
         
@@ -520,7 +508,7 @@ namespace DocOrganizer.UI.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[GetTextConfidenceAsync] Error: {ex.Message}");
+
                 return 0.0;
             }
         }
@@ -542,8 +530,7 @@ namespace DocOrganizer.UI.ViewModels
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotationAsync] ページ {PageNumber} 回転角度 {_page.Rotation}° - 非同期版開始");
-                
+
                 // 1. 全キャッシュの完全削除
                 ClearAllImageCaches();
                 
@@ -559,31 +546,29 @@ namespace DocOrganizer.UI.ViewModels
                         }
                         catch (Exception ex)
                         {
-                            System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotationAsync] Bitmap解放エラー: {ex.Message}");
+
                         }
                     }
                     
                     // 確実にnull設定 - [ObservableProperty]自動通知のみ
                     ThumbnailImage = null;
-                    
-                    System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotationAsync] ページ {PageNumber} null化完了");
+
                 });
                 
                 // 3. 新しいサムネイル生成（回転角度を考慮）
                 try
                 {
-                    System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotationAsync] ページ {PageNumber} サムネイル再生成開始");
-                    
+
                     // 回転角度を明示的に渡してサムネイル生成
+                    // ✅ 正しい修正: Windows標準アプリと同じ表示のため、EXIF回転角度を適用
                     await GenerateThumbnailWithRotation(_page.SourceImagePath ?? "", _page.Rotation);
                     
                     // 最終更新 - [ObservableProperty]自動通知のみ（手動通知削除）
-                    System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotationAsync] ページ {PageNumber} 最終更新完了");
+
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotationAsync] サムネイル生成エラー: {ex.Message}");
-                    
+
                     // エラー時のフォールバック処理
                     await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                     {
@@ -593,8 +578,7 @@ namespace DocOrganizer.UI.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[RegenerateThumbnailAfterRotationAsync] 致命的エラー: {ex.Message}");
-                
+
                 // 致命的エラー時の最終フォールバック
                 await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
@@ -617,12 +601,11 @@ namespace DocOrganizer.UI.ViewModels
                 // 強制ガベージコレクション
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
-                
-                System.Diagnostics.Debug.WriteLine($"[ClearAllImageCaches] ページ {PageNumber} 全キャッシュクリア完了");
+
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[ClearAllImageCaches] エラー: {ex.Message}");
+
             }
         }
         
@@ -640,15 +623,14 @@ namespace DocOrganizer.UI.ViewModels
                 
                 if (bitmap == null)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] プレビュー生成失敗: {imagePath}");
+
                     return;
                 }
                 
                 // ⭐修正: 回転処理を無効化（左右統一のため）
                 var rotatedBitmap = bitmap;
                 // ⭐修正完了: GenerateThumbnailWithRotationでも回転処理をスキップ
-                System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] 回転処理スキップ - rotationAngle={rotationAngle}度");
-                
+
                 // ⭐修正: 左側ThumbnailImageのみ設定（PreviewImageは右側で独自生成）
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -672,7 +654,7 @@ namespace DocOrganizer.UI.ViewModels
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] WPF変換エラー: {ex.Message}");
+
                     }
                 });
                 
@@ -685,7 +667,7 @@ namespace DocOrganizer.UI.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] エラー: {ex.Message}");
+
             }
         }
         
@@ -696,14 +678,13 @@ namespace DocOrganizer.UI.ViewModels
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[FallbackThumbnailRegeneration] ページ {PageNumber} フォールバック実行");
-                
+
                 ThumbnailImage = null; // [ObservableProperty]自動通知
                 LoadThumbnail(); // 従来の方法で再試行
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[FallbackThumbnailRegeneration] フォールバックもエラー: {ex.Message}");
+
             }
         }
 
@@ -721,8 +702,7 @@ namespace DocOrganizer.UI.ViewModels
             
             // 一時ファイルのクリーンアップ
             CleanupTempFiles();
-            
-            System.Diagnostics.Debug.WriteLine($"[PageViewModel.Dispose] Page {PageNumber} disposed");
+
         }
         
         public void CleanupTempFiles()
@@ -736,7 +716,7 @@ namespace DocOrganizer.UI.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[CleanupTempFiles] Error deleting {_heicTempJpegPath}: {ex.Message}");
+
                 }
             }
         }
@@ -746,8 +726,7 @@ namespace DocOrganizer.UI.ViewModels
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[GenerateRotatedPlaceholder] ページ {PageNumber} のプレースホルダー生成");
-                
+
                 // 150x200のプレースホルダー画像を生成
                 var placeholderBitmap = new SkiaSharp.SKBitmap(150, 200);
                 using (var canvas = new SkiaSharp.SKCanvas(placeholderBitmap))
@@ -794,11 +773,11 @@ namespace DocOrganizer.UI.ViewModels
                 });
                 
                 placeholderBitmap.Dispose();
-                System.Diagnostics.Debug.WriteLine($"[GenerateRotatedPlaceholder] プレースホルダー生成完了");
+
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[GenerateRotatedPlaceholder] エラー: {ex.Message}");
+
             }
         }
 
@@ -818,8 +797,7 @@ namespace DocOrganizer.UI.ViewModels
         { 
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[UpdateRotatedHeicPreviewAsync] HEIC回転プレビュー最適化開始");
-                
+
                 if (string.IsNullOrEmpty(_page.SourceImagePath) || !File.Exists(_page.SourceImagePath))
                     return;
                 
@@ -828,7 +806,7 @@ namespace DocOrganizer.UI.ViewModels
                 
                 if (thumbnailData == null || thumbnailData.Length == 0)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[UpdateRotatedHeicPreviewAsync] サムネイル取得失敗");
+
                     return;
                 }
                 
@@ -840,15 +818,14 @@ using var originalBitmap = SkiaSharp.SKBitmap.Decode(codec, new SkiaSharp.SKImag
                 
                 if (originalBitmap == null) 
                 {
-                    System.Diagnostics.Debug.WriteLine($"[UpdateRotatedHeicPreviewAsync] ビットマップデコード失敗");
+
                     return;
                 }
                 
                 // ⭐修正: 回転処理を無効化（左右統一のため）
                 SkiaSharp.SKBitmap processedBitmap = originalBitmap;
                 // ⭐修正完了: ProcessHeicOptimizedAsyncでも回転処理をスキップ
-                System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] 回転処理スキップ - Rotation={_page.Rotation}度");
-                
+
                 // ⭐修正: PreviewImage設定を完全削除（ドキュメント通り）
                 // 理由: PageViewModelでPreviewImageを設定すると右側の高解像度プレビューが劣化する
                 // → MainViewModelで独自に高解像度プレビューを生成する必要がある
@@ -863,12 +840,11 @@ using var originalBitmap = SkiaSharp.SKBitmap.Decode(codec, new SkiaSharp.SKImag
                         
                         // WeakReferenceキャッシュに保存（PreviewImageは設定しない）
                         _optimizedPreviewCache = new WeakReference<BitmapSource>(wpfBitmap);
-                        
-                        System.Diagnostics.Debug.WriteLine($"[UpdateRotatedHeicPreviewAsync] HEICキャッシュ更新完了 - PreviewImageは右側で独自生成");
+
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[UpdateRotatedHeicPreviewAsync] キャッシュ更新エラー: {ex.Message}");
+
                     }
                 });
                 
@@ -880,7 +856,7 @@ using var originalBitmap = SkiaSharp.SKBitmap.Decode(codec, new SkiaSharp.SKImag
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[UpdateRotatedHeicPreviewAsync] 最適化エラー: {ex.Message}");
+
             }
         }
 
@@ -895,7 +871,7 @@ using var originalBitmap = SkiaSharp.SKBitmap.Decode(codec, new SkiaSharp.SKImag
         { 
             // 静的キャッシュ廃止のため、GCに任せる
             GC.Collect(1, GCCollectionMode.Optimized);
-            System.Diagnostics.Debug.WriteLine("[CleanupHeicCache] WeakReferenceキャッシュ最適化完了（GC実行）");
+
         }
         public void UpdatePageNumber(int newPageNumber) { PageNumber = newPageNumber; }
         
