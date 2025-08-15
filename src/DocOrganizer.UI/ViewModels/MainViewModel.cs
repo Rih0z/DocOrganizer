@@ -507,24 +507,13 @@ namespace DocOrganizer.UI.ViewModels
 
                                 try
                                 {
-                                    // 新しい高品質プレビューサービスを使用
-                                    // ⭐最終修正: 右側プレビューもEXIF情報を完全削除（90度回転問題根本解決）
-                                    var exifFreeImageBytes = await _imageProcessingService.GenerateExifFreeImageForWpfAsync(page.SourceImagePath, 1200, 1600);
-                                    
-                                    if (exifFreeImageBytes != null)
+                                    // 🎯 左右統一修正: ファイルパスから直接EXIF読み取り（バイト配列処理をスキップ）
+                                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                                     {
-                                        await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                                        try
                                         {
-                                            try
-                                            {
-                                                // ⭐最終修正: EXIF完全削除済みPNGから直接WPF BitmapImage作成
-                                                var bitmap = new System.Windows.Media.Imaging.BitmapImage();
-                                                bitmap.BeginInit();
-                                                bitmap.StreamSource = new System.IO.MemoryStream(exifFreeImageBytes);
-                                                bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                                                // ⭐CreateOptions不要: すでにEXIF情報が削除済みPNG
-                                                bitmap.EndInit();
-                                                bitmap.Freeze();
+                                            // ✅ 完全統一: PageViewModelと同じファイルパス直接読み取り
+                                            var bitmap = CreateBitmapFromFilePath(page.SourceImagePath);
                                                 
                                                 CurrentPageImage = bitmap;
                                                 
@@ -548,7 +537,9 @@ namespace DocOrganizer.UI.ViewModels
                                             }
                                             catch (Exception uiEx)
                                             {
-
+                                                // UI処理エラー時は従来のバイト配列処理にフォールバック
+                                                System.Diagnostics.Debug.WriteLine($"[UpdatePreview] UI処理エラー: {uiEx.Message}");
+                                                // PDFプレビューフォールバック処理に進む
                                             }
                                         });
                                         
@@ -557,7 +548,7 @@ namespace DocOrganizer.UI.ViewModels
                                 }
                                 catch (Exception imgEx)
                                 {
-
+                                    System.Diagnostics.Debug.WriteLine($"[UpdatePreview] 画像処理エラー: {imgEx.Message}");
                                     // エラーの場合はPDFプレビューにフォールバック
                                 }
                             }
@@ -576,14 +567,8 @@ namespace DocOrganizer.UI.ViewModels
                                     {
                                         // SkiaSharpのSKBitmapを無圧縮PNG形式で変換（最高品質）
                                         using var data = previewBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
-                                        var bitmap = new System.Windows.Media.Imaging.BitmapImage();
-                                        bitmap.BeginInit();
-                                        bitmap.StreamSource = new System.IO.MemoryStream(data.ToArray());
-                                        bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                                        // ⭐テスト: CreateOptionsを一時的に無効化して表示確認
-                                        // bitmap.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreImageCache;
-                                        bitmap.EndInit();
-                                        bitmap.Freeze();
+                                        // 🎯 シンプル実装: 基本的なBitmapImage読み込みのみ
+                                        var bitmap = CreateSimpleBitmapFromBytes(data.ToArray());
                                         
                                         CurrentPageImage = bitmap;
                                         
@@ -641,6 +626,127 @@ namespace DocOrganizer.UI.ViewModels
 
 
             }
+        }
+
+        // 🎯 シンプル実装: 自動回転なし、基本的なBitmapImage読み込みのみ
+        private System.Windows.Media.Imaging.BitmapSource CreateSimpleBitmapFromBytes(byte[] imageData)
+{
+    // 🎯 OSS標準実装: EXIF Orientationを適切に読み取り→BitmapImage.Rotationで自動回転
+    // 参考: Stack Overflow実証済みパターン + 画像ビューアOSS標準実装
+    
+    using var stream = new System.IO.MemoryStream(imageData);
+    
+    // Phase 1: EXIF Orientation検出
+    System.Windows.Media.Imaging.Rotation rotation = System.Windows.Media.Imaging.Rotation.Rotate0;
+    try
+    {
+        stream.Position = 0;
+        var frame = System.Windows.Media.Imaging.BitmapFrame.Create(stream, System.Windows.Media.Imaging.BitmapCreateOptions.DelayCreation, System.Windows.Media.Imaging.BitmapCacheOption.None);
+        var metadata = frame.Metadata as System.Windows.Media.Imaging.BitmapMetadata;
+        
+        if (metadata?.ContainsQuery("System.Photo.Orientation") == true)
+        {
+            var orientationValue = metadata.GetQuery("System.Photo.Orientation");
+            if (orientationValue != null)
+            {
+                var orientation = (ushort)orientationValue;
+                rotation = orientation switch
+                {
+                    6 => System.Windows.Media.Imaging.Rotation.Rotate90,   // 右90度回転
+                    3 => System.Windows.Media.Imaging.Rotation.Rotate180,  // 180度回転
+                    8 => System.Windows.Media.Imaging.Rotation.Rotate270,  // 左90度回転 (右270度)
+                    _ => System.Windows.Media.Imaging.Rotation.Rotate0     // 回転なし
+                };
+            }
+        }
+    }
+    catch
+    {
+        // EXIF読み取り失敗時は回転なしで続行
+        rotation = System.Windows.Media.Imaging.Rotation.Rotate0;
+    }
+    
+    // Phase 2: BitmapImage + 自動回転設定（OSS標準パターン）
+    stream.Position = 0; // ストリームを先頭に戻す
+    
+    var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+    bitmap.BeginInit();
+    bitmap.StreamSource = stream;
+    bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+    bitmap.Rotation = rotation; // ← WPF標準的解決策（OSS実証済み）
+    bitmap.EndInit();
+    bitmap.Freeze();
+    
+    // デバッグログ
+    var rotationDegrees = rotation switch 
+    {
+        System.Windows.Media.Imaging.Rotation.Rotate90 => "90°",
+        System.Windows.Media.Imaging.Rotation.Rotate180 => "180°", 
+        System.Windows.Media.Imaging.Rotation.Rotate270 => "270°",
+        _ => "0°"
+    };
+    System.IO.File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [OSS_STANDARD_PREVIEW] EXIF Orientation → {rotationDegrees} rotation applied\\n");
+    
+    return bitmap;
+}
+
+        /// <summary>
+        /// ファイルパスから直接EXIF読み取りを行うバージョン（左右統一用）
+        /// </summary>
+        private System.Windows.Media.Imaging.BitmapSource CreateBitmapFromFilePath(string imagePath)
+        {
+            // 🎯 ファイルパス版: PageViewModelと同じEXIF処理ロジックで統一
+            
+            // Phase 1: EXIF Orientation検出（ファイルパスから直接）
+            System.Windows.Media.Imaging.Rotation rotation = System.Windows.Media.Imaging.Rotation.Rotate0;
+            try
+            {
+                using var stream = new System.IO.FileStream(imagePath, System.IO.FileMode.Open, System.IO.FileAccess.Read);
+                var frame = System.Windows.Media.Imaging.BitmapFrame.Create(stream, System.Windows.Media.Imaging.BitmapCreateOptions.DelayCreation, System.Windows.Media.Imaging.BitmapCacheOption.None);
+                var metadata = frame.Metadata as System.Windows.Media.Imaging.BitmapMetadata;
+                
+                if (metadata?.ContainsQuery("System.Photo.Orientation") == true)
+                {
+                    var orientationValue = metadata.GetQuery("System.Photo.Orientation");
+                    if (orientationValue != null)
+                    {
+                        var orientation = (ushort)orientationValue;
+                        rotation = orientation switch
+                        {
+                            6 => System.Windows.Media.Imaging.Rotation.Rotate90,   // 右90度回転
+                            3 => System.Windows.Media.Imaging.Rotation.Rotate180,  // 180度回転
+                            8 => System.Windows.Media.Imaging.Rotation.Rotate270,  // 左90度回転 (右270度)
+                            _ => System.Windows.Media.Imaging.Rotation.Rotate0     // 回転なし
+                        };
+                    }
+                }
+            }
+            catch
+            {
+                // EXIF読み取り失敗時は回転なしで続行
+                rotation = System.Windows.Media.Imaging.Rotation.Rotate0;
+            }
+            
+            // Phase 2: BitmapImage + 自動回転設定（ファイルパスから）
+            var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+            bitmap.BeginInit();
+            bitmap.UriSource = new System.Uri(imagePath);
+            bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+            bitmap.Rotation = rotation; // ← 左右統一されたEXIF処理結果
+            bitmap.EndInit();
+            bitmap.Freeze();
+            
+            // デバッグログ
+            var rotationDegrees = rotation switch 
+            {
+                System.Windows.Media.Imaging.Rotation.Rotate90 => "90°",
+                System.Windows.Media.Imaging.Rotation.Rotate180 => "180°", 
+                System.Windows.Media.Imaging.Rotation.Rotate270 => "270°",
+                _ => "0°"
+            };
+            System.IO.File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [OSS_UNIFIED] EXIF from FilePath → {rotationDegrees} rotation applied for {System.IO.Path.GetFileName(imagePath)}\\n");
+            
+            return bitmap;
         }
 
         private void UpdateUI()

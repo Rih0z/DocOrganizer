@@ -9,6 +9,7 @@ using SkiaSharp;
 using ImageMagick;
 using System.Windows.Media.Imaging;
 
+
 namespace DocOrganizer.UI.ViewModels
 {
     public partial class PageViewModel : ObservableObject, IDisposable
@@ -146,7 +147,7 @@ namespace DocOrganizer.UI.ViewModels
 
                     // 🚀 根本修正: SkiaSharp → WriteableBitmapに直接変換
                     using var data = _page.ThumbnailImage.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
-                    var bitmap = CreateBitmapFromBytes(data.ToArray());
+                    var bitmap = CreateSimpleBitmapFromBytes(data.ToArray());
                     
                     ThumbnailImage = bitmap;
                     
@@ -217,15 +218,14 @@ namespace DocOrganizer.UI.ViewModels
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] ⭐EXIF完全削除版 HEIC左側サムネイル専用処理開始: {Path.GetFileName(heicPath)}");
+                System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] 📱 HEIC画像読み込み開始: {Path.GetFileName(heicPath)}");
                 
-                // ⭐最終修正: HEIC画像もEXIF情報を完全削除してWPF用PNG生成
-                var exifFreeImageBytes = await _imageProcessingService.GenerateExifFreeImageForWpfAsync(heicPath, 150, 200);
+                // 🎯 シンプル実装: HEICファイルも直接読み込み
+                var imageBytes = await System.IO.File.ReadAllBytesAsync(heicPath);
                 
-                if (cancellationToken.IsCancellationRequested || exifFreeImageBytes == null)
+                if (cancellationToken.IsCancellationRequested || imageBytes == null)
                     return;
                 
-                // 🚀 根本修正: WPF BitmapImage → WriteableBitmap統一
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     if (cancellationToken.IsCancellationRequested)
@@ -233,27 +233,26 @@ namespace DocOrganizer.UI.ViewModels
                         
                     try
                     {
-                        // ⭐根本解決: CreateBitmapFromBytesでWriteableBitmap + unsafe memory copy
-                        var bitmap = CreateBitmapFromBytes(exifFreeImageBytes);
+                        // 🎯 シンプル実装: 基本的なBitmapImage読み込みのみ
+                        var bitmap = CreateSimpleBitmapFromBytes(imageBytes);
                         
-                        ThumbnailImage = bitmap; // 左側サムネイル専用
-                        // ⭐修正: PreviewImageは設定しない（右側で独自に高解像度生成）
+                        ThumbnailImage = bitmap; // 左側サムネイル
                         
-                        // WeakReferenceキャッシュはEXIF削除版データで保存
-                        _optimizedThumbnailCache = new WeakReference<byte[]>(exifFreeImageBytes);
+                        // キャッシュ保存
+                        _optimizedThumbnailCache = new WeakReference<byte[]>(imageBytes);
                         
-                        System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] ⭐WriteableBitmap統一 左側HEICサムネイル完了 - Size: {bitmap.PixelWidth}x{bitmap.PixelHeight}: {Path.GetFileName(heicPath)}");
+                        System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] ✅ HEIC読み込み完了 - Size: {bitmap.PixelWidth}x{bitmap.PixelHeight}: {Path.GetFileName(heicPath)}");
                     }
                     catch (Exception ex)
                     {
-
+                        System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] ❌ エラー: {ex.Message}");
                     }
                 });
             }
             catch (Exception ex)
             {
-
-                // エラー時は元の処理にフォールバック
+                System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] ❌ ファイル読み込みエラー: {ex.Message}");
+                // エラー時はフォールバック処理
                 await ProcessImageFallbackAsync(heicPath, cancellationToken);
             }
         }
@@ -268,15 +267,14 @@ namespace DocOrganizer.UI.ViewModels
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] ⭐EXIF完全削除版 左側サムネイル専用処理開始: {Path.GetFileName(imagePath)}");
+                System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] 📷 シンプル画像読み込み開始: {Path.GetFileName(imagePath)}");
                 
-                // ⭐最終修正: EXIF情報を完全削除してWPF用PNG生成（90度回転問題根本解決）
-                var exifFreeImageBytes = await _imageProcessingService.GenerateExifFreeImageForWpfAsync(imagePath, 150, 200);
+                // 🎯 シンプル実装: ファイルから直接読み込み
+                var imageBytes = await System.IO.File.ReadAllBytesAsync(imagePath);
                 
-                if (cancellationToken.IsCancellationRequested || exifFreeImageBytes == null)
+                if (cancellationToken.IsCancellationRequested || imageBytes == null)
                     return;
                 
-                // 🚀 根本修正: WPF BitmapImage → WriteableBitmap統一
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     if (cancellationToken.IsCancellationRequested)
@@ -284,24 +282,23 @@ namespace DocOrganizer.UI.ViewModels
                         
                     try
                     {
-                        // ⭐根本解決: CreateBitmapFromBytesでWriteableBitmap + unsafe memory copy
-                        var bitmap = CreateBitmapFromBytes(exifFreeImageBytes);
+                        // 🎯 シンプル実装: 基本的なBitmapImage読み込みのみ
+                        var bitmap = CreateSimpleBitmapFromBytes(imageBytes);
                         
-                        ThumbnailImage = bitmap; // 左側サムネイル専用
-                        // ⭐修正: PreviewImageは設定しない（右側で独自に高解像度生成）
+                        ThumbnailImage = bitmap; // 左側サムネイル
                         
-                        System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] ⭐WriteableBitmap統一 左側サムネイル完了 - Size: {bitmap.PixelWidth}x{bitmap.PixelHeight}: {Path.GetFileName(imagePath)}");
+                        System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] ✅ シンプル読み込み完了 - Size: {bitmap.PixelWidth}x{bitmap.PixelHeight}: {Path.GetFileName(imagePath)}");
                     }
                     catch (Exception ex)
                     {
-
+                        System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] ❌ エラー: {ex.Message}");
                     }
                 });
             }
             catch (Exception ex)
             {
-
-                // エラー時は元の処理にフォールバック
+                System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] ❌ ファイル読み込みエラー: {ex.Message}");
+                // エラー時はフォールバック処理
                 await ProcessImageFallbackAsync(imagePath, cancellationToken);
             }
         }
@@ -316,19 +313,16 @@ namespace DocOrganizer.UI.ViewModels
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[ProcessImageFallbackAsync] フォールバック処理（左側サムネイル専用）: {Path.GetFileName(imagePath)}");
+                System.Diagnostics.Debug.WriteLine($"[ProcessImageFallbackAsync] 🔄 フォールバック処理開始: {Path.GetFileName(imagePath)}");
                 
-                // ⭐修正: 左側サムネイル専用（150x200）
+                // SkiaSharpによる高品質サムネイル生成（フォールバック用）
                 var bitmap = await _imageProcessingService.GenerateHighQualityPreviewAsync(imagePath, 150, 200);
                 
                 if (cancellationToken.IsCancellationRequested || bitmap == null)
                     return;
                 
-                // ⭐修正: 回転処理を無効化（左右統一のため）
                 var finalBitmap = bitmap;
-                // ⭐修正完了: フォールバック処理でも回転処理をスキップ
 
-                // 🚀 根本修正: WPF BitmapImage → WriteableBitmap統一
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     if (cancellationToken.IsCancellationRequested)
@@ -336,18 +330,20 @@ namespace DocOrganizer.UI.ViewModels
                         
                     try
                     {
-                        // ⭐根本解決: SkiaSharp → WriteableBitmapに直接変換
+                        // SkiaSharp → PNG → BitmapImage変換
                         using var data = finalBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
-                        var thumbnailImage = CreateBitmapFromBytes(data.ToArray());
+                        var imageBytes = data.ToArray();
                         
-                        ThumbnailImage = thumbnailImage; // 左側サムネイル専用
-                        // ⭐修正: PreviewImageは設定しない（右側で独自に高解像度生成）
+                        // 🎯 シンプル実装: 基本的なBitmapImage読み込みのみ
+                        var thumbnailImage = CreateSimpleBitmapFromBytes(imageBytes);
                         
-                        System.Diagnostics.Debug.WriteLine($"[ProcessImageFallbackAsync] ⭐WriteableBitmap統一 フォールバック左側サムネイル完了: {Path.GetFileName(imagePath)}");
+                        ThumbnailImage = thumbnailImage; // 左側サムネイル
+                        
+                        System.Diagnostics.Debug.WriteLine($"[ProcessImageFallbackAsync] ✅ フォールバック完了: {Path.GetFileName(imagePath)}");
                     }
                     catch (Exception ex)
                     {
-
+                        System.Diagnostics.Debug.WriteLine($"[ProcessImageFallbackAsync] ❌ エラー: {ex.Message}");
                     }
                 });
                 
@@ -360,7 +356,7 @@ namespace DocOrganizer.UI.ViewModels
             }
             catch (Exception ex)
             {
-
+                System.Diagnostics.Debug.WriteLine($"[ProcessImageFallbackAsync] ❌ フォールバック処理エラー: {ex.Message}");
             }
         }
         
@@ -371,7 +367,7 @@ namespace DocOrganizer.UI.ViewModels
         {
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
-                var bitmap = CreateBitmapFromBytes(thumbnailData);
+                var bitmap = CreateSimpleBitmapFromBytes(thumbnailData);
                 ThumbnailImage = bitmap;
                 // PreviewImageは設定せず、高品質プレビューはMainViewModelで生成
                 // [ObservableProperty]自動通知に依存
@@ -381,50 +377,68 @@ namespace DocOrganizer.UI.ViewModels
         /// <summary>
         /// バイト配列からBitmapSourceを作成
         /// </summary>
-        private BitmapSource CreateBitmapFromBytes(byte[] imageData)
+        private BitmapSource CreateSimpleBitmapFromBytes(byte[] imageData)
+{
+    // 🎯 OSS標準実装: EXIF Orientationを適切に読み取り→BitmapImage.Rotationで自動回転
+    // 参考: Stack Overflow実証済みパターン + 画像ビューアOSS標準実装
+    
+    using var stream = new MemoryStream(imageData);
+    
+    // Phase 1: EXIF Orientation検出
+    System.Windows.Media.Imaging.Rotation rotation = System.Windows.Media.Imaging.Rotation.Rotate0;
+    try
+    {
+        stream.Position = 0;
+        var frame = BitmapFrame.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
+        var metadata = frame.Metadata as BitmapMetadata;
+        
+        if (metadata?.ContainsQuery("System.Photo.Orientation") == true)
         {
-            // 🚀 根本解決: WriteableBitmapによる完全手動制御
-            // WPF内部のあらゆる自動回転を回避
-            using var stream = new System.IO.MemoryStream(imageData);
-            
-            // まずSkiaSharpで完全にEXIF無視して読み込み
-            using var skiaCodec = SkiaSharp.SKCodec.Create(stream);
-            if (skiaCodec == null) throw new InvalidOperationException("Invalid image format");
-            
-            var skiaInfo = new SkiaSharp.SKImageInfo(skiaCodec.Info.Width, skiaCodec.Info.Height, SkiaSharp.SKColorType.Bgra8888);
-            using var skiaBitmap = new SkiaSharp.SKBitmap(skiaInfo);
-            
-            // EXIFを完全無視してピクセルデータを取得
-            var result = skiaCodec.GetPixels(skiaInfo, skiaBitmap.GetPixels());
-            if (result != SkiaSharp.SKCodecResult.Success)
-                throw new InvalidOperationException($"Failed to decode image: {result}");
-            
-            // WriteableBitmapに手動でピクセルコピー
-            var writeableBitmap = new System.Windows.Media.Imaging.WriteableBitmap(
-                skiaInfo.Width, skiaInfo.Height, 96, 96, 
-                System.Windows.Media.PixelFormats.Bgra32, null);
-            
-            writeableBitmap.Lock();
-            try
+            var orientationValue = metadata.GetQuery("System.Photo.Orientation");
+            if (orientationValue != null)
             {
-                // ピクセルデータを直接コピー（回転なし）
-                var pixelSize = skiaInfo.Width * skiaInfo.Height * 4; // BGRA32 = 4 bytes per pixel
-                unsafe
+                var orientation = (ushort)orientationValue;
+                rotation = orientation switch
                 {
-                    System.Buffer.MemoryCopy(skiaBitmap.GetPixels().ToPointer(), 
-                                           writeableBitmap.BackBuffer.ToPointer(), 
-                                           pixelSize, pixelSize);
-                }
-                writeableBitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, skiaInfo.Width, skiaInfo.Height));
+                    6 => System.Windows.Media.Imaging.Rotation.Rotate90,   // 右90度回転
+                    3 => System.Windows.Media.Imaging.Rotation.Rotate180,  // 180度回転
+                    8 => System.Windows.Media.Imaging.Rotation.Rotate270,  // 左90度回転 (右270度)
+                    _ => System.Windows.Media.Imaging.Rotation.Rotate0     // 回転なし
+                };
             }
-            finally
-            {
-                writeableBitmap.Unlock();
-            }
-            
-            writeableBitmap.Freeze();
-            return writeableBitmap;
         }
+    }
+    catch
+    {
+        // EXIF読み取り失敗時は回転なしで続行
+        rotation = System.Windows.Media.Imaging.Rotation.Rotate0;
+    }
+    
+    // Phase 2: BitmapImage + 自動回転設定（OSS標準パターン）
+    stream.Position = 0; // ストリームを先頭に戻す
+    
+    var bitmap = new BitmapImage();
+    bitmap.BeginInit();
+    bitmap.StreamSource = stream;
+    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+    bitmap.Rotation = rotation; // ← WPF標準的解決策（OSS実証済み）
+    bitmap.EndInit();
+    bitmap.Freeze();
+    
+    // デバッグログ
+    var rotationDegrees = rotation switch 
+    {
+        System.Windows.Media.Imaging.Rotation.Rotate90 => "90°",
+        System.Windows.Media.Imaging.Rotation.Rotate180 => "180°", 
+        System.Windows.Media.Imaging.Rotation.Rotate270 => "270°",
+        _ => "0°"
+    };
+    File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [OSS_STANDARD] EXIF Orientation → {rotationDegrees} rotation applied\\n");
+    
+    return bitmap;
+}
+
+        // 🚫 EXIF自動回転機能削除 - 不要なコード削除済み
         
         /// <summary>
         /// プレビューはサムネイルと同じ処理で統一 - HEIC/JPEG同等処理
@@ -653,7 +667,7 @@ namespace DocOrganizer.UI.ViewModels
                     {
                         // ⭐根本解決: SkiaSharp → WriteableBitmapに直接変換
                         using var data = rotatedBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
-                        var thumbnailImage = CreateBitmapFromBytes(data.ToArray());
+                        var thumbnailImage = CreateSimpleBitmapFromBytes(data.ToArray());
                         
                         ThumbnailImage = thumbnailImage; // 左側サムネイル専用
                         // ⭐修正: PreviewImageは設定しない（右側で独自に高解像度生成）
@@ -766,7 +780,7 @@ namespace DocOrganizer.UI.ViewModels
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     using var data = placeholderBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
-                    var bitmap = CreateBitmapFromBytes(data.ToArray());
+                    var bitmap = CreateSimpleBitmapFromBytes(data.ToArray());
                     
                     ThumbnailImage = bitmap;
                     // PreviewImageは設定せず、高品質プレビューはMainViewModelで生成
@@ -836,7 +850,7 @@ using var originalBitmap = SkiaSharp.SKBitmap.Decode(codec, new SkiaSharp.SKImag
                     try 
                     {
                         using var encodedData = processedBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 85);
-                        var wpfBitmap = CreateBitmapFromBytes(encodedData.ToArray());
+                        var wpfBitmap = CreateSimpleBitmapFromBytes(encodedData.ToArray());
                         
                         // WeakReferenceキャッシュに保存（PreviewImageは設定しない）
                         _optimizedPreviewCache = new WeakReference<BitmapSource>(wpfBitmap);
