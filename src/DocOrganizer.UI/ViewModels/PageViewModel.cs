@@ -402,19 +402,47 @@ namespace DocOrganizer.UI.ViewModels
         /// </summary>
         private BitmapSource CreateBitmapFromBytes(byte[] imageData)
         {
+            // 🚀 根本解決: WriteableBitmapによる完全手動制御
+            // WPF内部のあらゆる自動回転を回避
             using var stream = new System.IO.MemoryStream(imageData);
-            var bitmap = new System.Windows.Media.Imaging.BitmapImage();
-            bitmap.BeginInit();
-            bitmap.StreamSource = stream;
-            bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-            // 🚀 完全修正: WPF内部でのEXIF回転を完全無効化
-            bitmap.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreImageCache | 
-                                   System.Windows.Media.Imaging.BitmapCreateOptions.PreservePixelFormat;
-            // 🚀 重要: WPFのRotationプロパティも無効化
-            bitmap.Rotation = System.Windows.Media.Imaging.Rotation.Rotate0;
-            bitmap.EndInit();
-            bitmap.Freeze();
-            return bitmap;
+            
+            // まずSkiaSharpで完全にEXIF無視して読み込み
+            using var skiaCodec = SkiaSharp.SKCodec.Create(stream);
+            if (skiaCodec == null) throw new InvalidOperationException("Invalid image format");
+            
+            var skiaInfo = new SkiaSharp.SKImageInfo(skiaCodec.Info.Width, skiaCodec.Info.Height, SkiaSharp.SKColorType.Bgra8888);
+            using var skiaBitmap = new SkiaSharp.SKBitmap(skiaInfo);
+            
+            // EXIFを完全無視してピクセルデータを取得
+            var result = skiaCodec.GetPixels(skiaInfo, skiaBitmap.GetPixels());
+            if (result != SkiaSharp.SKCodecResult.Success)
+                throw new InvalidOperationException($"Failed to decode image: {result}");
+            
+            // WriteableBitmapに手動でピクセルコピー
+            var writeableBitmap = new System.Windows.Media.Imaging.WriteableBitmap(
+                skiaInfo.Width, skiaInfo.Height, 96, 96, 
+                System.Windows.Media.PixelFormats.Bgra32, null);
+            
+            writeableBitmap.Lock();
+            try
+            {
+                // ピクセルデータを直接コピー（回転なし）
+                var pixelSize = skiaInfo.Width * skiaInfo.Height * 4; // BGRA32 = 4 bytes per pixel
+                unsafe
+                {
+                    System.Buffer.MemoryCopy(skiaBitmap.GetPixels().ToPointer(), 
+                                           writeableBitmap.BackBuffer.ToPointer(), 
+                                           pixelSize, pixelSize);
+                }
+                writeableBitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, skiaInfo.Width, skiaInfo.Height));
+            }
+            finally
+            {
+                writeableBitmap.Unlock();
+            }
+            
+            writeableBitmap.Freeze();
+            return writeableBitmap;
         }
         
         /// <summary>
