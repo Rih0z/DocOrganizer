@@ -1404,7 +1404,10 @@
         },
         "runtime": {
           "bin/placeholder/DocOrganizer.Application.dll": {}
-        }
+        },
+        "frameworkReferences": [
+          "Microsoft.WindowsDesktop.App.WPF"
+        ]
       },
       "DocOrganizer.Core/1.0.0": {
         "type": "project",
@@ -1438,7 +1441,10 @@
         },
         "runtime": {
           "bin/placeholder/DocOrganizer.Infrastructure.dll": {}
-        }
+        },
+        "frameworkReferences": [
+          "Microsoft.WindowsDesktop.App.WPF"
+        ]
       }
     },
     "net6.0-windows7.0/win-x64": {
@@ -2663,7 +2669,10 @@
         },
         "runtime": {
           "bin/placeholder/DocOrganizer.Application.dll": {}
-        }
+        },
+        "frameworkReferences": [
+          "Microsoft.WindowsDesktop.App.WPF"
+        ]
       },
       "DocOrganizer.Core/1.0.0": {
         "type": "project",
@@ -2697,7 +2706,10 @@
         },
         "runtime": {
           "bin/placeholder/DocOrganizer.Infrastructure.dll": {}
-        }
+        },
+        "frameworkReferences": [
+          "Microsoft.WindowsDesktop.App.WPF"
+        ]
       }
     }
   },

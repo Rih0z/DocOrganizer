@@ -41,7 +41,7 @@ namespace DocOrganizer.Infrastructure.Services.V3
                     
                     // JPEG設定
                     image.Format = MagickFormat.Jpeg;
-                    image.Quality = quality;
+                    image.Quality = (uint)quality;
                     
                     // 出力ディレクトリ確保
                     var outputDir = Path.GetDirectoryName(jpegOutputPath);
@@ -156,8 +156,8 @@ namespace DocOrganizer.Infrastructure.Services.V3
                         : (ushort)1;
                     
                     return new HeicImageInfo(
-                        Width: image.Width,
-                        Height: image.Height,
+                        Width: (int)image.Width,
+                        Height: (int)image.Height,
                         FileSize: fileInfo.Length,
                         Format: "HEIC",
                         HasExifOrientation: hasExifOrientation,

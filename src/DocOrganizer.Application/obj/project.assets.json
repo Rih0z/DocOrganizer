@@ -1,7 +1,7 @@
 {
   "version": 3,
   "targets": {
-    "net6.0": {
+    "net6.0-windows7.0": {
       "SkiaSharp/2.88.6": {
         "type": "package",
         "dependencies": {
@@ -71,7 +71,7 @@
         }
       }
     },
-    "net6.0/win-x64": {
+    "net6.0-windows7.0/win-x64": {
       "SkiaSharp/2.88.6": {
         "type": "package",
         "dependencies": {
@@ -255,7 +255,7 @@
     }
   },
   "projectFileDependencyGroups": {
-    "net6.0": [
+    "net6.0-windows7.0": [
       "DocOrganizer.Core >= 1.0.0",
       "SkiaSharp >= 2.88.6"
     ]
@@ -276,14 +276,14 @@
         "C:\\Users\\217216X721451\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
-        "net6.0"
+        "net6.0-windows"
       ],
       "sources": {
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
-        "net6.0": {
-          "targetAlias": "net6.0",
+        "net6.0-windows7.0": {
+          "targetAlias": "net6.0-windows",
           "projectReferences": {
             "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.Core\\DocOrganizer.Core.csproj": {
               "projectPath": "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.Core\\DocOrganizer.Core.csproj"
@@ -298,8 +298,8 @@
       }
     },
     "frameworks": {
-      "net6.0": {
-        "targetAlias": "net6.0",
+      "net6.0-windows7.0": {
+        "targetAlias": "net6.0-windows",
         "dependencies": {
           "SkiaSharp": {
             "target": "Package",
@@ -334,6 +334,9 @@
         "frameworkReferences": {
           "Microsoft.NETCore.App": {
             "privateAssets": "all"
+          },
+          "Microsoft.WindowsDesktop.App.WPF": {
+            "privateAssets": "none"
           }
         },
         "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.428\\RuntimeIdentifierGraph.json"

@@ -3142,7 +3142,10 @@
         },
         "runtime": {
           "bin/placeholder/DocOrganizer.Application.dll": {}
-        }
+        },
+        "frameworkReferences": [
+          "Microsoft.WindowsDesktop.App.WPF"
+        ]
       },
       "DocOrganizer.Core/1.0.0": {
         "type": "project",
@@ -3176,7 +3179,10 @@
         },
         "runtime": {
           "bin/placeholder/DocOrganizer.Infrastructure.dll": {}
-        }
+        },
+        "frameworkReferences": [
+          "Microsoft.WindowsDesktop.App.WPF"
+        ]
       }
     }
   },

@@ -274,4 +274,45 @@ namespace DocOrganizer.UI.ViewModels.V3
             // プロパティ変更に応じた調整処理
         }
     }
+
+    // Missing Event argument classes
+    public class DocumentOpenedEventArgs : EventArgs
+    {
+        public PdfDocument Document { get; }
+
+        public DocumentOpenedEventArgs(PdfDocument document)
+        {
+            Document = document;
+        }
+    }
+
+    public class PageOperationEventArgs : EventArgs
+    {
+        public PageViewModel Page { get; }
+
+        public PageOperationEventArgs(PageViewModel page)
+        {
+            Page = page;
+        }
+    }
+
+    public class PreviewUpdatedEventArgs : EventArgs
+    {
+        public PageViewModel Page { get; }
+
+        public PreviewUpdatedEventArgs(PageViewModel page)
+        {
+            Page = page;
+        }
+    }
+
+    public class DocumentSavedEventArgs : EventArgs
+    {
+        public string FilePath { get; }
+
+        public DocumentSavedEventArgs(string filePath)
+        {
+            FilePath = filePath;
+        }
+    }
 }
