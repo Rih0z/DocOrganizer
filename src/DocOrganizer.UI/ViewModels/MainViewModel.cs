@@ -696,13 +696,8 @@ namespace DocOrganizer.UI.ViewModels
                     if (orientationValue != null)
                     {
                         var orientation = (ushort)orientationValue;
-                        rotation = orientation switch
-                        {
-                            6 => System.Windows.Media.Imaging.Rotation.Rotate90,   // 右90度回転
-                            3 => System.Windows.Media.Imaging.Rotation.Rotate180,  // 180度回転
-                            8 => System.Windows.Media.Imaging.Rotation.Rotate270,  // 左90度回転 (右270度)
-                            _ => System.Windows.Media.Imaging.Rotation.Rotate0     // 回転なし
-                        };
+                        // 🎯 Windows Photo/Paint互換: EXIF Orientationを完全無視
+                        rotation = System.Windows.Media.Imaging.Rotation.Rotate0; // 常に0度
                     }
                 }
             }

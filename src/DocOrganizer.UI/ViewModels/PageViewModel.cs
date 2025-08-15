@@ -170,7 +170,7 @@ namespace DocOrganizer.UI.ViewModels
         private WeakReference<System.Windows.Media.Imaging.BitmapSource>? _optimizedPreviewCache; // 最適化プレビューキャッシュ（GC対応） // HEICファイルパス → JPEGパスのキャッシュ
                 private readonly object _heicProcessingLock = new object(); // HEIC処理の排他制御（インスタンス別）
 
-        private void LoadThumbnailFromImage()
+        private async void LoadThumbnailFromImage()
         {
             // 前の読み込み処理をキャンセル
             _loadThumbnailCts?.Cancel();
@@ -191,19 +191,19 @@ namespace DocOrganizer.UI.ViewModels
                 {
                     System.Diagnostics.Debug.WriteLine($"[LoadThumbnailFromImage] HEIC最適化処理開始: {Path.GetFileName(imagePathToLoad)}");
                     
-                    // 🎯 遅延回転修正: 同期処理に変更
-                    ProcessHeicOptimizedAsync(imagePathToLoad, cancellationToken).Wait();
+                    // 🎯 UI死活修正: 非同期処理に戻すがEXIF回転は無効化済み
+                    await ProcessHeicOptimizedAsync(imagePathToLoad, cancellationToken);
                     return;
                 }
                 
                 // 通常の画像ファイル処理（HEIC以外）
-                ProcessStandardImageAsync(imagePathToLoad, cancellationToken).Wait();
+                await ProcessStandardImageAsync(imagePathToLoad, cancellationToken);
             }
             catch (Exception ex)
             {
 
                 // エラー発生時は基本処理にフォールバック
-                ProcessImageFallbackAsync(_page.SourceImagePath, cancellationToken).Wait();
+                await ProcessImageFallbackAsync(_page.SourceImagePath, cancellationToken);
             }
         }
 
@@ -397,13 +397,8 @@ namespace DocOrganizer.UI.ViewModels
             if (orientationValue != null)
             {
                 var orientation = (ushort)orientationValue;
-                rotation = orientation switch
-                {
-                    6 => System.Windows.Media.Imaging.Rotation.Rotate90,   // 右90度回転
-                    3 => System.Windows.Media.Imaging.Rotation.Rotate180,  // 180度回転
-                    8 => System.Windows.Media.Imaging.Rotation.Rotate270,  // 左90度回転 (右270度)
-                    _ => System.Windows.Media.Imaging.Rotation.Rotate0     // 回転なし
-                };
+                // 🎯 Windows Photo/Paint互換: EXIF Orientationを完全無視
+                rotation = System.Windows.Media.Imaging.Rotation.Rotate0; // 常に0度
             }
         }
     }
