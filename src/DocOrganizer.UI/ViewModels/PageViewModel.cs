@@ -407,8 +407,11 @@ namespace DocOrganizer.UI.ViewModels
             bitmap.BeginInit();
             bitmap.StreamSource = stream;
             bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-            // ⭐根本解決: Rotationプロパティを一切設定せず、画像をそのまま表示
-            bitmap.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreImageCache;
+            // 🚀 完全修正: WPF内部でのEXIF回転を完全無効化
+            bitmap.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreImageCache | 
+                                   System.Windows.Media.Imaging.BitmapCreateOptions.PreservePixelFormat;
+            // 🚀 重要: WPFのRotationプロパティも無効化
+            bitmap.Rotation = System.Windows.Media.Imaging.Rotation.Rotate0;
             bitmap.EndInit();
             bitmap.Freeze();
             return bitmap;
