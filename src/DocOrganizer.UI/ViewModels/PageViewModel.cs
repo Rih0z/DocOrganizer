@@ -68,10 +68,9 @@ namespace DocOrganizer.UI.ViewModels
                 
                 if (isSourceHeic && System.IO.File.Exists(_page.SourceImagePath))
                 {
-
-                    // キャッシュをクリア
+                    // 🎯 遅延回転修正: Task.Run非同期を削除し同期処理に変更
                     ClearOptimizedCache();
-                    _ = Task.Run(() => LoadThumbnailFromImage());
+                    LoadThumbnailFromImage(); // 同期実行で遅延回転を防止
                     return;
                 }
                 
@@ -84,8 +83,8 @@ namespace DocOrganizer.UI.ViewModels
                 // 画像ファイルから直接サムネイルを生成（HEIC以外）
                 else if (!string.IsNullOrEmpty(_page.SourceImagePath) && System.IO.File.Exists(_page.SourceImagePath))
                 {
-
-                    _ = Task.Run(() => LoadThumbnailFromImage());
+                    // 🎯 遅延回転修正: Task.Run非同期を削除し同期処理に変更
+                    LoadThumbnailFromImage(); // 同期実行で遅延回転を防止
                 }
                 // PDFページの場合
                 else if (_page.ThumbnailImage == null && _page.PageNumber > 0)
@@ -171,7 +170,7 @@ namespace DocOrganizer.UI.ViewModels
         private WeakReference<System.Windows.Media.Imaging.BitmapSource>? _optimizedPreviewCache; // 最適化プレビューキャッシュ（GC対応） // HEICファイルパス → JPEGパスのキャッシュ
                 private readonly object _heicProcessingLock = new object(); // HEIC処理の排他制御（インスタンス別）
 
-        private async void LoadThumbnailFromImage()
+        private void LoadThumbnailFromImage()
         {
             // 前の読み込み処理をキャンセル
             _loadThumbnailCts?.Cancel();
@@ -192,19 +191,19 @@ namespace DocOrganizer.UI.ViewModels
                 {
                     System.Diagnostics.Debug.WriteLine($"[LoadThumbnailFromImage] HEIC最適化処理開始: {Path.GetFileName(imagePathToLoad)}");
                     
-                    // 🚀 Phase 2最適化: HEIC処理統一・キャッシュ活用
-                    await ProcessHeicOptimizedAsync(imagePathToLoad, cancellationToken);
+                    // 🎯 遅延回転修正: 同期処理に変更
+                    ProcessHeicOptimizedAsync(imagePathToLoad, cancellationToken).Wait();
                     return;
                 }
                 
                 // 通常の画像ファイル処理（HEIC以外）
-                await ProcessStandardImageAsync(imagePathToLoad, cancellationToken);
+                ProcessStandardImageAsync(imagePathToLoad, cancellationToken).Wait();
             }
             catch (Exception ex)
             {
 
                 // エラー発生時は基本処理にフォールバック
-                await ProcessImageFallbackAsync(_page.SourceImagePath, cancellationToken);
+                ProcessImageFallbackAsync(_page.SourceImagePath, cancellationToken).Wait();
             }
         }
 

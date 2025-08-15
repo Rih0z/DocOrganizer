@@ -515,36 +515,21 @@ namespace DocOrganizer.UI.ViewModels
                                             // ✅ 完全統一: PageViewModelと同じファイルパス直接読み取り
                                             var bitmap = CreateBitmapFromFilePath(page.SourceImagePath);
                                                 
-                                                CurrentPageImage = bitmap;
+                                            CurrentPageImage = bitmap;
                                                 
-                                                // プレビューサイズを計算（高解像度維持）
-                                                var displayWidth = Math.Max(bitmap.PixelWidth, 600);
-                                                var displayHeight = Math.Max(bitmap.PixelHeight, 800);
-                                                
-                                                var aspectRatio = (double)bitmap.PixelWidth / bitmap.PixelHeight;
-                                                if (aspectRatio > 1)
-                                                {
-                                                    displayHeight = (int)(displayWidth / aspectRatio);
-                                                }
-                                                else
-                                                {
-                                                    displayWidth = (int)(displayHeight * aspectRatio);
-                                                }
-                                                
-                                                PreviewWidth = displayWidth;
-                                                PreviewHeight = displayHeight;
-
-                                            }
-                                            catch (Exception uiEx)
-                                            {
-                                                // UI処理エラー時は従来のバイト配列処理にフォールバック
-                                                System.Diagnostics.Debug.WriteLine($"[UpdatePreview] UI処理エラー: {uiEx.Message}");
-                                                // PDFプレビューフォールバック処理に進む
-                                            }
-                                        });
+                                            // 🎯 ズーム過剰修正: 元画像サイズをそのまま使用（強制拡大を削除）
+                                            PreviewWidth = bitmap.PixelWidth;
+                                            PreviewHeight = bitmap.PixelHeight;
+                                        }
+                                        catch (Exception uiEx)
+                                        {
+                                            // UI処理エラー時は従来のバイト配列処理にフォールバック
+                                            System.Diagnostics.Debug.WriteLine($"[UpdatePreview] UI処理エラー: {uiEx.Message}");
+                                            // PDFプレビューフォールバック処理に進む
+                                        }
+                                    });
                                         
-                                        return; // 高品質プレビュー完了、PDFプレビューをスキップ
-                                    }
+                                    return; // 高品質プレビュー完了、PDFプレビューをスキップ
                                 }
                                 catch (Exception imgEx)
                                 {
@@ -1936,9 +1921,5 @@ namespace DocOrganizer.UI.ViewModels
                    extension.Equals(".heif", StringComparison.OrdinalIgnoreCase);
         }
 
-        /// <summary>
-        /// SkiaSharp SKBitmapの回転処理
-        /// </summary>
-        
     }
 }
