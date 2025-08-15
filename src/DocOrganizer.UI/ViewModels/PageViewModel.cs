@@ -144,18 +144,9 @@ namespace DocOrganizer.UI.ViewModels
                 if (_page.ThumbnailImage != null)
                 {
 
-                    // SkiaSharpのSKBitmapをWPFで表示可能な形式に変換
+                    // 🚀 根本修正: SkiaSharp → WriteableBitmapに直接変換
                     using var data = _page.ThumbnailImage.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
-                    var stream = new System.IO.MemoryStream(data.ToArray());
-                    
-                    var bitmap = new System.Windows.Media.Imaging.BitmapImage();
-                    bitmap.BeginInit();
-                    bitmap.StreamSource = stream;
-                    bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                    // ⭐テスト: CreateOptionsを一時的に無効化して表示確認
-                    // bitmap.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreImageCache;
-                    bitmap.EndInit();
-                    bitmap.Freeze();
+                    var bitmap = CreateBitmapFromBytes(data.ToArray());
                     
                     ThumbnailImage = bitmap;
                     
@@ -219,6 +210,9 @@ namespace DocOrganizer.UI.ViewModels
         /// <summary>
         /// HEIC処理の最適化版（キャッシュ活用・2重変換排除）
         /// </summary>
+        /// <summary>
+        /// HEIC処理の最適化版（キャッシュ活用・2重変換排除）
+        /// </summary>
         private async Task ProcessHeicOptimizedAsync(string heicPath, CancellationToken cancellationToken)
         {
             try
@@ -231,7 +225,7 @@ namespace DocOrganizer.UI.ViewModels
                 if (cancellationToken.IsCancellationRequested || exifFreeImageBytes == null)
                     return;
                 
-                // ⭐修正: 左側ThumbnailImageのみ設定（PreviewImageは右側で独自生成）
+                // 🚀 根本修正: WPF BitmapImage → WriteableBitmap統一
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     if (cancellationToken.IsCancellationRequested)
@@ -239,14 +233,8 @@ namespace DocOrganizer.UI.ViewModels
                         
                     try
                     {
-                        // ⭐最終修正: EXIF完全削除済みPNGから直接WPF BitmapImage作成
-                        var bitmap = new System.Windows.Media.Imaging.BitmapImage();
-                        bitmap.BeginInit();
-                        bitmap.StreamSource = new System.IO.MemoryStream(exifFreeImageBytes);
-                        bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                        // ⭐CreateOptions不要: すでにEXIF情報が削除済みPNG
-                        bitmap.EndInit();
-                        bitmap.Freeze();
+                        // ⭐根本解決: CreateBitmapFromBytesでWriteableBitmap + unsafe memory copy
+                        var bitmap = CreateBitmapFromBytes(exifFreeImageBytes);
                         
                         ThumbnailImage = bitmap; // 左側サムネイル専用
                         // ⭐修正: PreviewImageは設定しない（右側で独自に高解像度生成）
@@ -254,7 +242,7 @@ namespace DocOrganizer.UI.ViewModels
                         // WeakReferenceキャッシュはEXIF削除版データで保存
                         _optimizedThumbnailCache = new WeakReference<byte[]>(exifFreeImageBytes);
                         
-                        System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] ⭐EXIF削除版 左側HEICサムネイル完了 - Size: {bitmap.PixelWidth}x{bitmap.PixelHeight}: {Path.GetFileName(heicPath)}");
+                        System.Diagnostics.Debug.WriteLine($"[ProcessHeicOptimizedAsync] ⭐WriteableBitmap統一 左側HEICサムネイル完了 - Size: {bitmap.PixelWidth}x{bitmap.PixelHeight}: {Path.GetFileName(heicPath)}");
                     }
                     catch (Exception ex)
                     {
@@ -273,6 +261,9 @@ namespace DocOrganizer.UI.ViewModels
         /// <summary>
         /// 通常画像ファイルの最適化処理
         /// </summary>
+        /// <summary>
+        /// 通常画像ファイルの最適化処理
+        /// </summary>
         private async Task ProcessStandardImageAsync(string imagePath, CancellationToken cancellationToken)
         {
             try
@@ -285,7 +276,7 @@ namespace DocOrganizer.UI.ViewModels
                 if (cancellationToken.IsCancellationRequested || exifFreeImageBytes == null)
                     return;
                 
-                // ⭐修正: 左側ThumbnailImageのみ設定（PreviewImageは右側で独自生成）
+                // 🚀 根本修正: WPF BitmapImage → WriteableBitmap統一
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     if (cancellationToken.IsCancellationRequested)
@@ -293,19 +284,13 @@ namespace DocOrganizer.UI.ViewModels
                         
                     try
                     {
-                        // ⭐最終修正: EXIF完全削除済みPNGから直接WPF BitmapImage作成
-                        var bitmap = new System.Windows.Media.Imaging.BitmapImage();
-                        bitmap.BeginInit();
-                        bitmap.StreamSource = new System.IO.MemoryStream(exifFreeImageBytes);
-                        bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                        // ⭐CreateOptions不要: すでにEXIF情報が削除済みPNG
-                        bitmap.EndInit();
-                        bitmap.Freeze();
+                        // ⭐根本解決: CreateBitmapFromBytesでWriteableBitmap + unsafe memory copy
+                        var bitmap = CreateBitmapFromBytes(exifFreeImageBytes);
                         
                         ThumbnailImage = bitmap; // 左側サムネイル専用
                         // ⭐修正: PreviewImageは設定しない（右側で独自に高解像度生成）
                         
-                        System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] ⭐EXIF削除版 左側サムネイル完了 - Size: {bitmap.PixelWidth}x{bitmap.PixelHeight}: {Path.GetFileName(imagePath)}");
+                        System.Diagnostics.Debug.WriteLine($"[ProcessStandardImageAsync] ⭐WriteableBitmap統一 左側サムネイル完了 - Size: {bitmap.PixelWidth}x{bitmap.PixelHeight}: {Path.GetFileName(imagePath)}");
                     }
                     catch (Exception ex)
                     {
@@ -321,6 +306,9 @@ namespace DocOrganizer.UI.ViewModels
             }
         }
         
+        /// <summary>
+        /// フォールバック処理（エラー時の基本処理）
+        /// </summary>
         /// <summary>
         /// フォールバック処理（エラー時の基本処理）
         /// </summary>
@@ -340,7 +328,7 @@ namespace DocOrganizer.UI.ViewModels
                 var finalBitmap = bitmap;
                 // ⭐修正完了: フォールバック処理でも回転処理をスキップ
 
-                // ⭐修正: 左側ThumbnailImageのみ設定（PreviewImageは右側で独自生成）
+                // 🚀 根本修正: WPF BitmapImage → WriteableBitmap統一
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     if (cancellationToken.IsCancellationRequested)
@@ -348,21 +336,14 @@ namespace DocOrganizer.UI.ViewModels
                         
                     try
                     {
-                        // 左側サムネイル用のWPF BitmapImage変換
+                        // ⭐根本解決: SkiaSharp → WriteableBitmapに直接変換
                         using var data = finalBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
-                        var thumbnailImage = new System.Windows.Media.Imaging.BitmapImage();
-                        thumbnailImage.BeginInit();
-                        thumbnailImage.StreamSource = new System.IO.MemoryStream(data.ToArray());
-                        thumbnailImage.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                        // ⭐テスト: CreateOptionsを一時的に無効化して表示確認
-                        // thumbnailImage.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreImageCache;
-                        thumbnailImage.EndInit();
-                        thumbnailImage.Freeze();
+                        var thumbnailImage = CreateBitmapFromBytes(data.ToArray());
                         
                         ThumbnailImage = thumbnailImage; // 左側サムネイル専用
                         // ⭐修正: PreviewImageは設定しない（右側で独自に高解像度生成）
                         
-                        System.Diagnostics.Debug.WriteLine($"[ProcessImageFallbackAsync] フォールバック左側サムネイル完了: {Path.GetFileName(imagePath)}");
+                        System.Diagnostics.Debug.WriteLine($"[ProcessImageFallbackAsync] ⭐WriteableBitmap統一 フォールバック左側サムネイル完了: {Path.GetFileName(imagePath)}");
                     }
                     catch (Exception ex)
                     {
@@ -643,6 +624,9 @@ namespace DocOrganizer.UI.ViewModels
         /// <summary>
         /// 回転角度を考慮したサムネイル生成
         /// </summary>
+        /// <summary>
+        /// 回転角度を考慮したサムネイル生成
+        /// </summary>
         private async Task GenerateThumbnailWithRotation(string imagePath, int rotationAngle)
         {
             try
@@ -662,26 +646,19 @@ namespace DocOrganizer.UI.ViewModels
                 var rotatedBitmap = bitmap;
                 // ⭐修正完了: GenerateThumbnailWithRotationでも回転処理をスキップ
 
-                // ⭐修正: 左側ThumbnailImageのみ設定（PreviewImageは右側で独自生成）
+                // 🚀 根本修正: WPF BitmapImage → WriteableBitmap統一
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     try
                     {
-                        // 左側サムネイル用のWPF BitmapImage変換
+                        // ⭐根本解決: SkiaSharp → WriteableBitmapに直接変換
                         using var data = rotatedBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
-                        var thumbnailImage = new System.Windows.Media.Imaging.BitmapImage();
-                        thumbnailImage.BeginInit();
-                        thumbnailImage.StreamSource = new System.IO.MemoryStream(data.ToArray());
-                        thumbnailImage.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                        // ⭐テスト: CreateOptionsを一時的に無効化して表示確認
-                        // thumbnailImage.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreImageCache;
-                        thumbnailImage.EndInit();
-                        thumbnailImage.Freeze();
+                        var thumbnailImage = CreateBitmapFromBytes(data.ToArray());
                         
                         ThumbnailImage = thumbnailImage; // 左側サムネイル専用
                         // ⭐修正: PreviewImageは設定しない（右側で独自に高解像度生成）
                         
-                        System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] 左側サムネイル完了 - 回転 {rotationAngle}度: {Path.GetFileName(imagePath)}");
+                        System.Diagnostics.Debug.WriteLine($"[GenerateThumbnailWithRotation] ⭐WriteableBitmap統一 左側サムネイル完了 - 回転 {rotationAngle}度: {Path.GetFileName(imagePath)}");
                     }
                     catch (Exception ex)
                     {
@@ -785,19 +762,11 @@ namespace DocOrganizer.UI.ViewModels
                     }
                 }
                 
-                // WPFで表示可能な形式に変換
+                // 🚀 根本修正: SkiaSharp → WriteableBitmapに直接変換
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     using var data = placeholderBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
-                    var stream = new System.IO.MemoryStream(data.ToArray());
-                    
-                    var bitmap = new System.Windows.Media.Imaging.BitmapImage();
-                    bitmap.BeginInit();
-                    bitmap.StreamSource = stream;
-                    bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                    bitmap.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreImageCache;
-            bitmap.EndInit();
-                    bitmap.Freeze();
+                    var bitmap = CreateBitmapFromBytes(data.ToArray());
                     
                     ThumbnailImage = bitmap;
                     // PreviewImageは設定せず、高品質プレビューはMainViewModelで生成
