@@ -202,27 +202,8 @@ namespace DocOrganizer.UI.ViewModels.V3
                     
                     if (pdfDocument != null)
                     {
-                        // CurrentDocumentを更新
-                        CurrentDocument = pdfDocument;
-                        
-                        // 🎯 重要: PreviewManagementにCurrentDocumentを設定
-                        PreviewManagement.SetCurrentDocument(CurrentDocument);
-                        
-                        // ページコレクション更新
-                        Pages.Clear();
-                        foreach (var page in pdfDocument.Pages)
-                        {
-                            var pageViewModel = new V3PageViewModel(page, _thumbnailService, _imageProcessingService, _textOrientationService);
-                            await pageViewModel.LoadLeftThumbnailAsync();
-                            Pages.Add(pageViewModel);
-                        }
-
-                        // 最初のページを選択してプレビュー更新
-                        if (Pages.Count > 0)
-                        {
-                            SelectedPage = Pages[0];
-                            await PreviewManagement.UpdatePreviewAsync(SelectedPage, true);
-                        }
+                        // 🎯 V3修正: DocumentOpenedイベント直接発火（OnDocumentOpenedで統一処理）
+                        DocumentManagement.DocumentOpened?.Invoke(DocumentManagement, new DocumentOpenedEventArgs(pdfDocument));
                     }
                     
                     StatusManagement.CompleteOperation($"{e.ImageFiles.Count}個の画像ファイルを追加しました");
