@@ -194,11 +194,36 @@ namespace DocOrganizer.UI.ViewModels.V3
             {
                 if (e.ImageFiles.Count > 0)
                 {
-                    // 画像ファイルからPDF生成後の処理
+                    // 🎯 V3修正: 画像ファイルからPDF生成処理を実装
                     StatusManagement.UpdateProgress(50, "ページ追加中...");
                     
-                    // 新しいページをコレクションに追加
-                    // (実際の実装では、ImageProcessingServiceからのPdfDocumentを処理)
+                    // 画像ファイルからPdfDocumentを生成
+                    var pdfDocument = await _imageProcessingService.ConvertImageToPdfAsync(e.ImageFiles[0]);
+                    
+                    if (pdfDocument != null)
+                    {
+                        // CurrentDocumentを更新
+                        CurrentDocument = pdfDocument;
+                        
+                        // 🎯 重要: PreviewManagementにCurrentDocumentを設定
+                        PreviewManagement.SetCurrentDocument(CurrentDocument);
+                        
+                        // ページコレクション更新
+                        Pages.Clear();
+                        foreach (var page in pdfDocument.Pages)
+                        {
+                            var pageViewModel = new V3PageViewModel(page, _thumbnailService, _imageProcessingService, _textOrientationService);
+                            await pageViewModel.LoadLeftThumbnailAsync();
+                            Pages.Add(pageViewModel);
+                        }
+
+                        // 最初のページを選択してプレビュー更新
+                        if (Pages.Count > 0)
+                        {
+                            SelectedPage = Pages[0];
+                            await PreviewManagement.UpdatePreviewAsync(SelectedPage, true);
+                        }
+                    }
                     
                     StatusManagement.CompleteOperation($"{e.ImageFiles.Count}個の画像ファイルを追加しました");
                 }
