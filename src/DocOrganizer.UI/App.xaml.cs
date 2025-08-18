@@ -5,9 +5,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using DocOrganizer.Application.Interfaces;
+using DocOrganizer.Application.Interfaces.V3;
 using DocOrganizer.Infrastructure.Services;
+using DocOrganizer.Infrastructure.Services.V3;
 using DocOrganizer.UI.Services;
 using DocOrganizer.UI.ViewModels;
+using DocOrganizer.UI.ViewModels.V3;
 using DocOrganizer.UI.Views;
 
 namespace DocOrganizer.UI
@@ -41,19 +44,34 @@ namespace DocOrganizer.UI
                         services.AddLogging(); // 最小限のログ設定
                     }
 
-                    // サービスの登録
+                    // 既存サービスの登録
                     services.AddSingleton<IDialogService, DialogService>();
-                    services.AddSingleton<IRotationService, RotationService>(); // ★統一回転サービス追加
+                    services.AddSingleton<IRotationService, RotationService>();
                     services.AddSingleton<IPdfService, PdfService>();
                     services.AddSingleton<IPdfEditorService, PdfEditorService>();
                     services.AddSingleton<IImageProcessingService, ImageProcessingService>();
                     services.AddSingleton<ITextOrientationService, SafeIronOcrTextOrientationService>();
                     
+                    // 🎯 V3 OSS標準サービス登録
+                    services.AddSingleton<IImageLoaderService, ImageLoaderService>();
+                    services.AddSingleton<IThumbnailGeneratorService, ThumbnailGeneratorService>();
+                    services.AddSingleton<IExifOrientationService, ExifOrientationService>();
+                    services.AddSingleton<IHeicConversionService, HeicConversionService>();
+                    services.AddSingleton<IImageValidationService, ImageValidationService>();
+                    services.AddSingleton<IFileAdditionService, FileAdditionService>();
+                    
                     // アップデートサービスの登録
                     services.AddHttpClient<IUpdateService, GitHubUpdateService>();
 
-                    // ViewModelの登録
-                    services.AddSingleton<MainViewModel>();
+                    // V3アーキテクチャ: 既存MainViewModelは不要（V3 MainCompositeViewModelを使用）
+                    
+                    // 🎯 V3 ViewModels登録
+                    services.AddSingleton<DocumentManagementViewModel>();
+                    services.AddSingleton<PageOperationViewModel>();
+                    services.AddSingleton<PreviewManagementViewModel>();
+                    services.AddSingleton<DragDropHandlerViewModel>();
+                    services.AddSingleton<StatusManagementViewModel>();
+                    services.AddSingleton<MainCompositeViewModel>();
 
                     // Viewの登録
                     services.AddSingleton<MainWindow>();
@@ -68,10 +86,13 @@ namespace DocOrganizer.UI
                 await _host.StartAsync();
 
                 var mainWindow = _host.Services.GetRequiredService<MainWindow>();
-                var viewModel = _host.Services.GetRequiredService<MainViewModel>();
-                mainWindow.DataContext = viewModel;
+                
+                // 🎯 V3 OSS標準: 常時V3使用 (環境変数依存削除)
+                var v3ViewModel = _host.Services.GetRequiredService<MainCompositeViewModel>();
+                mainWindow.DataContext = v3ViewModel;
+                System.Diagnostics.Debug.WriteLine("🚀 V3 OSS標準: MainCompositeViewModel常時使用");
+                
                 mainWindow.Show();
-
                 base.OnStartup(e);
             }
             catch (Exception ex)

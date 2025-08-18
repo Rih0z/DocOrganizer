@@ -57,7 +57,8 @@ Write-Host $commandList
 
 # Check ViewModel implementation
 Write-Host "`nChecking ViewModel implementation..." -ForegroundColor Yellow
-$viewModelPath = Join-Path $PSScriptRoot "..\src\DocOrganizer.UI\ViewModels\MainViewModel.cs"
+$viewModelPath = Join-Path $PSScriptRoot "..\src\DocOrganizer.UI\ViewModels\V3\MainCompositeViewModel.cs"
+# V3アーキテクチャ: MainViewModelは廃止済み"
 if (Test-Path $viewModelPath) {
     $content = Get-Content $viewModelPath -Raw
     $relayCommands = ($content | Select-String -Pattern '\[RelayCommand' -AllMatches).Matches.Count

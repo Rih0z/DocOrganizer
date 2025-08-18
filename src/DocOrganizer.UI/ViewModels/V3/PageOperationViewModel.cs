@@ -21,7 +21,7 @@ namespace DocOrganizer.UI.ViewModels.V3
         private readonly IDialogService _dialogService;
 
         [ObservableProperty]
-        private ObservableCollection<PageViewModel> pages = new();
+        private ObservableCollection<V3PageViewModel> pages = new();
 
         [ObservableProperty]
         private bool hasSelectedPages;
@@ -185,7 +185,7 @@ namespace DocOrganizer.UI.ViewModels.V3
         /// <summary>
         /// ページ並び替え（ドラッグ&ドロップ用）
         /// </summary>
-        public async Task ReorderPagesAsync(List<PageViewModel> pagesToMove, PageViewModel targetPage)
+        public async Task ReorderPagesAsync(List<V3PageViewModel> pagesToMove, V3PageViewModel targetPage)
         {
             if (_currentDocument == null || pagesToMove == null || targetPage == null)
                 return;
@@ -197,7 +197,7 @@ namespace DocOrganizer.UI.ViewModels.V3
                 if (targetIndex == -1) return;
 
                 // ドラッグされたページを一時的に削除
-                var movingPages = new List<(PageViewModel page, int originalIndex)>();
+                var movingPages = new List<(V3PageViewModel page, int originalIndex)>();
                 foreach (var page in pagesToMove.OrderByDescending(p => Pages.IndexOf(p)))
                 {
                     int originalIndex = Pages.IndexOf(page);
@@ -327,8 +327,9 @@ namespace DocOrganizer.UI.ViewModels.V3
 
         // Events for coordination with other ViewModels
         public event EventHandler? PagesChanged;
-        public event EventHandler<PageViewModel>? PageRotated;
-        public event EventHandler<List<PageViewModel>>? PagesDeleted;
-        public event EventHandler<(PageViewModel page, int newIndex)>? PageMoved;
+        public event EventHandler<PageOperationEventArgs>? PageRotated;
+        public event EventHandler<PageOperationEventArgs>? PageDeleted;
+        public event EventHandler<List<V3PageViewModel>>? PagesDeleted;
+        public event EventHandler<PageOperationEventArgs>? PageMoved;
     }
 }

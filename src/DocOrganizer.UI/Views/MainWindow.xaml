@@ -3,26 +3,25 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:behaviors="clr-namespace:DocOrganizer.UI.Behaviors"
         mc:Ignorable="d"
         Title="DocOrganizer 2.2" 
         Height="700" Width="1000"
         WindowStartupLocation="CenterScreen"
         Background="#F0F0F0"
         AllowDrop="True"
-        Drop="Window_Drop"
-        DragEnter="Window_DragEnter"
-        DragOver="Window_DragOver"
-        DragLeave="Window_DragLeave">
+        behaviors:V3AdvancedDragDropBehavior.IsDropTarget="True"
+        behaviors:V3AdvancedDragDropBehavior.DropHandler="{Binding DragDropHandler}">
     
     <!-- キーボードショートカット -->
     <Window.InputBindings>
-        <KeyBinding Key="N" Modifiers="Ctrl" Command="{Binding NewCommand}"/>
-        <KeyBinding Key="O" Modifiers="Ctrl" Command="{Binding OpenCommand}"/>
-        <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SaveCommand}"/>
-        <KeyBinding Key="A" Modifiers="Ctrl" Command="{Binding SelectAllCommand}"/>
-        <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding UndoCommand}"/>
-        <KeyBinding Key="Y" Modifiers="Ctrl" Command="{Binding RedoCommand}"/>
-        <KeyBinding Key="Delete" Command="{Binding DeleteCommand}"/>
+        <KeyBinding Key="N" Modifiers="Ctrl" Command="{Binding DocumentManagement.NewCommand}"/>
+        <KeyBinding Key="O" Modifiers="Ctrl" Command="{Binding DocumentManagement.OpenCommand}"/>
+        <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding DocumentManagement.SaveCommand}"/>
+        <KeyBinding Key="A" Modifiers="Ctrl" Command="{Binding PageOperation.SelectAllCommand}"/>
+        <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding DocumentManagement.UndoCommand}"/>
+        <KeyBinding Key="Y" Modifiers="Ctrl" Command="{Binding DocumentManagement.RedoCommand}"/>
+        <KeyBinding Key="Delete" Command="{Binding PageOperation.DeleteSelectedPagesCommand}"/>
         <KeyBinding Key="F1" Command="{Binding ShowHelpCommand}"/>
         <KeyBinding Key="OemPlus" Modifiers="Ctrl" Command="{Binding ZoomInCommand}"/>
         <KeyBinding Key="OemMinus" Modifiers="Ctrl" Command="{Binding ZoomOutCommand}"/>
@@ -39,26 +38,26 @@
         <!-- メニューバー -->
         <Menu Grid.Row="0" Background="White">
             <MenuItem Header="ファイル(_F)">
-                <MenuItem Header="新規作成(_N)" Command="{Binding NewCommand}" InputGestureText="Ctrl+N">
+                <MenuItem Header="新規作成(_N)" Command="{Binding DocumentManagement.NewCommand}" InputGestureText="Ctrl+N">
                     <MenuItem.Icon>
                         <TextBlock Text="📄" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="PDF・画像ファイルを開く(_O)..." Command="{Binding OpenCommand}" InputGestureText="Ctrl+O">
+                <MenuItem Header="PDF・画像ファイルを開く(_O)..." Command="{Binding DocumentManagement.OpenCommand}" InputGestureText="Ctrl+O">
                     <MenuItem.Icon>
                         <TextBlock Text="📂" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="保存(_S)" Command="{Binding SaveCommand}" InputGestureText="Ctrl+S">
+                <MenuItem Header="保存(_S)" Command="{Binding DocumentManagement.SaveCommand}" InputGestureText="Ctrl+S">
                     <MenuItem.Icon>
                         <TextBlock Text="💾" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="名前を付けて保存(_A)..." Command="{Binding SaveAsCommand}"/>
+                <MenuItem Header="名前を付けて保存(_A)..." Command="{Binding DocumentManagement.SaveAsCommand}"/>
                 <Separator/>
-                <MenuItem Header="閉じる(_C)" Command="{Binding CloseCommand}"/>
+                <MenuItem Header="閉じる(_C)" Command="{Binding DocumentManagement.CloseCommand}"/>
                 <Separator/>
-                <MenuItem Header="終了(_X)" Command="{Binding ExitCommand}" InputGestureText="Alt+F4"/>
+                <MenuItem Header="終了(_X)" Command="{Binding DocumentManagement.ExitCommand}" InputGestureText="Alt+F4"/>
             </MenuItem>
             
             <MenuItem Header="編集(_E)">
@@ -70,35 +69,35 @@
             </MenuItem>
             
             <MenuItem Header="ページ(_P)">
-                <MenuItem Header="左回転(_L)" Command="{Binding RotateLeftCommand}">
+                <MenuItem Header="左回転(_L)" Command="{Binding PageOperation.RotateLeftCommand}">
                     <MenuItem.Icon>
                         <TextBlock Text="↺" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="右回転(_R)" Command="{Binding RotateRightCommand}">
+                <MenuItem Header="右回転(_R)" Command="{Binding PageOperation.RotateRightCommand}">
                     <MenuItem.Icon>
                         <TextBlock Text="↻" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
-                <MenuItem Header="全ページ自動回転(_A)" Command="{Binding AutoCorrectAllPagesOrientationCommand}">
+                <MenuItem Header="全ページ自動回転(_A)" Command="{Binding PageOperation.AutoCorrectAllPagesOrientationCommand}">
                     <MenuItem.Icon>
                         <TextBlock Text="📖" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
-                <MenuItem Header="削除(_D)" Command="{Binding DeleteCommand}" InputGestureText="Delete">
+                <MenuItem Header="削除(_D)" Command="{Binding PageOperation.DeleteSelectedPagesCommand}" InputGestureText="Delete">
                     <MenuItem.Icon>
                         <TextBlock Text="🗑" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
-                <MenuItem Header="上に移動(_U)" Command="{Binding MovePageUpCommand}">
+                <MenuItem Header="上に移動(_U)" Command="{Binding PageOperation.MovePageUpCommand}">
                     <MenuItem.Icon>
                         <TextBlock Text="▲" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="下に移動(_N)" Command="{Binding MovePageDownCommand}">
+                <MenuItem Header="下に移動(_N)" Command="{Binding PageOperation.MovePageDownCommand}">
                     <MenuItem.Icon>
                         <TextBlock Text="▼" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
@@ -149,32 +148,32 @@
         <ToolBarTray Grid.Row="1" Background="White">
             <ToolBar x:Name="MainToolBar" Background="Transparent">
                 <!-- ファイル操作 -->
-                <Button Command="{Binding OpenCommand}" ToolTip="PDF・画像ファイルを開く (Ctrl+O)" Padding="4" x:Name="OpenButton">
+                <Button Command="{Binding DocumentManagement.OpenCommand}" ToolTip="PDF・画像ファイルを開く (Ctrl+O)" Padding="4" x:Name="OpenButton">
                     <TextBlock Text="📂" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
-                <Button Command="{Binding SaveCommand}" ToolTip="保存 (Ctrl+S)" Padding="4">
+                <Button Command="{Binding DocumentManagement.SaveCommand}" ToolTip="保存 (Ctrl+S)" Padding="4">
                     <TextBlock Text="💾" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
                 <Separator/>
                 
                 <!-- ページ操作 -->
-                <Button Command="{Binding RotateLeftCommand}" ToolTip="左回転" Padding="4"
-                        IsEnabled="{Binding HasSelectedPages}">
+                <Button Command="{Binding PageOperation.RotateLeftCommand}" ToolTip="左回転" Padding="4"
+                        IsEnabled="{Binding PageOperation.HasSelectedPages}">
                     <TextBlock Text="↺" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
-                <Button Command="{Binding RotateRightCommand}" ToolTip="右回転" Padding="4"
-                        IsEnabled="{Binding HasSelectedPages}">
+                <Button Command="{Binding PageOperation.RotateRightCommand}" ToolTip="右回転" Padding="4"
+                        IsEnabled="{Binding PageOperation.HasSelectedPages}">
                     <TextBlock Text="↻" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
-                <Button Command="{Binding DeleteCommand}" ToolTip="削除 (Delete)" Padding="4"
-                        IsEnabled="{Binding HasSelectedPages}">
+                <Button Command="{Binding PageOperation.DeleteSelectedPagesCommand}" ToolTip="削除 (Delete)" Padding="4"
+                        IsEnabled="{Binding PageOperation.HasSelectedPages}">
                     <TextBlock Text="🗑" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
                 <Separator/>
                 
                 <!-- 📖 全ページ自動回転ボタン -->
-                <Button Command="{Binding AutoCorrectAllPagesOrientationCommand}" ToolTip="全ページの文字向きを自動補正" Padding="6,4"
-                        IsEnabled="{Binding HasDocument}" Background="#E3F2FD" BorderBrush="#1976D2">
+                <Button Command="{Binding PageOperation.AutoCorrectAllPagesOrientationCommand}" ToolTip="全ページの文字向きを自動補正" Padding="6,4"
+                        IsEnabled="{Binding DocumentManagement.HasDocument}" Background="#E3F2FD" BorderBrush="#1976D2">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="📖" FontSize="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
                         <TextBlock Text="自動回転" FontSize="11" VerticalAlignment="Center" FontWeight="Bold" Foreground="#1976D2"/>
@@ -183,12 +182,12 @@
                 <Separator/>
                 
                 <!-- ページ順序変更 -->
-                <Button Command="{Binding MovePageUpCommand}" ToolTip="上に移動" Padding="4" Width="30" Height="24"
-                        IsEnabled="{Binding CanMoveUp}">
+                <Button Command="{Binding PageOperation.MovePageUpCommand}" ToolTip="上に移動" Padding="4" Width="30" Height="24"
+                        IsEnabled="{Binding PageOperation.CanMoveUp}">
                     <TextBlock Text="▲" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
-                <Button Command="{Binding MovePageDownCommand}" ToolTip="下に移動" Padding="4" Width="30" Height="24"
-                        IsEnabled="{Binding CanMoveDown}">
+                <Button Command="{Binding PageOperation.MovePageDownCommand}" ToolTip="下に移動" Padding="4" Width="30" Height="24"
+                        IsEnabled="{Binding PageOperation.CanMoveDown}">
                     <TextBlock Text="▼" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
                 <Separator/>
@@ -200,7 +199,7 @@
                 <Button Command="{Binding ZoomOutCommand}" ToolTip="縮小" Padding="4">
                     <TextBlock Text="🔍-" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
-                <ComboBox Width="80" SelectedItem="{Binding ZoomLevel}" Margin="4,0">
+                <ComboBox Width="80" SelectedItem="{Binding PreviewManagement.ZoomLevel}" Margin="4,0">
                     <ComboBoxItem>50%</ComboBoxItem>
                     <ComboBoxItem>75%</ComboBoxItem>
                     <ComboBoxItem IsSelected="True">100%</ComboBoxItem>
@@ -231,7 +230,7 @@
                     <Border Grid.Row="0" Background="#E0E0E0" BorderBrush="#CCCCCC" BorderThickness="0,0,0,1">
                         <Grid Height="24">
                             <TextBlock Text="ページ" VerticalAlignment="Center" Margin="8,0" FontWeight="Bold"/>
-                            <TextBlock Text="{Binding PageCountText}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8,0"/>
+                            <TextBlock Text="{Binding DocumentManagement.PageCountText}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8,0"/>
                         </Grid>
                     </Border>
 
@@ -244,11 +243,12 @@
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                              SelectionMode="Extended"
                              AllowDrop="True"
-                             Drop="ThumbnailList_Drop"
-                             PreviewMouseLeftButtonDown="ThumbnailList_PreviewMouseLeftButtonDown"
-                             PreviewMouseMove="ThumbnailList_PreviewMouseMove"
                              SelectionChanged="PageListBox_SelectionChanged"
-                             IsSynchronizedWithCurrentItem="True">
+                             IsSynchronizedWithCurrentItem="True"
+                             behaviors:V3AdvancedDragDropBehavior.IsDragSource="True"
+                             behaviors:V3AdvancedDragDropBehavior.IsDropTarget="True"
+                             behaviors:V3AdvancedDragDropBehavior.DragHandler="{Binding DragDropHandler}"
+                             behaviors:V3AdvancedDragDropBehavior.DropHandler="{Binding DragDropHandler}">
                         
                         <ListBox.ItemContainerStyle>
                             <Style TargetType="ListBoxItem">
@@ -305,10 +305,8 @@
             <!-- 右側：プレビューエリア -->
             <Border Grid.Column="2" Background="#808080"
                     AllowDrop="True"
-                    Drop="Window_Drop"
-                    DragEnter="Window_DragEnter"
-                    DragOver="Window_DragOver"
-                    DragLeave="Window_DragLeave">
+                    behaviors:V3AdvancedDragDropBehavior.IsDropTarget="True"
+                    behaviors:V3AdvancedDragDropBehavior.DropHandler="{Binding DragDropHandler}">
                 <Grid>
                     <!-- プレビュー表示 -->
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" 
@@ -322,10 +320,10 @@
                                 BorderThickness="1"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center">
-                            <Image Source="{Binding CurrentPageImage}" 
+                            <Image Source="{Binding PreviewManagement.CurrentPageImage}" 
                                    Stretch="Uniform"
-                                   MaxWidth="{Binding PreviewWidth}"
-                                   MaxHeight="{Binding PreviewHeight}"
+                                   MaxWidth="{Binding PreviewManagement.PreviewWidth}"
+                                   MaxHeight="{Binding PreviewManagement.PreviewHeight}"
                                    RenderOptions.BitmapScalingMode="HighQuality"/>
                         </Border>
                     </ScrollViewer>
@@ -334,11 +332,7 @@
                     <Border x:Name="DropOverlay"
                             Background="#80000000" 
                             Visibility="Collapsed"
-                            AllowDrop="True"
-                            Drop="PreviewArea_Drop"
-                            DragEnter="PreviewArea_DragEnter"
-                            DragOver="PreviewArea_DragEnter"
-                            DragLeave="PreviewArea_DragLeave">
+                            AllowDrop="True">
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                             <TextBlock Text="ここにPDFまたは画像ファイルをドロップ" 
                                        Foreground="White" 
@@ -353,12 +347,8 @@
                     </Border>
 
                     <!-- 空の状態表示 -->
-                    <Border Visibility="{Binding EmptyStateVisibility}" Background="White"
-                            AllowDrop="True"
-                            Drop="Window_Drop"
-                            DragEnter="Window_DragEnter"
-                            DragOver="Window_DragOver"
-                            DragLeave="Window_DragLeave">
+                    <Border Visibility="{Binding DocumentManagement.EmptyStateVisibility}" Background="White"
+                            AllowDrop="True">
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                             <TextBlock Text="PDFまたは画像ファイルを開いてください" 
                                        Foreground="#666666" 
@@ -415,21 +405,21 @@
             </StatusBar.ItemsPanel>
             
             <StatusBarItem Grid.Column="0">
-                <TextBlock Text="{Binding StatusMessage}"/>
+                <TextBlock Text="{Binding StatusManagement.StatusMessage}"/>
             </StatusBarItem>
             
             <StatusBarItem Grid.Column="1">
                 <ProgressBar Width="150" Height="16" 
-                             Value="{Binding ProgressValue}" 
-                             Visibility="{Binding ProgressVisibility}"/>
+                             Value="{Binding StatusManagement.ProgressValue}" 
+                             Visibility="{Binding StatusManagement.ProgressVisibility}"/>
             </StatusBarItem>
             
             <StatusBarItem Grid.Column="2">
-                <TextBlock Text="{Binding PageInfo}" Margin="8,0"/>
+                <TextBlock Text="{Binding DocumentManagement.PageInfo}" Margin="8,0"/>
             </StatusBarItem>
             
             <StatusBarItem Grid.Column="3">
-                <TextBlock Text="{Binding FileInfo}" Margin="8,0"/>
+                <TextBlock Text="{Binding DocumentManagement.FileInfo}" Margin="8,0"/>
             </StatusBarItem>
         </StatusBar>
     </Grid>

@@ -1,5 +1,4 @@
 using System;
-using System;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -7,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using Microsoft.Extensions.Logging;
 using DocOrganizer.UI.ViewModels;
+using DocOrganizer.UI.ViewModels.V3;
 
 namespace DocOrganizer.UI.Views
 {
@@ -37,14 +37,12 @@ namespace DocOrganizer.UI.Views
         
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
-
             _logger?.LogInformation("Cleaning up HEIC cache on window close");
-            DocOrganizer.UI.ViewModels.PageViewModel.CleanupHeicCache();
+            // V3PageViewModel cleanup if needed
         }
         
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-
             System.Diagnostics.Debug.WriteLine($"[MainWindow] DataContext type: {DataContext?.GetType().Name}");
 
             // Force command refresh
@@ -53,24 +51,23 @@ namespace DocOrganizer.UI.Views
             // Add fallback click handler for Open button
             if (this.FindName("OpenButton") is Button openButton)
             {
-
                 openButton.Click += (s, args) =>
                 {
-
-                    if (ViewModel?.OpenCommand != null && ViewModel.OpenCommand.CanExecute(null))
+                    // 🎯 V3対応: MainCompositeViewModelのDocumentManagementを使用
+                    if (V3ViewModel?.DocumentManagement?.OpenCommand != null && V3ViewModel.DocumentManagement.OpenCommand.CanExecute(null))
                     {
-                        ViewModel.OpenCommand.Execute(null);
+                        V3ViewModel.DocumentManagement.OpenCommand.Execute(null);
                     }
                 };
             }
             
             if (PageListBox != null)
             {
-
+                System.Diagnostics.Debug.WriteLine("[MainWindow] PageListBox found and configured");
             }
             else
             {
-
+                System.Diagnostics.Debug.WriteLine("[MainWindow] PageListBox not found");
             }
             
             // ツールバーのボタンのコマンドバインディングを確認
@@ -83,35 +80,14 @@ namespace DocOrganizer.UI.Views
                 {
                     if (item is Button button)
                     {
-
+                        System.Diagnostics.Debug.WriteLine($"[MainWindow] Button: {button.Name}, Command: {button.Command?.GetType().Name}");
                     }
                 }
             }
-            
-            // テストボタンを追加して基本的な動作を確認
-            var testButton = new Button
-            {
-                Content = "テスト",
-                Width = 100,
-                Height = 30,
-                HorizontalAlignment = HorizontalAlignment.Right,
-                VerticalAlignment = VerticalAlignment.Bottom,
-                Margin = new Thickness(10)
-            };
-            testButton.Click += (s, args) =>
-            {
-
-                // Test MessageBox removed for production
-            };
-            
-            if (this.Content is Grid mainGrid)
-            {
-                mainGrid.Children.Add(testButton);
-
-            }
         }
 
-        private MainViewModel ViewModel => (MainViewModel)DataContext;
+        // 🎯 V3対応: MainCompositeViewModelのみサポート
+        private MainCompositeViewModel? V3ViewModel => DataContext as MainCompositeViewModel;
 
         #region Thumbnail List Drag & Drop
 
@@ -141,7 +117,7 @@ namespace DocOrganizer.UI.Views
                 if (listBoxItem != null && listBox != null)
                 {
                     // 選択されたページを取得
-                    var selectedPages = listBox.SelectedItems.Cast<PageViewModel>().ToList();
+                    var selectedPages = listBox.SelectedItems.Cast<V3PageViewModel>().ToList();
 
                     if (selectedPages.Any())
                     {
@@ -158,11 +134,11 @@ namespace DocOrganizer.UI.Views
             }
         }
 
-        private void ThumbnailList_Drop(object sender, DragEventArgs e)
+        private async void ThumbnailList_Drop(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent("PageViewModels"))
             {
-                var droppedPages = e.Data.GetData("PageViewModels") as System.Collections.Generic.List<PageViewModel>;
+                var droppedPages = e.Data.GetData("PageViewModels") as System.Collections.Generic.List<V3PageViewModel>;
                 if (droppedPages != null && droppedPages.Any())
                 {
                     // ドロップ位置を取得
@@ -171,10 +147,11 @@ namespace DocOrganizer.UI.Views
 
                     if (targetItem != null && listBox != null)
                     {
-                        var targetPage = targetItem.DataContext as PageViewModel;
-                        if (targetPage != null)
+                        var targetPage = targetItem.DataContext as V3PageViewModel;
+                        if (targetPage != null && V3ViewModel?.DragDropHandler != null)
                         {
-                            ViewModel.ReorderPages(droppedPages, targetPage);
+                            // 🎯 V3対応: DragDropHandlerViewModelを使用
+                            await V3ViewModel.DragDropHandler.HandlePageReorderAsync(droppedPages, targetPage);
                         }
                     }
                 }
@@ -212,10 +189,10 @@ namespace DocOrganizer.UI.Views
                     }
                 }
                 
-                if (hasSupportedItem)
+                if (hasSupportedItem && V3ViewModel?.DragDropHandler != null)
                 {
                     e.Effects = System.Windows.DragDropEffects.Copy;
-                    DropOverlay.Visibility = Visibility.Visible;
+                    V3ViewModel.DragDropHandler.ShowDragOverlay();
                 }
                 else
                 {
@@ -233,7 +210,10 @@ namespace DocOrganizer.UI.Views
         private void PreviewArea_DragLeave(object sender, DragEventArgs e)
         {
             // オーバーレイを非表示
-            DropOverlay.Visibility = Visibility.Collapsed;
+            if (V3ViewModel?.DragDropHandler != null)
+            {
+                V3ViewModel.DragDropHandler.HideDragOverlay();
+            }
         }
 
         private async void PreviewArea_Drop(object sender, DragEventArgs e)
@@ -241,111 +221,72 @@ namespace DocOrganizer.UI.Views
             // ⭐重複処理防止チェック
             if (_isProcessingDrop)
             {
-                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [WARNING] PreviewArea_Drop: Already processing, skipping duplicate event\n");
+                System.Diagnostics.Debug.WriteLine("[WARNING] PreviewArea_Drop: Already processing, skipping duplicate event");
                 e.Handled = true;
                 return;
             }
             
             _isProcessingDrop = true;
-            File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [DEBUG] PreviewArea_Drop: Started processing\n");
+            System.Diagnostics.Debug.WriteLine("[DEBUG] PreviewArea_Drop: Started processing");
             
             try
             {
                 // オーバーレイを非表示
-                DropOverlay.Visibility = Visibility.Collapsed;
-
-            if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop))
-            {
-                string[] droppedItems = (string[])e.Data.GetData(System.Windows.DataFormats.FileDrop);
-                
-                // ⭐修正: 即座にUI状態変化（ユーザー応答性向上）
-                ViewModel.StatusMessage = "ファイルを処理中...";
-                ViewModel.ProgressVisibility = "Visible";
-                
-                // ファイルとフォルダを展開
-                var allFiles = new System.Collections.Generic.List<string>();
-                
-                foreach (var item in droppedItems)
+                if (V3ViewModel?.DragDropHandler != null)
                 {
-                    if (File.Exists(item))
-                    {
-                        // ファイルの場合
-                        allFiles.Add(item);
-                    }
-                    else if (Directory.Exists(item))
-                    {
-                        // フォルダの場合、対応形式のファイルを再帰的に検索
-                        var folderFiles = Directory.GetFiles(item, "*.*", SearchOption.AllDirectories)
-                            .Where(f => IsSupportedFileType(f))
-                            .ToList();
-                        allFiles.AddRange(folderFiles);
-                    }
+                    V3ViewModel.DragDropHandler.HideDragOverlay();
                 }
-                
-                // 対応ファイル形式のフィルタリング
-                var supportedFiles = allFiles.Where(f => IsSupportedFileType(f)).ToList();
-                
-                if (supportedFiles.Any())
+
+                if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop))
                 {
-                    try
+                    string[] droppedItems = (string[])e.Data.GetData(System.Windows.DataFormats.FileDrop);
+                    
+                    // ファイルとフォルダを展開
+                    var allFiles = new System.Collections.Generic.List<string>();
+                    
+                    foreach (var item in droppedItems)
                     {
-                        // ⭐修正: 詳細状態メッセージに更新（ProgressVisibilityは既に設定済み）
-                        ViewModel.StatusMessage = $"{supportedFiles.Count} 個のファイルを処理中...";
-                        
-                        // PDFファイルと画像ファイルを分離
-                        var pdfFiles = supportedFiles.Where(f => IsPdfFile(f)).ToList();
-                        var imageFiles = supportedFiles.Where(f => IsImageFile(f)).ToList();
-                        
-                        // 画像ファイルを一括処理（高速化のため最初に処理）
-                        if (imageFiles.Any())
+                        if (File.Exists(item))
                         {
-                            try
-                            {
-                                await ViewModel.OpenMultipleImageFilesAsync(imageFiles);
-                            }
-                            catch (Exception ex)
-                            {
-
-
-                                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [CRITICAL ERROR] Image processing failed: {ex.Message}\n");
-                                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [CRITICAL ERROR] StackTrace: {ex.StackTrace}\n");
-                                // シンプルなエラーメッセージ（ログエラーを回避）
-                                ViewModel.StatusMessage = $"画像変換エラー: {ex.Message}";
-                            }
+                            // ファイルの場合
+                            allFiles.Add(item);
                         }
-                        
-                        // PDFファイルを処理
-                        foreach (var pdfFile in pdfFiles)
+                        else if (Directory.Exists(item))
                         {
-                            try
-                            {
-                                await ViewModel.OpenFileAsync(pdfFile);
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger?.LogWarning($"Failed to process PDF {pdfFile}: {ex.Message}");
-                            }
+                            // フォルダの場合、対応形式のファイルを再帰的に検索
+                            var folderFiles = Directory.GetFiles(item, "*.*", SearchOption.AllDirectories)
+                                .Where(f => IsSupportedFileType(f))
+                                .ToList();
+                            allFiles.AddRange(folderFiles);
                         }
                     }
-                    catch (Exception ex)
+                    
+                    // 対応ファイル形式のフィルタリング
+                    var supportedFiles = allFiles.Where(f => IsSupportedFileType(f)).ToList();
+                    
+                    if (supportedFiles.Any() && V3ViewModel?.DragDropHandler != null)
                     {
-                        ViewModel.StatusMessage = $"エラー: {ex.Message}";
+                        // 🎯 V3対応: DragDropHandlerViewModelでファイル処理
+                        await V3ViewModel.DragDropHandler.HandleFilesDropAsync(supportedFiles);
                     }
-                    finally
+                    else if (V3ViewModel?.StatusManagement != null)
                     {
-                        ViewModel.ProgressVisibility = "Collapsed";
+                        V3ViewModel.StatusManagement.ShowWarning("対応していないファイル形式です");
                     }
-                }
-                else
-                {
-                    ViewModel.StatusMessage = "対応していないファイル形式です";
                 }
             }
+            catch (Exception ex)
+            {
+                if (V3ViewModel?.StatusManagement != null)
+                {
+                    V3ViewModel.StatusManagement.ShowError($"ファイル処理エラー: {ex.Message}", ex);
+                }
+                System.Diagnostics.Debug.WriteLine($"[CRITICAL ERROR] PreviewArea_Drop failed: {ex.Message}");
             }
             finally
             {
                 _isProcessingDrop = false;
-                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [DEBUG] PreviewArea_Drop: Processing completed, flag reset\n");
+                System.Diagnostics.Debug.WriteLine("[DEBUG] PreviewArea_Drop: Processing completed, flag reset");
             }
             
             e.Handled = true;
@@ -381,10 +322,10 @@ namespace DocOrganizer.UI.Views
                     }
                 }
                 
-                if (hasSupportedItem)
+                if (hasSupportedItem && V3ViewModel?.DragDropHandler != null)
                 {
                     e.Effects = System.Windows.DragDropEffects.Copy;
-                    DropOverlay.Visibility = Visibility.Visible;
+                    V3ViewModel.DragDropHandler.ShowDragOverlay();
                 }
                 else
                 {
@@ -410,7 +351,10 @@ namespace DocOrganizer.UI.Views
             Point pt = e.GetPosition(this);
             if (pt.X < 0 || pt.Y < 0 || pt.X > ActualWidth || pt.Y > ActualHeight)
             {
-                DropOverlay.Visibility = Visibility.Collapsed;
+                if (V3ViewModel?.DragDropHandler != null)
+                {
+                    V3ViewModel.DragDropHandler.HideDragOverlay();
+                }
             }
         }
 
@@ -419,106 +363,68 @@ namespace DocOrganizer.UI.Views
             // ⭐重複処理防止チェック
             if (_isProcessingDrop)
             {
-                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [WARNING] Window_Drop: Already processing, skipping duplicate event\n");
+                System.Diagnostics.Debug.WriteLine("[WARNING] Window_Drop: Already processing, skipping duplicate event");
                 e.Handled = true;
                 return;
             }
             
             _isProcessingDrop = true;
-            File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [DEBUG] Window_Drop: Started processing\n");
+            System.Diagnostics.Debug.WriteLine("[DEBUG] Window_Drop: Started processing");
             
             try
             {
-                DropOverlay.Visibility = Visibility.Collapsed;
-
-            if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop))
-            {
-                string[] droppedItems = (string[])e.Data.GetData(System.Windows.DataFormats.FileDrop);
-                
-                var allFiles = new System.Collections.Generic.List<string>();
-                
-                foreach (var item in droppedItems)
+                // オーバーレイを非表示
+                if (V3ViewModel?.DragDropHandler != null)
                 {
-                    if (File.Exists(item))
-                    {
-                        allFiles.Add(item);
-                    }
-                    else if (Directory.Exists(item))
-                    {
-                        var folderFiles = Directory.GetFiles(item, "*.*", SearchOption.AllDirectories)
-                            .Where(f => IsSupportedFileType(f))
-                            .ToList();
-                        allFiles.AddRange(folderFiles);
-                    }
+                    V3ViewModel.DragDropHandler.HideDragOverlay();
                 }
-                
-                var supportedFiles = allFiles.Where(f => IsSupportedFileType(f)).ToList();
-                
-                if (supportedFiles.Any())
+
+                if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop))
                 {
-                    try
+                    string[] droppedItems = (string[])e.Data.GetData(System.Windows.DataFormats.FileDrop);
+                    
+                    var allFiles = new System.Collections.Generic.List<string>();
+                    
+                    foreach (var item in droppedItems)
                     {
-                        // ⭐修正: 詳細状態メッセージに更新（ProgressVisibilityは既に設定済み）
-                        ViewModel.StatusMessage = $"{supportedFiles.Count} 個のファイルを処理中...";
-                        
-                        // PDFファイルと画像ファイルを分離
-                        var pdfFiles = supportedFiles.Where(f => IsPdfFile(f)).ToList();
-                        var imageFiles = supportedFiles.Where(f => IsImageFile(f)).ToList();
-                        
-                        // 画像ファイルを一括処理（高速化のため最初に処理）
-                        if (imageFiles.Any())
+                        if (File.Exists(item))
                         {
-                            try
-                            {
-                                await ViewModel.OpenMultipleImageFilesAsync(imageFiles);
-                            }
-                            catch (Exception ex)
-                            {
-
-
-                                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [CRITICAL ERROR] Image processing failed: {ex.Message}\n");
-                                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [CRITICAL ERROR] StackTrace: {ex.StackTrace}\n");
-                                // シンプルなエラーメッセージ（ログエラーを回避）
-                                ViewModel.StatusMessage = $"画像変換エラー: {ex.Message}";
-                            }
+                            allFiles.Add(item);
                         }
-                        
-                        // PDFファイルを処理
-                        foreach (var pdfFile in pdfFiles)
+                        else if (Directory.Exists(item))
                         {
-                            try
-                            {
-                                await ViewModel.OpenFileAsync(pdfFile);
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger?.LogWarning($"Failed to process PDF {pdfFile}: {ex.Message}");
-                            }
+                            var folderFiles = Directory.GetFiles(item, "*.*", SearchOption.AllDirectories)
+                                .Where(f => IsSupportedFileType(f))
+                                .ToList();
+                            allFiles.AddRange(folderFiles);
                         }
                     }
-                    catch (Exception ex)
+                    
+                    var supportedFiles = allFiles.Where(f => IsSupportedFileType(f)).ToList();
+                    
+                    if (supportedFiles.Any() && V3ViewModel?.DragDropHandler != null)
                     {
-                        ViewModel.StatusMessage = $"エラー: {ex.Message}";
+                        // 🎯 V3対応: DragDropHandlerViewModelでファイル処理
+                        await V3ViewModel.DragDropHandler.HandleFilesDropAsync(supportedFiles);
                     }
-                    finally
+                    else if (V3ViewModel?.StatusManagement != null)
                     {
-                        await Task.Delay(2000);
-                        ViewModel.ProgressVisibility = "Collapsed";
-                        ViewModel.StatusMessage = "準備完了";
+                        V3ViewModel.StatusManagement.ShowWarning("対応していないファイル形式です");
                     }
-                }
-                else
-                {
-                    ViewModel.StatusMessage = "対応していないファイル形式です";
-                    await Task.Delay(2000);
-                    ViewModel.StatusMessage = "準備完了";
                 }
             }
+            catch (Exception ex)
+            {
+                if (V3ViewModel?.StatusManagement != null)
+                {
+                    V3ViewModel.StatusManagement.ShowError($"ファイル処理エラー: {ex.Message}", ex);
+                }
+                System.Diagnostics.Debug.WriteLine($"[CRITICAL ERROR] Window_Drop failed: {ex.Message}");
             }
             finally
             {
                 _isProcessingDrop = false;
-                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [DEBUG] Window_Drop: Processing completed, flag reset\n");
+                System.Diagnostics.Debug.WriteLine("[DEBUG] Window_Drop: Processing completed, flag reset");
             }
             
             e.Handled = true;
@@ -532,41 +438,36 @@ namespace DocOrganizer.UI.Views
         {
             try
             {
-
                 _logger?.LogInformation("PageListBox_SelectionChanged event fired");
                 
                 if (sender is ListBox listBox)
                 {
                     System.Diagnostics.Debug.WriteLine($"[PageListBox_SelectionChanged] ListBox found, SelectedItem: {listBox.SelectedItem?.GetType().Name}");
                     
-                    if (listBox.SelectedItem is PageViewModel selectedPage)
+                    if (listBox.SelectedItem is V3PageViewModel selectedPage && V3ViewModel != null)
                     {
-
                         _logger?.LogInformation($"Selected page: {selectedPage.PageNumber}");
                         
-                        // ViewModelのSelectedPageとCurrentPageImageを更新
-                        ViewModel.UpdateSelectedPage(selectedPage);
+                        // 🎯 V3対応: MainCompositeViewModelのSelectedPageを更新
+                        V3ViewModel.SelectedPage = selectedPage;
                     }
                     else
                     {
-                        System.Diagnostics.Debug.WriteLine($"[PageListBox_SelectionChanged] SelectedItem is not PageViewModel: {listBox.SelectedItem?.GetType().Name}");
+                        System.Diagnostics.Debug.WriteLine($"[PageListBox_SelectionChanged] SelectedItem is not V3PageViewModel: {listBox.SelectedItem?.GetType().Name}");
                     }
                 }
                 else
                 {
-
+                    System.Diagnostics.Debug.WriteLine("[PageListBox_SelectionChanged] Sender is not ListBox");
                 }
             }
             catch (Exception ex)
             {
-
-
                 _logger?.LogError(ex, "Error in PageListBox_SelectionChanged");
             }
         }
 
         #endregion
-
 
         #region Helper Methods
 

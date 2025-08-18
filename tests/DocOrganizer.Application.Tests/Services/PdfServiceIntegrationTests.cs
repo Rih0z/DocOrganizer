@@ -68,11 +68,17 @@ namespace DocOrganizer.Application.Tests.Services
         {
             // Arrange
             var doc1 = new PdfDocument();
-            doc1.AddPage(new PdfPage(1));
-            doc1.AddPage(new PdfPage(2));
+            var page1 = new PdfPage(1);
+            page1.SetDimensions(595, 842);
+            doc1.AddPage(page1);
+            var page2 = new PdfPage(2);
+            page2.SetDimensions(595, 842);
+            doc1.AddPage(page2);
 
             var doc2 = new PdfDocument();
-            doc2.AddPage(new PdfPage(1));
+            var page3 = new PdfPage(1);
+            page3.SetDimensions(595, 842);
+            doc2.AddPage(page3);
 
             // Act
             var merged = await _pdfService.MergePdfsAsync(doc1, doc2);
@@ -92,7 +98,9 @@ namespace DocOrganizer.Application.Tests.Services
             var document = new PdfDocument();
             for (int i = 1; i <= 5; i++)
             {
-                document.AddPage(new PdfPage(i));
+                var page = new PdfPage(i);
+                page.SetDimensions(595, 842);
+                document.AddPage(page);
             }
 
             // Act

@@ -5,7 +5,9 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DocOrganizer.Application.Interfaces;
+using DocOrganizer.Application.Interfaces.V3;
 using DocOrganizer.Core.Models;
+using DocOrganizer.UI.ViewModels;
 
 namespace DocOrganizer.UI.ViewModels.V3
 {
@@ -22,12 +24,17 @@ namespace DocOrganizer.UI.ViewModels.V3
         public PreviewManagementViewModel PreviewManagement { get; }
         public DragDropHandlerViewModel DragDropHandler { get; }
         public StatusManagementViewModel StatusManagement { get; }
+        
+        // 🎯 V3 OSS標準: サービス注入
+        private readonly IThumbnailGeneratorService _thumbnailService;
+        private readonly IImageProcessingService _imageProcessingService;
+        private readonly ITextOrientationService _textOrientationService;
 
         [ObservableProperty]
-        private ObservableCollection<PageViewModel> pages = new();
+        private ObservableCollection<V3PageViewModel> pages = new();
 
         [ObservableProperty]
-        private PageViewModel? selectedPage;
+        private V3PageViewModel? selectedPage;
 
         [ObservableProperty]
         private PdfDocument? currentDocument;
@@ -37,13 +44,19 @@ namespace DocOrganizer.UI.ViewModels.V3
             PageOperationViewModel pageOperation,
             PreviewManagementViewModel previewManagement,
             DragDropHandlerViewModel dragDropHandler,
-            StatusManagementViewModel statusManagement)
+            StatusManagementViewModel statusManagement,
+            IThumbnailGeneratorService thumbnailService,
+            IImageProcessingService imageProcessingService,
+            ITextOrientationService textOrientationService)
         {
             DocumentManagement = documentManagement;
             PageOperation = pageOperation;
             PreviewManagement = previewManagement;
             DragDropHandler = dragDropHandler;
             StatusManagement = statusManagement;
+            _thumbnailService = thumbnailService;
+            _imageProcessingService = imageProcessingService;
+            _textOrientationService = textOrientationService;
 
             InitializeEventHandlers();
         }
@@ -66,6 +79,11 @@ namespace DocOrganizer.UI.ViewModels.V3
             // DragDropHandler → 他ViewModels
             DragDropHandler.FilesProcessed += OnFilesProcessed;
             DragDropHandler.PageReorderRequested += OnPageReorderRequested;
+            DragDropHandler.FileAdditionCompleted += OnFileAdditionCompleted;
+            DragDropHandler.FileAdditionFailed += OnFileAdditionFailed;
+            // 🚨 致命的修正: 欠落していた新規ドキュメント作成イベント
+            DragDropHandler.NewDocumentCreated += OnNewDocumentCreated;
+            DragDropHandler.FilesAddedToDocument += OnFilesAddedToDocument;
 
             // StatusManagement → 他ViewModels
             StatusManagement.OperationStarted += OnOperationStarted;
@@ -86,18 +104,23 @@ namespace DocOrganizer.UI.ViewModels.V3
             {
                 CurrentDocument = e.Document;
                 
+                // 🎯 V3修正: PreviewManagementViewModelにCurrentDocument設定（必須）
+                PreviewManagement.SetCurrentDocument(CurrentDocument);
+                
                 // ページコレクション更新
                 Pages.Clear();
                 foreach (var page in e.Document.Pages)
                 {
-                    Pages.Add(new PageViewModel(page));
+                    var pageViewModel = new V3PageViewModel(page, _thumbnailService, _imageProcessingService, _textOrientationService);
+                    await pageViewModel.LoadLeftThumbnailAsync(); // V3 OSS標準サムネイル生成
+                    Pages.Add(pageViewModel);
                 }
 
                 // 最初のページを選択
                 if (Pages.Count > 0)
                 {
                     SelectedPage = Pages[0];
-                    await PreviewManagement.UpdateCurrentPageAsync(SelectedPage);
+                    await PreviewManagement.UpdatePreviewAsync(SelectedPage, true);
                 }
 
                 StatusManagement.CompleteOperation($"{Pages.Count}ページのドキュメントを開きました");
@@ -125,7 +148,7 @@ namespace DocOrganizer.UI.ViewModels.V3
                     if (SelectedPage?.Id == e.Page.Id)
                     {
                         SelectedPage = e.Page;
-                        await PreviewManagement.UpdateCurrentPageAsync(e.Page);
+                        await PreviewManagement.UpdatePreviewAsync(e.Page, true);
                     }
                 }
             }
@@ -150,7 +173,7 @@ namespace DocOrganizer.UI.ViewModels.V3
                     SelectedPage = Pages.Count > 0 ? Pages[0] : null;
                     if (SelectedPage != null)
                     {
-                        _ = PreviewManagement.UpdateCurrentPageAsync(SelectedPage);
+                        _ = PreviewManagement.UpdatePreviewAsync(SelectedPage, false);
                     }
                 }
 
@@ -191,6 +214,140 @@ namespace DocOrganizer.UI.ViewModels.V3
             catch (Exception ex)
             {
                 StatusManagement.ShowError($"ファイル処理エラー: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// 🎯 V3 OSS標準: ファイル追加完了時の処理
+        /// </summary>
+        private async void OnFileAdditionCompleted(object? sender, FileAdditionCompletedEventArgs e)
+        {
+            try
+            {
+                StatusManagement.StartOperation("ドキュメント更新中...");
+
+                // ドキュメント更新
+                CurrentDocument = e.UpdatedDocument;
+                
+                // ページコレクション完全更新
+                Pages.Clear();
+                foreach (var page in e.UpdatedDocument.Pages)
+                {
+                    var pageViewModel = new V3PageViewModel(page, _thumbnailService, _imageProcessingService, _textOrientationService);
+                    Pages.Add(pageViewModel);
+                }
+
+                // 新しく追加されたページを選択
+                if (e.AddedPageCount > 0 && Pages.Count > 0)
+                {
+                    var newPageIndex = Math.Max(0, Pages.Count - e.AddedPageCount);
+                    SelectedPage = Pages[newPageIndex];
+                    await PreviewManagement.UpdatePreviewAsync(SelectedPage, true);
+                }
+
+                // 他のViewModelに変更を通知（DocumentManagementは内部で変更通知する）
+                PageOperation.SetCurrentDocument(CurrentDocument);
+                PreviewManagement.SetCurrentDocument(CurrentDocument);
+
+                StatusManagement.CompleteOperation($"{e.AddedPageCount}ページを追加しました（合計{Pages.Count}ページ）");
+            }
+            catch (Exception ex)
+            {
+                StatusManagement.ShowError($"ファイル追加後の更新エラー: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// 🎯 V3 OSS標準: ファイル追加失敗時の処理
+        /// </summary>
+        private void OnFileAdditionFailed(object? sender, FileAdditionFailedEventArgs e)
+        {
+            StatusManagement.ShowError($"ファイル追加エラー: {e.ErrorMessage}", e.Exception);
+        }
+
+        /// <summary>
+        /// 🚨 致命的修正: 新規ドキュメント作成完了時の処理
+        /// </summary>
+        private async void OnNewDocumentCreated(object? sender, NewDocumentCreatedEventArgs e)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] OnNewDocumentCreated開始: Pages={e.Document.Pages.Count}");
+                StatusManagement.StartOperation("新規ドキュメント読み込み中...");
+
+                // ドキュメント更新
+                CurrentDocument = e.Document;
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] CurrentDocument設定完了: CurrentDocument={CurrentDocument != null}");
+                
+                // ページコレクション完全更新
+                Pages.Clear();
+                foreach (var page in e.Document.Pages)
+                {
+                    var pageViewModel = new V3PageViewModel(page, _thumbnailService, _imageProcessingService, _textOrientationService);
+                    await pageViewModel.LoadLeftThumbnailAsync(); // V3 OSS標準サムネイル生成
+                    Pages.Add(pageViewModel);
+                }
+
+                // 最初のページを選択
+                if (Pages.Count > 0)
+                {
+                    SelectedPage = Pages[0];
+                    await PreviewManagement.UpdatePreviewAsync(SelectedPage, true);
+                }
+
+                // 他のViewModelに変更を通知
+                System.Diagnostics.Debug.WriteLine("[DEBUG] 他ViewModelにCurrentDocument通知開始");
+                PageOperation.SetCurrentDocument(CurrentDocument);
+                PreviewManagement.SetCurrentDocument(CurrentDocument);
+                DragDropHandler.SetCurrentDocument(CurrentDocument);
+                System.Diagnostics.Debug.WriteLine("[DEBUG] 他ViewModelにCurrentDocument通知完了");
+
+                StatusManagement.CompleteOperation($"{e.SourceFiles.Count}個のファイルから{Pages.Count}ページのドキュメントを作成しました");
+            }
+            catch (Exception ex)
+            {
+                StatusManagement.ShowError($"新規ドキュメント作成後の更新エラー: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// 🎯 V3 OSS標準: ファイル追加完了時の処理
+        /// </summary>
+        private async void OnFilesAddedToDocument(object? sender, FilesAddedEventArgs e)
+        {
+            try
+            {
+                StatusManagement.StartOperation("ドキュメント更新中...");
+
+                // ドキュメント更新
+                CurrentDocument = e.Document;
+                
+                // ページコレクション完全更新
+                Pages.Clear();
+                foreach (var page in e.Document.Pages)
+                {
+                    var pageViewModel = new V3PageViewModel(page, _thumbnailService, _imageProcessingService, _textOrientationService);
+                    await pageViewModel.LoadLeftThumbnailAsync(); // V3 OSS標準サムネイル生成
+                    Pages.Add(pageViewModel);
+                }
+
+                // 新しく追加されたページを選択
+                if (Pages.Count > 0)
+                {
+                    SelectedPage = Pages[Pages.Count - 1]; // 最後のページを選択
+                    await PreviewManagement.UpdatePreviewAsync(SelectedPage, true);
+                }
+
+                // 他のViewModelに変更を通知
+                PageOperation.SetCurrentDocument(CurrentDocument);
+                PreviewManagement.SetCurrentDocument(CurrentDocument);
+                DragDropHandler.SetCurrentDocument(CurrentDocument);
+
+                StatusManagement.CompleteOperation($"ファイルを追加しました（合計{Pages.Count}ページ）");
+            }
+            catch (Exception ex)
+            {
+                StatusManagement.ShowError($"ファイル追加後の更新エラー: {ex.Message}", ex);
             }
         }
 
@@ -256,11 +413,17 @@ namespace DocOrganizer.UI.ViewModels.V3
         /// <summary>
         /// 選択ページ変更時のプレビュー更新
         /// </summary>
-        partial void OnSelectedPageChanged(PageViewModel? value)
+        partial void OnSelectedPageChanged(V3PageViewModel? value)
         {
             if (value != null)
             {
-                _ = PreviewManagement.UpdateCurrentPageAsync(value);
+                // 🎯 V3アーキテクチャ修正: PreviewManagementViewModelを使用して右側プレビュー更新
+                _ = PreviewManagement.UpdatePreviewAsync(value, false);
+            }
+            else
+            {
+                // 選択解除時はプレビュークリア
+                PreviewManagement.ClearPreview();
             }
         }
 
@@ -288,9 +451,9 @@ namespace DocOrganizer.UI.ViewModels.V3
 
     public class PageOperationEventArgs : EventArgs
     {
-        public PageViewModel Page { get; }
+        public V3PageViewModel Page { get; }
 
-        public PageOperationEventArgs(PageViewModel page)
+        public PageOperationEventArgs(V3PageViewModel page)
         {
             Page = page;
         }
@@ -298,9 +461,9 @@ namespace DocOrganizer.UI.ViewModels.V3
 
     public class PreviewUpdatedEventArgs : EventArgs
     {
-        public PageViewModel Page { get; }
+        public V3PageViewModel Page { get; }
 
-        public PreviewUpdatedEventArgs(PageViewModel page)
+        public PreviewUpdatedEventArgs(V3PageViewModel page)
         {
             Page = page;
         }
@@ -313,6 +476,40 @@ namespace DocOrganizer.UI.ViewModels.V3
         public DocumentSavedEventArgs(string filePath)
         {
             FilePath = filePath;
+        }
+    }
+
+    /// <summary>
+    /// 🎯 V3 OSS標準: ファイル追加完了イベント引数
+    /// </summary>
+    public class FileAdditionCompletedEventArgs : EventArgs
+    {
+        public PdfDocument UpdatedDocument { get; }
+        public int AddedPageCount { get; }
+        public System.Collections.Generic.List<string> AddedFiles { get; }
+
+        public FileAdditionCompletedEventArgs(PdfDocument updatedDocument, int addedPageCount, System.Collections.Generic.List<string> addedFiles)
+        {
+            UpdatedDocument = updatedDocument;
+            AddedPageCount = addedPageCount;
+            AddedFiles = addedFiles;
+        }
+    }
+
+    /// <summary>
+    /// 🎯 V3 OSS標準: ファイル追加失敗イベント引数
+    /// </summary>
+    public class FileAdditionFailedEventArgs : EventArgs
+    {
+        public string ErrorMessage { get; }
+        public Exception? Exception { get; }
+        public System.Collections.Generic.List<string> FailedFiles { get; }
+
+        public FileAdditionFailedEventArgs(string errorMessage, Exception? exception, System.Collections.Generic.List<string> failedFiles)
+        {
+            ErrorMessage = errorMessage;
+            Exception = exception;
+            FailedFiles = failedFiles;
         }
     }
 }

@@ -125,6 +125,16 @@ namespace DocOrganizer.UI.ViewModels.V3
         }
 
         /// <summary>
+        /// 警告メッセージ表示
+        /// </summary>
+        public void ShowWarning(string warningMessage)
+        {
+            _dialogService.ShowWarning(warningMessage);
+            
+            WarningMessageShown?.Invoke(this, new MessageEventArgs(warningMessage));
+        }
+
+        /// <summary>
         /// キャンセレーショントークン取得
         /// </summary>
         public CancellationToken GetCancellationToken()
@@ -139,6 +149,7 @@ namespace DocOrganizer.UI.ViewModels.V3
         public event EventHandler? OperationCancelled;
         public event EventHandler<ErrorEventArgs>? ErrorOccurred;
         public event EventHandler<MessageEventArgs>? SuccessMessageShown;
+        public event EventHandler<MessageEventArgs>? WarningMessageShown;
     }
 
     // Event argument classes

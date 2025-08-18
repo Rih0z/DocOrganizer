@@ -66,7 +66,8 @@ foreach ($category in $commands) {
 
 # ViewModelでのコマンド実装状態確認
 Write-Host "`n🔍 ViewModelでの実装状態確認:" -ForegroundColor Yellow
-$viewModelPath = Join-Path $PSScriptRoot "..\src\DocOrganizer.UI\ViewModels\MainViewModel.cs"
+$viewModelPath = Join-Path $PSScriptRoot "..\src\DocOrganizer.UI\ViewModels\V3\MainCompositeViewModel.cs"
+# V3アーキテクチャ: MainViewModelは廃止済み"
 if (Test-Path $viewModelPath) {
     $content = Get-Content $viewModelPath -Raw
     

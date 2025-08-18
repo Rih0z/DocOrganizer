@@ -14,6 +14,11 @@ namespace DocOrganizer.Core.Models
         private bool _disposed;
 
         /// <summary>
+        /// ページの一意識別子
+        /// </summary>
+        public Guid Id { get; private set; }
+
+        /// <summary>
         /// ページ番号（1から始まる）
         /// </summary>
         public int PageNumber { get; }
@@ -68,6 +73,11 @@ namespace DocOrganizer.Core.Models
         public string? SourceImagePath { get; set; }
 
         /// <summary>
+        /// 画像ファイルパス（V3互換性）
+        /// </summary>
+        public string ImagePath { get; set; } = string.Empty;
+
+        /// <summary>
         /// PdfPageの新しいインスタンスを初期化します
         /// </summary>
         /// <param name="pageNumber">ページ番号（1から始まる）</param>
@@ -76,6 +86,7 @@ namespace DocOrganizer.Core.Models
             if (pageNumber <= 0)
                 throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
 
+            Id = Guid.NewGuid();
             PageNumber = pageNumber;
             _rotation = 0;
         }

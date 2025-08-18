@@ -3,7 +3,9 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DocOrganizer.Application.Interfaces;
+using DocOrganizer.Application.Interfaces.V3;
 using DocOrganizer.Core.Models;
+using Microsoft.Extensions.Logging;
 
 namespace DocOrganizer.UI.ViewModels.V3
 {
@@ -14,6 +16,9 @@ namespace DocOrganizer.UI.ViewModels.V3
     /// </summary>
     public partial class PreviewManagementViewModel : ObservableObject
     {
+        private readonly IImageLoaderService _imageLoaderService;
+        private readonly IDialogService _dialogService;
+        private readonly ILogger<PreviewManagementViewModel> _logger;
         private readonly IPdfEditorService _pdfEditorService;
 
         [ObservableProperty]
@@ -34,28 +39,45 @@ namespace DocOrganizer.UI.ViewModels.V3
         [ObservableProperty]
         private string emptyStateVisibility = "Visible";
 
-        private PageViewModel? _selectedPage;
+        private V3PageViewModel? _selectedPage;
         private PdfDocument? _currentDocument;
 
-        public PreviewManagementViewModel(IPdfEditorService pdfEditorService)
+        public PreviewManagementViewModel(
+            IImageLoaderService imageLoaderService,
+            IDialogService dialogService,
+            ILogger<PreviewManagementViewModel> logger,
+            IPdfEditorService pdfEditorService)
         {
+            _imageLoaderService = imageLoaderService;
+            _dialogService = dialogService;
+            _logger = logger;
             _pdfEditorService = pdfEditorService;
         }
 
         /// <summary>
         /// 選択ページのプレビュー更新
         /// </summary>
-        public async Task UpdatePreviewAsync(PageViewModel? selectedPage, bool forceUpdate = false)
+        public async Task UpdatePreviewAsync(V3PageViewModel? selectedPage, bool forceUpdate = false)
         {
             try
             {
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] UpdatePreviewAsync開始: selectedPage={selectedPage?.PageNumber}, forceUpdate={forceUpdate}");
+                
                 if (selectedPage?.Page == null)
                 {
+                    System.Diagnostics.Debug.WriteLine("[DEBUG] SelectedPageがNULL - プレビュー表示不可");
+                    _logger.LogWarning("[V3_Preview] SelectedPageがNULL - プレビュー表示不可");
                     CurrentPageImage = null;
                     PageInfo = "";
                     EmptyStateVisibility = "Visible";
                     return;
                 }
+                
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] _currentDocument={(_currentDocument != null ? "設定済み" : "NULL")}");
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] selectedPage.Page.SourceImagePath={selectedPage.Page.SourceImagePath}");
+            
+                _logger.LogDebug("[V3_Preview] UpdatePreviewAsync開始: PageNumber={PageNumber}, ForceUpdate={ForceUpdate}", 
+                    selectedPage.PageNumber, forceUpdate);
 
                 EmptyStateVisibility = "Collapsed";
                 _selectedPage = selectedPage;
@@ -65,11 +87,15 @@ namespace DocOrganizer.UI.ViewModels.V3
 
                 // 🎯 V3新実装: OSS標準ImageLoaderService使用
                 await LoadPreviewImageAsync(selectedPage, forceUpdate);
+                
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] UpdatePreviewAsync完了: CurrentPageImage={CurrentPageImage != null}");
             }
             catch (Exception ex)
             {
                 // プレビュー更新エラーはUIに表示しない（頻繁に呼ばれるため）
                 System.Diagnostics.Debug.WriteLine($"[PreviewManagement] プレビュー更新エラー: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[PreviewManagement] エラー詳細: {ex}");
+                _logger.LogError(ex, "[V3_Preview_ERROR] UpdatePreviewAsync失敗: SelectedPage={SelectedPage}", selectedPage?.PageNumber ?? -1);
             }
         }
 
@@ -120,11 +146,15 @@ namespace DocOrganizer.UI.ViewModels.V3
         }
 
         // Private helper methods
-        private async Task LoadPreviewImageAsync(PageViewModel pageViewModel, bool forceUpdate)
+        private async Task LoadPreviewImageAsync(V3PageViewModel pageViewModel, bool forceUpdate)
         {
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] LoadPreviewImageAsync開始: forceUpdate={forceUpdate}");
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] pageViewModel.PreviewImage={pageViewModel.PreviewImage != null}");
+            
             // PageViewModelに既にPreviewImageがある場合はそれを使用
             if (!forceUpdate && pageViewModel.PreviewImage != null)
             {
+                System.Diagnostics.Debug.WriteLine("[DEBUG] 既存のPreviewImageを使用");
                 await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     CurrentPageImage = pageViewModel.PreviewImage;
@@ -133,53 +163,83 @@ namespace DocOrganizer.UI.ViewModels.V3
                 return;
             }
 
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] _currentDocument確認: {(_currentDocument != null ? "存在" : "NULL")}");
+            
             // 🎯 V3新実装: 高品質プレビュー生成
             if (_currentDocument != null)
             {
                 var pageIndex = _currentDocument.Pages.ToList().IndexOf(pageViewModel.Page);
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] pageIndex={pageIndex}");
+                
                 if (pageIndex >= 0)
                 {
                     var page = _currentDocument.Pages[pageIndex];
+                    System.Diagnostics.Debug.WriteLine($"[DEBUG] page.SourceImagePath='{page.SourceImagePath}'");
+                    System.Diagnostics.Debug.WriteLine($"[DEBUG] ファイル存在確認: {(!string.IsNullOrEmpty(page.SourceImagePath) && System.IO.File.Exists(page.SourceImagePath))}");
 
                     // 元画像パスが存在する場合は画像ベースでプレビュー
                     if (!string.IsNullOrEmpty(page.SourceImagePath) && System.IO.File.Exists(page.SourceImagePath))
                     {
+                        System.Diagnostics.Debug.WriteLine("[DEBUG] 画像ベースプレビューを実行");
                         // 🎯 V3: OSS標準ImageLoaderServiceでEXIF処理
                         await LoadImageBasedPreviewAsync(page.SourceImagePath);
                     }
                     else
                     {
+                        System.Diagnostics.Debug.WriteLine("[DEBUG] PDFベースプレビューを実行");
                         // PDFベースでプレビュー生成
                         await LoadPdfBasedPreviewAsync(pageIndex);
                     }
                 }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("[DEBUG] エラー: pageIndexが見つからない");
+                }
             }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine("[DEBUG] エラー: _currentDocumentがNULL");
+            }
+            
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] LoadPreviewImageAsync完了: CurrentPageImage={CurrentPageImage != null}");
         }
 
         private async Task LoadImageBasedPreviewAsync(string imagePath)
         {
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] LoadImageBasedPreviewAsync開始: imagePath='{imagePath}'");
+            
             await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 try
                 {
+                    System.Diagnostics.Debug.WriteLine("[DEBUG] BitmapImage作成開始");
                     // 🎯 V3: OSS標準BitmapImage.Rotation使用
                     var bitmap = CreateBitmapWithOSSStandardRotation(imagePath);
+                    System.Diagnostics.Debug.WriteLine($"[DEBUG] BitmapImage作成完了: bitmap={bitmap != null}");
+                    
                     CurrentPageImage = bitmap;
                     UpdatePreviewSize(bitmap);
+                    
+                    System.Diagnostics.Debug.WriteLine($"[DEBUG] CurrentPageImage設定完了: CurrentPageImage={CurrentPageImage != null}");
                 }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"[PreviewManagement] 画像プレビューエラー: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"[PreviewManagement] 画像プレビューエラー詳細: {ex}");
                 }
             });
         }
 
         private async Task LoadPdfBasedPreviewAsync(int pageIndex)
         {
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] LoadPdfBasedPreviewAsync開始: pageIndex={pageIndex}");
+            
             try
             {
                 // 高品質プレビューを生成（スケール3.0倍）
+                System.Diagnostics.Debug.WriteLine("[DEBUG] GetPagePreviewAsync呼び出し開始");
                 var previewBitmap = await _pdfEditorService.GetPagePreviewAsync(_currentDocument!, pageIndex, 3.0f);
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] GetPagePreviewAsync完了: previewBitmap={previewBitmap != null}");
 
                 if (previewBitmap != null)
                 {
@@ -187,25 +247,35 @@ namespace DocOrganizer.UI.ViewModels.V3
                     {
                         try
                         {
+                            System.Diagnostics.Debug.WriteLine("[DEBUG] SKBitmap→PNG変換開始");
                             // SkiaSharpのSKBitmapを無圧縮PNG形式で変換
                             using var data = previewBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
                             var bitmap = CreateBitmapFromBytes(data.ToArray());
+                            System.Diagnostics.Debug.WriteLine($"[DEBUG] PNG変換完了: bitmap={bitmap != null}");
 
                             CurrentPageImage = bitmap;
                             UpdatePreviewSize(bitmap);
+                            
+                            System.Diagnostics.Debug.WriteLine($"[DEBUG] CurrentPageImage設定完了: CurrentPageImage={CurrentPageImage != null}");
                         }
                         catch (Exception ex)
                         {
                             System.Diagnostics.Debug.WriteLine($"[PreviewManagement] PDFプレビューエラー: {ex.Message}");
+                            System.Diagnostics.Debug.WriteLine($"[PreviewManagement] PDFプレビューエラー詳細: {ex}");
                         }
                     });
 
                     previewBitmap.Dispose();
                 }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("[DEBUG] エラー: previewBitmapがNULL");
+                }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[PreviewManagement] PDF処理エラー: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[PreviewManagement] PDF処理エラー詳細: {ex}");
             }
         }
 
@@ -281,7 +351,7 @@ namespace DocOrganizer.UI.ViewModels.V3
             }
         }
 
-        private void UpdatePageInfo(PageViewModel pageViewModel)
+        private void UpdatePageInfo(V3PageViewModel pageViewModel)
         {
             // ページ情報の更新
             PageInfo = $"ページ {pageViewModel.PageNumber}";
@@ -324,6 +394,6 @@ namespace DocOrganizer.UI.ViewModels.V3
         }
 
         // Events for coordination
-        public event EventHandler<object?>? PreviewUpdated;
+        public event EventHandler<PreviewUpdatedEventArgs>? PreviewUpdated;
     }
 }

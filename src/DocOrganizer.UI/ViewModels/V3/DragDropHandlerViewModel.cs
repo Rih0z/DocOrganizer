@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DocOrganizer.Application.Interfaces;
@@ -16,11 +17,12 @@ namespace DocOrganizer.UI.ViewModels.V3
     /// 責務: ファイル処理、ページ並び替えのみ
     /// 目標: 150行以下、4メソッド以下
     /// </summary>
-    public partial class DragDropHandlerViewModel : ObservableObject
+    public partial class DragDropHandlerViewModel : ObservableObject, IAdvancedDropHandler, IAdvancedDragHandler
     {
         private readonly IImageProcessingService _imageProcessingService;
         private readonly IImageLoaderService _imageLoaderService;
         private readonly IDialogService _dialogService;
+        private readonly IFileAdditionService _fileAdditionService;
 
         [ObservableProperty]
         private bool isProcessing;
@@ -31,18 +33,158 @@ namespace DocOrganizer.UI.ViewModels.V3
         [ObservableProperty]
         private string dragOverlayVisibility = "Collapsed";
 
+        [ObservableProperty]
+        private double progressPercentage;
+
+        [ObservableProperty]
+        private string progressDetail = "";
+
+        // 現在処理中のドキュメント（ファイル追加用）
+        private PdfDocument? _currentDocument;
+
         public DragDropHandlerViewModel(
             IImageProcessingService imageProcessingService,
             IImageLoaderService imageLoaderService,
-            IDialogService dialogService)
+            IDialogService dialogService,
+            IFileAdditionService fileAdditionService)
         {
             _imageProcessingService = imageProcessingService;
             _imageLoaderService = imageLoaderService;
             _dialogService = dialogService;
+            _fileAdditionService = fileAdditionService;
+
+            // OSS標準: イベント駆動アーキテクチャ
+            _fileAdditionService.ProgressUpdated += OnFileAdditionProgress;
+            _fileAdditionService.AdditionCompleted += OnFileAdditionCompletedFromService;
+            _fileAdditionService.ErrorOccurred += OnFileAdditionError;
+        }
+
+        #region OSS標準: IAdvancedDropHandler実装
+
+        /// <summary>
+        /// 🎯 OSS標準: ドロップ可能性判定
+        /// </summary>
+        public async Task<bool> CanDropAsync(IAdvancedDropInfo dropInfo)
+        {
+            try
+            {
+                if (IsProcessing) return false;
+
+                // ファイルドロップの場合
+                if (dropInfo.FilePaths != null && dropInfo.FilePaths.Length > 0)
+                {
+                    var validationResult = await _fileAdditionService.ValidateFilesForAdditionAsync(dropInfo.FilePaths);
+                    return validationResult.IsValid || validationResult.ValidFiles.Any();
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"🚨 V3 CanDrop Error: {ex.Message}");
+                return false;
+            }
         }
 
         /// <summary>
-        /// ファイルドロップ処理
+        /// 🎯 OSS標準: ドロップ処理実行
+        /// </summary>
+        public async Task DropAsync(IAdvancedDropInfo dropInfo)
+        {
+            try
+            {
+                if (IsProcessing) return;
+
+                if (dropInfo.FilePaths != null && dropInfo.FilePaths.Length > 0)
+                {
+                    await HandleFilesDropAsync(dropInfo.FilePaths);
+                    dropInfo.Effects = DragDropEffects.Copy;
+                }
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"ドロップ処理エラー: {ex.Message}");
+                dropInfo.Effects = DragDropEffects.None;
+            }
+        }
+
+        /// <summary>
+        /// 🎯 OSS標準: ドラッグオーバー処理
+        /// </summary>
+        public async Task DragOverAsync(IAdvancedDropInfo dropInfo)
+        {
+            try
+            {
+                if (await CanDropAsync(dropInfo))
+                {
+                    ShowDragOverlay();
+                    StatusMessage = $"{dropInfo.FilePaths?.Length ?? 0} 個のファイル - ドロップして追加";
+                }
+                else
+                {
+                    HideDragOverlay();
+                    StatusMessage = "サポートされていないファイル形式";
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"🚨 V3 DragOver Error: {ex.Message}");
+                HideDragOverlay();
+            }
+        }
+
+        #endregion
+
+        #region OSS標準: IAdvancedDragHandler実装
+
+        /// <summary>
+        /// 🎯 OSS標準: ドラッグ開始処理
+        /// </summary>
+        public async Task<object> StartDragAsync(IAdvancedDragInfo dragInfo)
+        {
+            try
+            {
+                // ページViewModelからのドラッグの場合
+                if (dragInfo.SourceItem is V3PageViewModel pageViewModel)
+                {
+                    return new DataObject(DataFormats.Serializable, pageViewModel);
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"🚨 V3 StartDrag Error: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 🎯 OSS標準: ドラッグ完了処理
+        /// </summary>
+        public async Task DragCompletedAsync(IAdvancedDragCompletedInfo dragCompletedInfo)
+        {
+            try
+            {
+                if (dragCompletedInfo.IsCancelled)
+                {
+                    StatusMessage = "ドラッグがキャンセルされました";
+                }
+                else
+                {
+                    StatusMessage = "ドラッグ完了";
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"🚨 V3 DragCompleted Error: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        /// <summary>
+        /// 🎯 V3 OSS標準: ファイルドロップ処理（既存ドキュメントへの追加対応）
         /// </summary>
         public async Task HandleFilesDropAsync(IEnumerable<string> filePaths)
         {
@@ -52,28 +194,46 @@ namespace DocOrganizer.UI.ViewModels.V3
             {
                 IsProcessing = true;
                 DragOverlayVisibility = "Collapsed";
+                ProgressPercentage = 0;
 
                 var filesList = filePaths.ToList();
-                var imageFiles = filesList.Where(IsImageFile).ToList();
-                var pdfFiles = filesList.Where(IsPdfFile).ToList();
+                StatusMessage = $"{filesList.Count} 個のファイルを検証中...";
 
-                StatusMessage = $"{filesList.Count} 個のファイルを処理中...";
-
-                // 🎯 V3新実装: 画像とPDFを統合処理
-                if (imageFiles.Any())
+                // 🎯 OSS標準: 事前検証
+                var validationResult = await _fileAdditionService.ValidateFilesForAdditionAsync(filesList);
+                
+                if (!validationResult.IsValid)
                 {
-                    await ProcessImageFilesAsync(imageFiles);
+                    _dialogService.ShowWarning($"無効なファイルが含まれています:\n{string.Join("\n", validationResult.ValidationErrors)}");
+                    
+                    if (!validationResult.ValidFiles.Any())
+                    {
+                        StatusMessage = "追加可能なファイルがありません";
+                        return;
+                    }
                 }
 
-                if (pdfFiles.Any())
+                var validFiles = validationResult.ValidFiles;
+                StatusMessage = $"{validFiles.Count} 個のファイルを処理中...";
+
+                // 🎯 OSS標準: 既存ドキュメントへの追加 vs 新規ドキュメント作成
+                if (_currentDocument != null)
                 {
-                    await ProcessPdfFilesAsync(pdfFiles);
+                    // 既存ドキュメントに追加
+                    await AddFilesToExistingDocumentAsync(validFiles);
+                }
+                else
+                {
+                    // 新規ドキュメント作成
+                    await CreateNewDocumentFromFilesAsync(validFiles);
                 }
 
-                StatusMessage = $"{filesList.Count} 個のファイル処理完了";
+                StatusMessage = $"{validFiles.Count} 個のファイル処理完了";
 
                 // イベント通知
-                FilesProcessed?.Invoke(this, new FilesProcessedEventArgs(imageFiles, pdfFiles));
+                FilesProcessed?.Invoke(this, new FilesProcessedEventArgs(
+                    validFiles.Where(IsImageFile).ToList(),
+                    validFiles.Where(IsPdfFile).ToList()));
             }
             catch (Exception ex)
             {
@@ -83,13 +243,15 @@ namespace DocOrganizer.UI.ViewModels.V3
             finally
             {
                 IsProcessing = false;
+                ProgressPercentage = 0;
+                ProgressDetail = "";
             }
         }
 
         /// <summary>
         /// ページ並び替え処理
         /// </summary>
-        public async Task HandlePageReorderAsync(List<PageViewModel> pagesToMove, PageViewModel targetPage)
+        public async Task HandlePageReorderAsync(List<V3PageViewModel> pagesToMove, V3PageViewModel targetPage)
         {
             if (IsProcessing) return;
 
@@ -127,46 +289,118 @@ namespace DocOrganizer.UI.ViewModels.V3
             DragOverlayVisibility = "Collapsed";
         }
 
-        // Private helper methods
-        private async Task ProcessImageFilesAsync(List<string> imageFiles)
+        /// <summary>
+        /// 現在のドキュメントを設定（ファイル追加機能用）
+        /// </summary>
+        public void SetCurrentDocument(PdfDocument? document)
         {
+            _currentDocument = document;
+        }
+
+        // Private methods - OSS標準実装
+
+        /// <summary>
+        /// 🎯 OSS標準: 既存ドキュメントへのファイル追加
+        /// </summary>
+        private async Task AddFilesToExistingDocumentAsync(List<string> files)
+        {
+            if (_currentDocument == null) return;
+
             try
             {
-                // 🎯 V3新実装: OSS標準ImageLoaderService使用
-                var imageInfoTasks = imageFiles.Select(async file =>
-                {
-                    var info = await _imageLoaderService.GetImageInfoAsync(file);
-                    return new { FilePath = file, Info = info };
-                });
+                StatusMessage = "既存ドキュメントにファイルを追加中...";
+                
+                // FileAdditionServiceで追加処理
+                var result = await _fileAdditionService.AddMixedFilesToDocumentAsync(_currentDocument, files);
+                
+                StatusMessage = $"ファイル追加完了: {result.Summary}";
 
-                var imageInfos = await Task.WhenAll(imageInfoTasks);
-
-                // ImageProcessingServiceで統合PDF作成
-                var pdfDocument = await _imageProcessingService.ConvertImagesToPdfAsync(imageFiles);
-
-                // イベント通知
-                ImageFilesProcessed?.Invoke(this, new ImageFilesProcessedEventArgs(imageFiles, pdfDocument));
+                // 追加完了イベント
+                FilesAddedToDocument?.Invoke(this, new FilesAddedEventArgs(_currentDocument, result));
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"画像ファイル処理失敗: {ex.Message}", ex);
+                throw new InvalidOperationException($"既存ドキュメントへの追加失敗: {ex.Message}", ex);
             }
         }
 
-        private async Task ProcessPdfFilesAsync(List<string> pdfFiles)
+        /// <summary>
+        /// 🎯 OSS標準: 新規ドキュメント作成
+        /// </summary>
+        private async Task CreateNewDocumentFromFilesAsync(List<string> files)
         {
             try
             {
-                foreach (var pdfFile in pdfFiles)
+                StatusMessage = "新規ドキュメントを作成中...";
+                
+                var imageFiles = files.Where(IsImageFile).ToList();
+                var pdfFiles = files.Where(IsPdfFile).ToList();
+
+                if (imageFiles.Any())
                 {
-                    // DocumentManagementViewModelに委譲
-                    PdfFileProcessed?.Invoke(this, new PdfFileProcessedEventArgs(pdfFile));
+                    // 画像からPDF作成
+                    var pdfDocument = await _imageProcessingService.ConvertImagesToPdfAsync(imageFiles);
+                    
+                    // PDFファイルがある場合は結合
+                    if (pdfFiles.Any())
+                    {
+                        await _fileAdditionService.AddPdfFilesToDocumentAsync(pdfDocument, pdfFiles);
+                    }
+
+                    // 新規ドキュメント作成完了イベント
+                    NewDocumentCreated?.Invoke(this, new NewDocumentCreatedEventArgs(pdfDocument, files));
                 }
+                else if (pdfFiles.Any())
+                {
+                    // 最初のPDFを基準に他のPDFを結合
+                    // Use PdfEditorService to load PDF (not available in ImageProcessingService)
+                    var basePdf = new PdfDocument(pdfFiles.First());
+                    if (pdfFiles.Count > 1)
+                    {
+                        await _fileAdditionService.AddPdfFilesToDocumentAsync(basePdf, pdfFiles.Skip(1));
+                    }
+
+                    NewDocumentCreated?.Invoke(this, new NewDocumentCreatedEventArgs(basePdf, files));
+                }
+
+                StatusMessage = "新規ドキュメント作成完了";
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"PDFファイル処理失敗: {ex.Message}", ex);
+                throw new InvalidOperationException($"新規ドキュメント作成失敗: {ex.Message}", ex);
             }
+        }
+
+        // FileAdditionService イベントハンドラー
+        private void OnFileAdditionProgress(object? sender, FileAdditionProgressEventArgs e)
+        {
+            ProgressPercentage = e.ProgressPercentage;
+            ProgressDetail = $"処理中: {Path.GetFileName(e.CurrentFile)} ({e.ProcessedCount}/{e.TotalCount})";
+        }
+
+        private void OnFileAdditionCompletedFromService(object? sender, DocOrganizer.Application.Interfaces.V3.FileAdditionCompletedEventArgs e)
+        {
+            StatusMessage = $"ファイル追加完了: {e.Result.Summary}";
+            
+            // 🎯 V3 OSS標準: MainCompositeViewModelに通知
+            // Note: FileAdditionResult doesn't contain UpdatedDocument, need to get it from current document
+            var mainEventArgs = new FileAdditionCompletedEventArgs(
+                _currentDocument!, 
+                e.Result.AddedPagesCount, 
+                e.Result.SuccessfulFiles);
+            FileAdditionCompleted?.Invoke(this, mainEventArgs);
+        }
+
+        private void OnFileAdditionError(object? sender, FileAdditionErrorEventArgs e)
+        {
+            _dialogService.ShowError($"ファイル追加エラー: {e.ErrorMessage}");
+            
+            // 🎯 V3 OSS標準: MainCompositeViewModelに通知
+            var mainEventArgs = new FileAdditionFailedEventArgs(
+                e.ErrorMessage, 
+                e.Exception, 
+                new List<string> { e.FailedFile ?? "不明なファイル" });
+            FileAdditionFailed?.Invoke(this, mainEventArgs);
         }
 
         private bool IsImageFile(string filePath)
@@ -184,9 +418,43 @@ namespace DocOrganizer.UI.ViewModels.V3
 
         // Events for coordination with other ViewModels
         public event EventHandler<FilesProcessedEventArgs>? FilesProcessed;
-        public event EventHandler<ImageFilesProcessedEventArgs>? ImageFilesProcessed;
-        public event EventHandler<PdfFileProcessedEventArgs>? PdfFileProcessed;
+        public event EventHandler<FilesAddedEventArgs>? FilesAddedToDocument;
+        public event EventHandler<NewDocumentCreatedEventArgs>? NewDocumentCreated;
         public event EventHandler<PageReorderEventArgs>? PageReorderRequested;
+        
+        // 🎯 V3 OSS標準: ファイル追加イベント
+        public event EventHandler<FileAdditionCompletedEventArgs>? FileAdditionCompleted;
+        public event EventHandler<FileAdditionFailedEventArgs>? FileAdditionFailed;
+    }
+
+    /// <summary>
+    /// ファイル追加完了イベント引数
+    /// </summary>
+    public class FilesAddedEventArgs : EventArgs
+    {
+        public PdfDocument Document { get; }
+        public FileAdditionResult Result { get; }
+
+        public FilesAddedEventArgs(PdfDocument document, FileAdditionResult result)
+        {
+            Document = document;
+            Result = result;
+        }
+    }
+
+    /// <summary>
+    /// 新規ドキュメント作成完了イベント引数
+    /// </summary>
+    public class NewDocumentCreatedEventArgs : EventArgs
+    {
+        public PdfDocument Document { get; }
+        public List<string> SourceFiles { get; }
+
+        public NewDocumentCreatedEventArgs(PdfDocument document, List<string> sourceFiles)
+        {
+            Document = document;
+            SourceFiles = sourceFiles;
+        }
     }
 
     // Event argument classes
@@ -226,10 +494,10 @@ namespace DocOrganizer.UI.ViewModels.V3
 
     public class PageReorderEventArgs : EventArgs
     {
-        public List<PageViewModel> PagesToMove { get; }
-        public PageViewModel TargetPage { get; }
+        public List<V3PageViewModel> PagesToMove { get; }
+        public V3PageViewModel TargetPage { get; }
 
-        public PageReorderEventArgs(List<PageViewModel> pagesToMove, PageViewModel targetPage)
+        public PageReorderEventArgs(List<V3PageViewModel> pagesToMove, V3PageViewModel targetPage)
         {
             PagesToMove = pagesToMove;
             TargetPage = targetPage;

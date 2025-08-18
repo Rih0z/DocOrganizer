@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using DocOrganizer.Application.Interfaces;
 using DocOrganizer.Infrastructure.Services;
+using DocOrganizer.Application.Interfaces;
 using Xunit;
 
 namespace DocOrganizer.Application.Tests.Services
@@ -26,6 +27,7 @@ namespace DocOrganizer.Application.Tests.Services
             services.AddLogging();
             services.AddSingleton<IPdfService, PdfService>();
             services.AddSingleton<IPdfEditorService, PdfEditorService>();
+            services.AddSingleton<IRotationService, RotationService>();
             services.AddSingleton<IImageProcessingService, ImageProcessingService>();
             
             _serviceProvider = services.BuildServiceProvider();

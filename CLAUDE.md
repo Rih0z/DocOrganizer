@@ -3,8 +3,8 @@
 ```yaml
 ai_coding_principles:
   meta:
-    version: "2.2"
-    last_updated: "2025-01-24"
+    version: "2.3"
+    last_updated: "2025-08-15"
     description: "DocOrganizer 画像PDF変換ツール開発用AIコーディング実行原則"
     project_name: "DocOrganizer - CubePDF Utility互換 汎用PDF編集ツール"
     project_concept: "CubePDF Utilityをベースに、文書整理に特化した機能を追加した汎用PDF編集ツール"
@@ -31,6 +31,8 @@ ai_coding_principles:
       第2条: 常にプロの世界最高エンジニアとして対応する
       第3条: モックや仮のコード、ハードコードを一切禁止する。コーディング前にread Serena's initial instructions
              Serenaツールを使用してセマンティックなコード理解と編集を行う（MCPビルドは不要だがコード分析には必須）
+             ユーザーから新規機能の実装指示を受けたら、まずはtmpフォルダ以下に実装計画を作成する
+             既存の実装をserena mcpを利用して詳細に分析し、プロとして恥ずかしくない実装を計画する
       第4条: エンタープライズレベルの実装を実施し、修正は表面的ではなく、全体のアーキテクチャを意識して実施する
       第5条: 問題に詰まったら、まずCLAUDE.mdやプロジェクトドキュメント内に解決策がないか確認する
       第6条: 不要なスクリプトは増やさない。スクリプト作成時は常に既存のスクリプトで使用可能なものがないかscript_managementセクションを確認する
@@ -83,7 +85,7 @@ ai_coding_principles:
       rule: "常にプロの世界最高エンジニアとして対応する"
       related_sections: ["mindset", "quality_standards", "domain_requirements"]
     第3条: 
-      rule: "モックや仮のコード、ハードコードを一切禁止する。コーディング前にread Serena's initial instructions"
+      rule: "モックや仮のコード、ハードコードを一切禁止する。コーディング前にread Serena's initial instructions。Serenaツールを使用してセマンティックなコード理解と編集を行う（MCPビルドは不要だがコード分析には必須）。ユーザーから新規機能の実装指示を受けたら、まずはtmpフォルダ以下に実装計画を作成する。既存の実装をserena mcpを利用して詳細に分析し、プロとして恥ずかしくない実装を計画する。"
       related_sections: ["implementation", "architecture", "quality_standards", "https://github.com/oraios/serena"]
     第4条: 
       rule: "エンタープライズレベルの実装を実施し、修正は表面的ではなく、全体のアーキテクチャを意識して実施する"
@@ -299,7 +301,7 @@ ai_coding_principles:
         lesson_learned: "Windows WPFアプリケーションの権限レベル制約は回避不可能な設計制約"
       related_sections: ["第13条", "exe_verification", "troubleshooting", "testing_verification"]
     第15条:
-      rule: "バグを修正する場合は、まず原因の分析をしユーザーに原因について報告する。ユーザーが確認したら修正方法を提案する。修正方法が妥当か十分にレビューし、他の宣言に矛盾していないか確認した上でユーザーの確認をとり修正を実施する。"
+      rule: "バグを修正する場合は、serena mcpを利用して原因の分析をし、tmpフォルダ以下に報告資料を作成する。ユーザーに原因について報告する。すでに同様のバグの報告資料がある場合は、それを更新する。ユーザーが確認したら修正方法を提案する。修正方法が妥当か十分にレビューし、他の宣言に矛盾していないか確認した上でユーザーの確認をとり修正を実施する。バグ報告はドキュメントを作成し、tmpフォルダ以下に保存する。ユーザーがバグが解決したと言うまでドキュメントを残し、バグが解決したらドキュメントは削除する。"
       importance: "品質の高い修正と、ユーザーとの適切なコミュニケーションを確保"
       mandatory: "例外なく守ること - 即座の修正は予期しない副作用を引き起こす可能性がある"
       implementation:

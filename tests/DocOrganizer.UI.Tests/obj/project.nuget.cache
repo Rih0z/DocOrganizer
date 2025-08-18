@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "A+0aq+IhhWRnss2QqUaqmBl+lorSIZON5OjTgzIPOjz6F8zsDv/qfjnaMvRB8k/Ic43rfZELL6fPyf1q+S3uZg==",
+  "dgSpecHash": "Y9xX97ihNRvH9Yp0OA/ggPsr2Vd5sAvF8YxvFTEbdKUUVtojSVN6q14B5r50PqNUdyvxBm+kkppjYRqsMnj6KA==",
   "success": true,
   "projectFilePath": "C:\\Users\\217216X721451\\github\\DocOrganizer\\tests\\DocOrganizer.UI.Tests\\DocOrganizer.UI.Tests.csproj",
   "expectedPackageFiles": [
@@ -51,6 +51,7 @@
     "C:\\Users\\217216X721451\\.nuget\\packages\\microsoft.testplatform.testhost\\17.8.0\\microsoft.testplatform.testhost.17.8.0.nupkg.sha512",
     "C:\\Users\\217216X721451\\.nuget\\packages\\microsoft.win32.primitives\\4.3.0\\microsoft.win32.primitives.4.3.0.nupkg.sha512",
     "C:\\Users\\217216X721451\\.nuget\\packages\\microsoft.win32.systemevents\\6.0.0\\microsoft.win32.systemevents.6.0.0.nupkg.sha512",
+    "C:\\Users\\217216X721451\\.nuget\\packages\\microsoft.xaml.behaviors.wpf\\1.1.135\\microsoft.xaml.behaviors.wpf.1.1.135.nupkg.sha512",
     "C:\\Users\\217216X721451\\.nuget\\packages\\moq\\4.20.69\\moq.4.20.69.nupkg.sha512",
     "C:\\Users\\217216X721451\\.nuget\\packages\\netstandard.library\\1.6.1\\netstandard.library.1.6.1.nupkg.sha512",
     "C:\\Users\\217216X721451\\.nuget\\packages\\newtonsoft.json\\13.0.3\\newtonsoft.json.13.0.3.nupkg.sha512",

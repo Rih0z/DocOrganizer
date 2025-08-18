@@ -282,13 +282,13 @@ namespace DocOrganizer.UI.ViewModels.V3
         public PdfDocument? CurrentDocument => _currentDocument;
 
         // Events for notifying other ViewModels
-        public event EventHandler<PdfDocument>? DocumentOpened;
+        public event EventHandler<DocumentOpenedEventArgs>? DocumentOpened;
         public event EventHandler? DocumentClosed;
-        public event EventHandler<string>? DocumentSaved;
+        public event EventHandler<DocumentSavedEventArgs>? DocumentSaved;
 
         protected virtual void OnDocumentOpened(PdfDocument document)
         {
-            DocumentOpened?.Invoke(this, document);
+            DocumentOpened?.Invoke(this, new DocumentOpenedEventArgs(document));
         }
 
         protected virtual void OnDocumentClosed()
@@ -298,7 +298,7 @@ namespace DocOrganizer.UI.ViewModels.V3
 
         protected virtual void OnDocumentSaved(string filePath)
         {
-            DocumentSaved?.Invoke(this, filePath);
+            DocumentSaved?.Invoke(this, new DocumentSavedEventArgs(filePath));
         }
     }
 }

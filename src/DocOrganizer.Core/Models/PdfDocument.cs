@@ -13,6 +13,16 @@ namespace DocOrganizer.Core.Models
         private bool _disposed;
 
         /// <summary>
+        /// 文書の一意識別子
+        /// </summary>
+        public Guid Id { get; private set; }
+
+        /// <summary>
+        /// 文書の作成日時
+        /// </summary>
+        public DateTime CreatedAt { get; private set; }
+
+        /// <summary>
         /// PDF文書のページコレクション
         /// </summary>
         public IReadOnlyList<PdfPage> Pages => _pages;
@@ -42,6 +52,8 @@ namespace DocOrganizer.Core.Models
         /// </summary>
         public PdfDocument()
         {
+            Id = Guid.NewGuid();
+            CreatedAt = DateTime.Now;
             _pages = new List<PdfPage>();
             IsModified = false;
         }
