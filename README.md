@@ -1,6 +1,6 @@
 # DocOrganizer
 
-[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/Rih0z/DocOrganizer/releases)
+[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://github.com/Rih0z/DocOrganizer/releases)
 [![.NET](https://img.shields.io/badge/.NET-6.0-purple.svg)](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -51,6 +51,7 @@ dotnet publish src/DocOrganizer.UI/DocOrganizer.UI.csproj -c Release -r win-x64 
 - **🐛 不具合報告**: [GitHub Issues](https://github.com/Rih0z/DocOrganizer/issues)
 - **📖 詳細情報**: [`docs/`](docs/)フォルダを参照
   - [V3アーキテクチャ - 画像表示の仕組み](docs/V3_ARCHITECTURE_IMAGE_DISPLAY.md)
+  - [V3.0 回転・画像入れ替え機能](docs/V3_ROTATION_AND_IMAGE_REPLACEMENT.md)
 - **📦 最新版**: [リリースページ](https://github.com/Rih0z/DocOrganizer/releases)
 
 ## 🏗️ プロジェクト構成

@@ -11,8 +11,8 @@ ai_coding_principles:
     
   repository_info:
     github_url: "https://github.com/Rih0z/DocOrganizer"
-    latest_exe_path: "C:\\Users\\koki\\ezark\\standard-image\\Standard-image\\v2.2-taxdoc-organizer\\release\\DocOrganizer.exe"
-    version: "2.2.0"
+    latest_exe_path: "C:\\Users\\217216X721451\\github\\DocOrganizer\\release\\DocOrganizer.exe"
+    version: "3.0.0"
     features:
       - "PDF編集機能（CubePDF Utility互換）"
       - "画像→PDF変換（HEIC/JPG/PNG/JPEG対応）"

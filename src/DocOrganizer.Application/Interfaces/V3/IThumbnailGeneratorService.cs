@@ -14,17 +14,19 @@ namespace DocOrganizer.Application.Interfaces.V3
         /// 左側パネル用サムネイル生成（150x200固定）
         /// </summary>
         /// <param name="filePath">画像ファイルパス</param>
+        /// <param name="rotation">回転角度（0, 90, 180, 270）</param>
         /// <returns>150x200サイズのサムネイル</returns>
-        Task<ImageSource> GenerateLeftPanelThumbnailAsync(string filePath);
+        Task<ImageSource> GenerateLeftPanelThumbnailAsync(string filePath, int rotation = 0);
 
         /// <summary>
         /// 右側プレビュー用高解像度画像生成
         /// </summary>
         /// <param name="filePath">画像ファイルパス</param>
+        /// <param name="rotation">回転角度（0, 90, 180, 270）</param>
         /// <param name="maxWidth">最大幅（デフォルト: 1920）</param>
         /// <param name="maxHeight">最大高さ（デフォルト: 1080）</param>
         /// <returns>高解像度プレビュー画像</returns>
-        Task<ImageSource> GenerateRightPreviewImageAsync(string filePath, int maxWidth = 1920, int maxHeight = 1080);
+        Task<ImageSource> GenerateRightPreviewImageAsync(string filePath, int rotation = 0, int maxWidth = 1920, int maxHeight = 1080);
 
         /// <summary>
         /// PDFページからサムネイル生成

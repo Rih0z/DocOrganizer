@@ -68,8 +68,17 @@ namespace DocOrganizer.UI.ViewModels
             {
                 if (!string.IsNullOrEmpty(_page.SourceImagePath) && File.Exists(_page.SourceImagePath))
                 {
-                    var thumbnailImageSource = await _thumbnailService.GenerateLeftPanelThumbnailAsync(_page.SourceImagePath);
-                    ThumbnailImage = thumbnailImageSource as BitmapSource;
+                    var thumbnailImageSource = await _thumbnailService.GenerateLeftPanelThumbnailAsync(_page.SourceImagePath, Rotation);
+                    if (thumbnailImageSource is BitmapSource bitmapSource)
+                    {
+                        // 🔧 アーキテクチャレベル修正: BitmapSourceをFreezeして不変化
+                        // これによりガベージコレクションによる解放を防ぎ、画像が永続的に保持される
+                        if (bitmapSource.CanFreeze && !bitmapSource.IsFrozen)
+                        {
+                            bitmapSource.Freeze();
+                        }
+                        ThumbnailImage = bitmapSource;
+                    }
                 }
                 else
                 {
@@ -92,7 +101,7 @@ namespace DocOrganizer.UI.ViewModels
             {
                 if (!string.IsNullOrEmpty(_page.SourceImagePath) && File.Exists(_page.SourceImagePath))
                 {
-                    var previewImageSource = await _thumbnailService.GenerateRightPreviewImageAsync(_page.SourceImagePath);
+                    var previewImageSource = await _thumbnailService.GenerateRightPreviewImageAsync(_page.SourceImagePath, Rotation);
                     PreviewImage = previewImageSource as BitmapSource;
                 }
                 else

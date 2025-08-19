@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Media; // For RotateTransform and TransformedBitmap
 using DocOrganizer.Application.Interfaces.V3;
 using Microsoft.Extensions.Logging;
 using SixLabors.ImageSharp;
@@ -35,11 +36,11 @@ namespace DocOrganizer.Infrastructure.Services.V3
         /// <summary>
         /// 左側パネル用サムネイル生成（150x200固定）
         /// </summary>
-        public async Task<ImageSource> GenerateLeftPanelThumbnailAsync(string filePath)
+        public async Task<ImageSource> GenerateLeftPanelThumbnailAsync(string filePath, int rotation = 0)
         {
             try
             {
-                _logger.LogDebug("[V3_Thumbnail] 左パネル用サムネイル生成開始: {FileName}", Path.GetFileName(filePath));
+                _logger.LogDebug("[V3_Thumbnail] 左パネル用サムネイル生成開始: {FileName}, 回転: {Rotation}度", Path.GetFileName(filePath), rotation);
 
                 return await Task.Run(() =>
                 {
@@ -48,6 +49,12 @@ namespace DocOrganizer.Infrastructure.Services.V3
                     
                     // EXIF Orientation自動補正
                     image.Mutate(x => x.AutoOrient());
+                    
+                    // 🔧 回転適用（0, 90, 180, 270度）
+                    if (rotation > 0)
+                    {
+                        image.Mutate(x => x.Rotate(rotation));
+                    }
                     
                     // 150x200にリサイズ（アスペクト比保持）
                     var targetSize = CalculateResizeWithAspectRatio(image.Width, image.Height, 150, 200);
@@ -67,15 +74,26 @@ namespace DocOrganizer.Infrastructure.Services.V3
         /// <summary>
         /// 右側プレビュー用高解像度画像生成
         /// </summary>
-        public async Task<ImageSource> GenerateRightPreviewImageAsync(string filePath, int maxWidth = 1920, int maxHeight = 1080)
+        public async Task<ImageSource> GenerateRightPreviewImageAsync(string filePath, int rotation = 0, int maxWidth = 1920, int maxHeight = 1080)
         {
             try
             {
-                _logger.LogDebug("[V3_Thumbnail] 右プレビュー用高解像度生成開始: {FileName}, 上限: {MaxWidth}x{MaxHeight}", 
-                    Path.GetFileName(filePath), maxWidth, maxHeight);
+                _logger.LogDebug("[V3_Thumbnail] 右プレビュー用高解像度生成開始: {FileName}, 回転: {Rotation}度, 上限: {MaxWidth}x{MaxHeight}", 
+                    Path.GetFileName(filePath), rotation, maxWidth, maxHeight);
 
-                // 🎯 V3新アプローチ: ImageLoaderServiceを活用
-                return await _imageLoaderService.LoadHighQualityImageAsync(filePath, maxWidth, maxHeight);
+                // 🎯 V3新アプローチ: ImageLoaderServiceを活用して画像を読み込み
+                var imageSource = await _imageLoaderService.LoadHighQualityImageAsync(filePath, maxWidth, maxHeight);
+                
+                // 🔧 回転適用（WPFのTransformedBitmapを使用）
+                if (rotation > 0 && imageSource is BitmapSource bitmapSource)
+                {
+                    var transform = new RotateTransform(rotation);
+                    var rotatedBitmap = new TransformedBitmap(bitmapSource, transform);
+                    rotatedBitmap.Freeze();
+                    return rotatedBitmap;
+                }
+                
+                return imageSource;
             }
             catch (Exception ex)
             {
