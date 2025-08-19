@@ -1,49 +1,46 @@
-# DocOrganizer プロジェクト概要
+# DocOrganizer Project Overview
 
-## プロジェクト目的
-CubePDF Utility互換のモダンなPDF編集・文書管理ツール。画像からPDF変換機能を持つWindows専用アプリケーション。
+## Purpose
+DocOrganizer is a professional-grade PDF editing and document management application for Windows that combines the familiar user experience of CubePDF Utility with advanced document organization features. It serves as a modernized, enhanced alternative to CubePDF Utility with additional features like auto-orientation detection, image-to-PDF conversion, and automated document organization.
 
-## 技術スタック
-- **フレームワーク**: .NET 6.0 (WPF - Windows専用)
-- **アーキテクチャ**: Clean Architecture (4層構造)
-- **PDF処理**: PDFsharp, PdfSharp.ImageSharp
-- **画像処理**: ImageSharp, Magick.NET (HEIC対応)
-- **UI**: WPF + Material Design In XAML
-- **テスト**: xUnit
-- **依存性注入**: Microsoft.Extensions.DependencyInjection
+## Key Features
+- **PDF Operations**: Load, edit, merge, split, rotate, delete PDF pages
+- **Image Support**: Convert HEIC, JPG, PNG, JPEG files to PDF
+- **Drag & Drop**: Intuitive file handling with visual feedback
+- **Auto-Orientation**: Automatic detection and correction of image orientation
+- **Auto-Update**: GitHub Releases integration for seamless updates
+- **Document Organization**: Smart naming, batch processing, template system
 
-## プロジェクト構造
+## Tech Stack
+- **Language**: C# with .NET 6.0
+- **Framework**: WPF (Windows Presentation Foundation)
+- **Architecture**: Clean Architecture with MVVM pattern
+- **UI Pattern**: MVVM with CommunityToolkit.Mvvm
+- **Dependencies**: 
+  - PDFsharp for PDF processing
+  - SkiaSharp for image processing  
+  - Microsoft.Extensions.DependencyInjection for IoC
+  - Serilog for logging
+  - Microsoft.Xaml.Behaviors.Wpf for behaviors
+
+## Project Structure
 ```
 DocOrganizer/
 ├── src/
-│   ├── DocOrganizer.Core/          # ドメイン層 (エンティティ・ビジネスルール)
-│   ├── DocOrganizer.Application/   # アプリケーション層 (ユースケース・インターフェース)
-│   ├── DocOrganizer.Infrastructure/ # インフラ層 (外部サービス・データアクセス)
-│   └── DocOrganizer.UI/            # プレゼンテーション層 (WPF・MVVM)
-├── tests/                          # 単体・統合テスト
-├── scripts/                        # ビルド・テスト自動化スクリプト
-└── docs/                          # プロジェクトドキュメント
+│   ├── DocOrganizer.Core/          # Domain layer (entities, interfaces)
+│   ├── DocOrganizer.Application/   # Application layer (use cases, services)
+│   ├── DocOrganizer.Infrastructure/# Infrastructure layer (PDF, file I/O)
+│   └── DocOrganizer.UI/            # Presentation layer (WPF, ViewModels)
+├── tests/                          # Unit and integration tests
+├── scripts/                        # Build and automation scripts
+├── docs/                          # Documentation
+├── sample/                        # Test files (HEIC, JPG, PNG, etc.)
+├── release/                       # Build output directory
+└── tmp/                          # Temporary analysis/debug files
 ```
 
-## 主要機能
-1. **PDF操作**: ドラッグ&ドロップでページ結合・分割・回転・削除
-2. **画像対応**: HEIC・JPG・PNG・JPEG形式からPDF変換
-3. **向き自動補正**: スキャン文書の向き自動検出・修正
-4. **自動更新**: GitHub Releases連携による自動アップデート
-5. **高性能**: 高速処理とモダンなUI
-
-## 主要サービス
-- **IPdfService**: PDF読み込み・保存・操作
-- **IImageProcessingService**: 画像処理・HEIC変換・サムネイル生成
-- **IPdfEditorService**: PDF編集操作（回転・削除・並び替え）
-- **IUpdateService**: 自動アップデート機能
-
-## 開発環境要件
-- Windows 10/11 (64-bit)
-- .NET 6.0 SDK
-- Visual Studio 2022 (推奨)
-
-## 現在のバージョン
-- Version: 2.2.0
-- 対象フレームワーク: .NET 6.0
-- プラットフォーム: win-x64 (自己完結型)
+## Current Status
+- **Version**: 2.2.0
+- **State**: Production-ready with V3 architecture improvements in progress
+- **Build Target**: Single-file, self-contained Windows x64 executable (~200MB)
+- **Testing**: Comprehensive test suite with automated scripts

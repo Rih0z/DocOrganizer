@@ -12,7 +12,7 @@ ai_coding_principles:
   repository_info:
     github_url: "https://github.com/Rih0z/DocOrganizer"
     latest_exe_path: "C:\\Users\\217216X721451\\github\\DocOrganizer\\release\\DocOrganizer.exe"
-    version: "3.0.0"
+    version: "3.0.002"
     features:
       - "PDF編集機能（CubePDF Utility互換）"
       - "画像→PDF変換（HEIC/JPG/PNG/JPEG対応）"
@@ -21,6 +21,54 @@ ai_coding_principles:
       - "ページ回転・削除・並び替え"
       - "PDF結合・分割"
     build_command: "dotnet publish src/DocOrganizer.UI/DocOrganizer.UI.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o release"
+    
+  version_management:
+    description: "ビルド時自動バージョン管理システム"
+    last_updated: "2025-08-19"
+    mandatory: "ビルドの度に最後の桁を自動インクリメント"
+    
+    current_version: "3.0.002"
+    version_format: "メジャー.マイナー.ビルド番号"
+    increment_rule: "ビルドの度に最後の桁（ビルド番号）を1つずつ上げる"
+    
+    version_history:
+      "3.0.002": 
+        date: "2025-08-19"
+        changes: "PDF出力実装変更 - System.Drawing使用でImageSharp依存削除"
+        build_reason: "XImage.FromFile MissingMethodException修正"
+      "3.0.001": 
+        date: "2025-08-19"
+        changes: "PDF出力互換性問題修正 - PdfSharp/ImageSharp相性問題解決"
+        build_reason: "MissingMethodException修正"
+      "3.0.000":
+        date: "2025-08-19" 
+        changes: "V3.0基本機能完成 - PDF出力ボタン修正"
+        build_reason: "RelayCommand自動生成問題修正"
+    
+    title_bar_display:
+      format: "DocOrganizer {version}"
+      example: "DocOrganizer 3.0.001"
+      location: "MainWindow.xaml Title属性"
+      update_requirement: "ビルド毎に必ず更新"
+    
+    auto_increment_procedure:
+      step1: "現在のバージョン番号をCLAUDE.mdから取得"
+      step2: "最後の桁（ビルド番号）を1増加"
+      step3: "CLAUDE.mdのcurrent_versionを更新"
+      step4: "MainWindow.xamlのTitle属性を更新" 
+      step5: "変更履歴をversion_historyに記録"
+      step6: "ビルド実行"
+    
+    implementation_locations:
+      claude_md: "CLAUDE.md repository_info.version & version_management.current_version"
+      main_window: "src/DocOrganizer.UI/Views/MainWindow.xaml Title属性"
+      assembly_info: "src/DocOrganizer.UI/DocOrganizer.UI.csproj AssemblyVersion"
+    
+    version_control_integration:
+      commit_message_format: "[Version {version}] {変更内容概要}"
+      example: "[Version 3.0.001] PDF出力互換性問題修正完了"
+      tag_format: "v{version}"
+      example_tag: "v3.0.001"
     
   core_principles:
     mandatory_declaration: |
@@ -44,6 +92,7 @@ ai_coding_principles:
       第12条: 全ての作業開始前にWindows環境での再ビルドを必ず実行する
       第13条: 修正を行ったら必ずビルドまで完全実行し、最終的なEXEの完全パスを出力する
       第14条: Windowsアプリケーションはエクスプローラーから直接起動する。管理者権限での起動は厳禁
+      第17条: ビルド実行時は必ずバージョン管理システムに従い、現在のバージョン番号を確認し、最後の桁を1増加させてからCLAUDE.md・MainWindow.xaml・AssemblyVersionを更新する。バージョン履歴も必ず記録する。
     
     pre_work_requirements:
       description: "全ての作業開始前の必須手順"

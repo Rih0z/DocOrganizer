@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "OQsYclYlmsubYEsYLKbVCiEl0lUvYkGCA6s4VhTlTC3N6hIz0c95kTS6wnj2OyPui1OgpH9MTLGxtfca9B0fKg==",
+  "dgSpecHash": "rfY8g12/Ecu9PHSGSgC7GbBB8jt6YkmFdOX+bCi60E7pCkGujx2TqgX3xO9i7v10/ZB60Km+4y+1cs0ZTVpBUQ==",
   "success": true,
   "projectFilePath": "C:\\Users\\217216X721451\\github\\DocOrganizer\\src\\DocOrganizer.UI\\DocOrganizer.UI.csproj",
   "expectedPackageFiles": [
@@ -44,12 +44,11 @@
     "C:\\Users\\217216X721451\\.nuget\\packages\\microsoft.win32.systemevents\\6.0.0\\microsoft.win32.systemevents.6.0.0.nupkg.sha512",
     "C:\\Users\\217216X721451\\.nuget\\packages\\microsoft.xaml.behaviors.wpf\\1.1.135\\microsoft.xaml.behaviors.wpf.1.1.135.nupkg.sha512",
     "C:\\Users\\217216X721451\\.nuget\\packages\\newtonsoft.json\\13.0.3\\newtonsoft.json.13.0.3.nupkg.sha512",
-    "C:\\Users\\217216X721451\\.nuget\\packages\\pdfsharpcore\\1.3.67\\pdfsharpcore.1.3.67.nupkg.sha512",
+    "C:\\Users\\217216X721451\\.nuget\\packages\\pdfsharp\\6.1.1\\pdfsharp.6.1.1.nupkg.sha512",
     "C:\\Users\\217216X721451\\.nuget\\packages\\serilog\\3.1.1\\serilog.3.1.1.nupkg.sha512",
     "C:\\Users\\217216X721451\\.nuget\\packages\\serilog.extensions.hosting\\8.0.0\\serilog.extensions.hosting.8.0.0.nupkg.sha512",
     "C:\\Users\\217216X721451\\.nuget\\packages\\serilog.extensions.logging\\8.0.0\\serilog.extensions.logging.8.0.0.nupkg.sha512",
     "C:\\Users\\217216X721451\\.nuget\\packages\\serilog.sinks.file\\5.0.0\\serilog.sinks.file.5.0.0.nupkg.sha512",
-    "C:\\Users\\217216X721451\\.nuget\\packages\\sharpziplib\\1.4.2\\sharpziplib.1.4.2.nupkg.sha512",
     "C:\\Users\\217216X721451\\.nuget\\packages\\sixlabors.fonts\\2.0.4\\sixlabors.fonts.2.0.4.nupkg.sha512",
     "C:\\Users\\217216X721451\\.nuget\\packages\\sixlabors.imagesharp\\3.1.11\\sixlabors.imagesharp.3.1.11.nupkg.sha512",
     "C:\\Users\\217216X721451\\.nuget\\packages\\sixlabors.imagesharp.drawing\\2.1.4\\sixlabors.imagesharp.drawing.2.1.4.nupkg.sha512",

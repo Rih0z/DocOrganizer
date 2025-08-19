@@ -37,38 +37,75 @@ namespace DocOrganizer.UI.ViewModels.V3
 
         private PdfDocument? _currentDocument;
 
+        // 自動回転コマンド（未実装）
+        [RelayCommand]
+        private void AutoCorrectAllPagesOrientation()
+        {
+            _dialogService.ShowInformation("自動回転機能は現在実装中です。次のバージョンで利用可能になります。");
+        }
+
         public PageOperationViewModel(
             IPdfEditorService pdfEditorService,
             IDialogService dialogService)
         {
             _pdfEditorService = pdfEditorService;
             _dialogService = dialogService;
+            
+            // 初期状態を設定
+            CanMoveUp = false;
+            CanMoveDown = false;
+            HasSelectedPages = false;
+            
+            // Pagesコレクションの変更を監視
+            Pages.CollectionChanged += (s, e) => UpdateSelectionState();
+            
+            // デバッグ: コマンドが生成されているか確認
+            System.Diagnostics.Debug.WriteLine($"[PageOperationViewModel] Constructor - MovePageUpCommand: {MovePageUpCommand != null}");
+            System.Diagnostics.Debug.WriteLine($"[PageOperationViewModel] Constructor - MovePageDownCommand: {MovePageDownCommand != null}");
+            System.Diagnostics.Debug.WriteLine($"[PageOperationViewModel] Constructor - RotateLeftCommand: {RotateLeftCommand != null}");
+            System.Diagnostics.Debug.WriteLine($"[PageOperationViewModel] Constructor - RotateRightCommand: {RotateRightCommand != null}");
+            System.Diagnostics.Debug.WriteLine($"[PageOperationViewModel] Constructor - DeleteSelectedPagesCommand: {DeleteSelectedPagesCommand != null}");
         }
 
         /// <summary>
         /// 左回転（反時計回り90度）
         /// </summary>
-        [RelayCommand(CanExecute = nameof(HasSelectedPages))]
+        [RelayCommand]
         private async Task RotateLeftAsync()
         {
+            if (_currentDocument == null || !Pages.Any(p => p.IsSelected))
+            {
+                _dialogService.ShowInformation("ページを選択してから回転操作を行ってください");
+                return;
+            }
             await RotateSelectedPagesAsync(270); // 左回転 = 270度（反時計回り）
         }
 
         /// <summary>
         /// 右回転（時計回り90度）
         /// </summary>
-        [RelayCommand(CanExecute = nameof(HasSelectedPages))]
+        [RelayCommand]
         private async Task RotateRightAsync()
         {
+            if (_currentDocument == null || !Pages.Any(p => p.IsSelected))
+            {
+                _dialogService.ShowInformation("ページを選択してから回転操作を行ってください");
+                return;
+            }
             await RotateSelectedPagesAsync(90); // 右回転 = 90度（時計回り）
         }
 
         /// <summary>
         /// 選択ページ削除
         /// </summary>
-        [RelayCommand(CanExecute = nameof(HasSelectedPages))]
+        [RelayCommand]
         private async Task DeleteSelectedPagesAsync()
         {
+            if (_currentDocument == null || !Pages.Any(p => p.IsSelected))
+            {
+                _dialogService.ShowInformation("削除するページを選択してください");
+                return;
+            }
             if (_currentDocument == null) return;
 
             var selectedPages = Pages.Where(p => p.IsSelected).OrderByDescending(p => p.PageNumber).ToList();
@@ -101,21 +138,37 @@ namespace DocOrganizer.UI.ViewModels.V3
         /// <summary>
         /// ページを上に移動
         /// </summary>
-        [RelayCommand(CanExecute = nameof(CanMoveUp))]
+        [RelayCommand]
         private async Task MovePageUpAsync()
         {
-            if (_currentDocument == null || !CanMoveUp) return;
+            System.Diagnostics.Debug.WriteLine("[MovePageUpAsync] メソッドが呼び出されました！");
+            
+            if (_currentDocument == null || Pages.Count <= 1) 
+            {
+                _dialogService.ShowInformation("ページ移動機能を使用するには2ページ以上が必要です");
+                return;
+            }
+            
+            var selectedPage = Pages.FirstOrDefault(p => p.IsSelected);
+            if (selectedPage == null)
+            {
+                _dialogService.ShowInformation("移動するページを選択してください");
+                return;
+            }
 
             try
             {
-                var selectedPage = Pages.FirstOrDefault(p => p.IsSelected);
-                if (selectedPage == null) return;
-
                 var currentIndex = Pages.IndexOf(selectedPage);
-                if (currentIndex <= 0) return;
+                if (currentIndex <= 0) 
+                {
+                    _dialogService.ShowInformation("このページは既に最初のページです");
+                    return;
+                }
 
                 // ObservableCollectionで位置を移動
+                await AppendDebugLogAsync($"[MovePageUp] 移動前: {string.Join(",", Pages.Select(p => p.PageNumber))}");
                 Pages.Move(currentIndex, currentIndex - 1);
+                await AppendDebugLogAsync($"[MovePageUp] 移動後: {string.Join(",", Pages.Select(p => p.PageNumber))}");
 
                 // PDFドキュメント側も同じ順序に更新
                 if (currentIndex < _currentDocument.Pages.Count)
@@ -143,21 +196,37 @@ namespace DocOrganizer.UI.ViewModels.V3
         /// <summary>
         /// ページを下に移動
         /// </summary>
-        [RelayCommand(CanExecute = nameof(CanMoveDown))]
+        [RelayCommand]
         private async Task MovePageDownAsync()
         {
-            if (_currentDocument == null || !CanMoveDown) return;
+            System.Diagnostics.Debug.WriteLine("[MovePageDownAsync] メソッドが呼び出されました！");
+            
+            if (_currentDocument == null || Pages.Count <= 1)
+            {
+                _dialogService.ShowInformation("ページ移動機能を使用するには2ページ以上が必要です");
+                return;
+            }
+            
+            var selectedPage = Pages.FirstOrDefault(p => p.IsSelected);
+            if (selectedPage == null)
+            {
+                _dialogService.ShowInformation("移動するページを選択してください");
+                return;
+            }
 
             try
             {
-                var selectedPage = Pages.FirstOrDefault(p => p.IsSelected);
-                if (selectedPage == null) return;
-
                 var currentIndex = Pages.IndexOf(selectedPage);
-                if (currentIndex >= Pages.Count - 1) return;
+                if (currentIndex >= Pages.Count - 1) 
+                {
+                    _dialogService.ShowInformation("このページは既に最後のページです");
+                    return;
+                }
 
                 // ObservableCollectionで位置を移動
+                await AppendDebugLogAsync($"[MovePageDown] 移動前: {string.Join(",", Pages.Select(p => p.PageNumber))}");
                 Pages.Move(currentIndex, currentIndex + 1);
+                await AppendDebugLogAsync($"[MovePageDown] 移動後: {string.Join(",", Pages.Select(p => p.PageNumber))}");
 
                 // PDFドキュメント側も同じ順序に更新
                 if (currentIndex + 1 < _currentDocument.Pages.Count)
@@ -287,6 +356,8 @@ namespace DocOrganizer.UI.ViewModels.V3
         {
             var selectedCount = Pages.Count(p => p.IsSelected);
             HasSelectedPages = selectedCount > 0;
+            
+            System.Diagnostics.Debug.WriteLine($"[UpdateSelectionState] SelectedCount: {selectedCount}, HasSelectedPages: {HasSelectedPages}");
 
             // 移動可能性を判定
             if (selectedCount == 1)
@@ -297,20 +368,23 @@ namespace DocOrganizer.UI.ViewModels.V3
                     var selectedIndex = Pages.IndexOf(selectedPage);
                     CanMoveUp = selectedIndex > 0;
                     CanMoveDown = selectedIndex < Pages.Count - 1;
+                    
+                    System.Diagnostics.Debug.WriteLine($"[UpdateSelectionState] SelectedIndex: {selectedIndex}, CanMoveUp: {CanMoveUp}, CanMoveDown: {CanMoveDown}, PagesCount: {Pages.Count}");
                 }
             }
             else
             {
                 CanMoveUp = false;
                 CanMoveDown = false;
+                System.Diagnostics.Debug.WriteLine($"[UpdateSelectionState] Multiple or no selection - CanMoveUp: false, CanMoveDown: false");
             }
 
-            // コマンドの状態変更を通知
-            MovePageUpCommand?.NotifyCanExecuteChanged();
-            MovePageDownCommand?.NotifyCanExecuteChanged();
-            RotateLeftCommand?.NotifyCanExecuteChanged();
-            RotateRightCommand?.NotifyCanExecuteChanged();
-            DeleteSelectedPagesCommand?.NotifyCanExecuteChanged();
+            // プロパティ変更通知でコマンドの状態も更新される
+            OnPropertyChanged(nameof(CanMoveUp));
+            OnPropertyChanged(nameof(CanMoveDown));
+            OnPropertyChanged(nameof(HasSelectedPages));
+            
+            
         }
 
         // Public methods for external coordination
@@ -322,11 +396,30 @@ namespace DocOrganizer.UI.ViewModels.V3
 
         public void NotifyPageSelectionChanged()
         {
+            System.Diagnostics.Debug.WriteLine("[NotifyPageSelectionChanged] Called");
             UpdateSelectionState();
         }
 
         // Events for coordination with other ViewModels
         public event EventHandler? PagesChanged;
+        
+        /// <summary>
+        /// 🚨 緊急デバッグ: ファイルに詳細ログを出力（第16条準拠）
+        /// </summary>
+        private async Task AppendDebugLogAsync(string message)
+        {
+            try
+            {
+                var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}";
+                var logPath = @"C:\Users\217216X721451\github\DocOrganizer\release\DEBUG_LOG.txt";
+                await System.IO.File.AppendAllTextAsync(logPath, logMessage + Environment.NewLine);
+                System.Diagnostics.Debug.WriteLine($"[PAGE_OPERATION_DEBUG] {message}");
+            }
+            catch
+            {
+                // ログ出力エラーは無視
+            }
+        }
         public event EventHandler<PageOperationEventArgs>? PageRotated;
         public event EventHandler<PageOperationEventArgs>? PageDeleted;
         public event EventHandler<List<V3PageViewModel>>? PagesDeleted;

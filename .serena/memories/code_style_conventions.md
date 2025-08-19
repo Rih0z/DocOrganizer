@@ -1,203 +1,75 @@
-# コードスタイル・規約
+# DocOrganizer Code Style and Conventions
 
-## 基本方針
-- Clean Architecture準拠
-- SOLID原則の徹底
-- 日本語コメント使用
-- プロフェッショナル品質のコード
+## Language Standards
+- **Language**: C# with .NET 6.0
+- **Nullable Reference Types**: Enabled (`<Nullable>enable</Nullable>`)
+- **Implicit Usings**: Enabled (`<ImplicitUsings>enable</ImplicitUsings>`)
+- **Unsafe Code**: Allowed for performance-critical operations
 
-## 命名規則
+## Naming Conventions
+- **Classes**: PascalCase (e.g., `DocumentManagementViewModel`, `PdfService`)
+- **Methods**: PascalCase (e.g., `LoadPagesAsync`, `ProcessFilesAsync`)
+- **Properties**: PascalCase (e.g., `ThumbnailImage`, `IsLoading`)
+- **Fields**: camelCase with underscore prefix for private fields (e.g., `_logger`, `_pdfService`)
+- **Interfaces**: PascalCase with 'I' prefix (e.g., `IPdfService`, `IImageLoaderService`)
+- **Constants**: UPPER_CASE (e.g., `MAX_FILE_SIZE`)
+- **Async Methods**: Always suffix with 'Async' (e.g., `LoadFileAsync`, `SaveDocumentAsync`)
 
-### クラス・インターフェース
-```csharp
-// インターフェース: I + PascalCase
-public interface IPdfService { }
-public interface IImageProcessingService { }
+## File Organization
+- **Namespace Structure**: Follows folder structure (e.g., `DocOrganizer.UI.ViewModels.V3`)
+- **One Class Per File**: Each class in its own file with matching filename
+- **Folder Structure**: 
+  - `/Models` - Data models and DTOs
+  - `/ViewModels` - MVVM ViewModels  
+  - `/Views` - WPF Views and UserControls
+  - `/Services` - Business logic services
+  - `/Interfaces` - Service contracts
 
-// クラス: PascalCase
-public class PdfService { }
-public class MainViewModel { }
-```
+## MVVM Pattern Guidelines
+- **ViewModels**: Inherit from `ObservableObject` (CommunityToolkit.Mvvm)
+- **Commands**: Use `RelayCommand` and `AsyncRelayCommand` from CommunityToolkit
+- **Properties**: Use `[ObservableProperty]` attribute for auto-generation
+- **Data Binding**: All UI updates through property binding, no direct UI manipulation
 
-### メソッド・プロパティ
-```csharp
-// メソッド: PascalCase + Async suffix
-public async Task<bool> LoadPdfAsync(string filePath) { }
+## Clean Architecture Principles
+- **Domain Layer** (`Core`): Pure business logic, no dependencies
+- **Application Layer**: Use cases and application services
+- **Infrastructure Layer**: External concerns (file I/O, PDF processing)
+- **Presentation Layer** (`UI`): WPF views and ViewModels
 
-// プロパティ: PascalCase
-public string FilePath { get; set; }
+## Dependency Injection
+- Use Microsoft.Extensions.DependencyInjection
+- Register services in `App.xaml.cs` 
+- Constructor injection in ViewModels and services
+- Interface-based dependencies
 
-// プライベートフィールド: _camelCase
-private readonly IPdfService _pdfService;
-```
+## Error Handling
+- Use structured exception handling with try-catch blocks
+- Log errors using Serilog with appropriate log levels
+- Provide user-friendly error messages
+- Graceful degradation for non-critical errors
 
-### 定数・列挙型
-```csharp
-// 定数: PascalCase
-public const int MaxFileSize = 100 * 1024 * 1024;
+## Testing Standards
+- **Unit Tests**: Cover business logic and ViewModels
+- **Integration Tests**: Test cross-layer functionality
+- **Test Naming**: Should_ExpectedBehavior_When_Condition
+- **Arrange-Act-Assert**: Standard test structure
+- **Mocking**: Use interfaces for testability
 
-// 列挙型: PascalCase
-public enum RotationAngle
-{
-    None = 0,
-    Clockwise90 = 90,
-    Clockwise180 = 180,
-    Clockwise270 = 270
-}
-```
+## Documentation
+- **XML Comments**: For public APIs and complex methods
+- **README**: Keep up-to-date with current functionality
+- **Code Comments**: Explain "why" not "what"
+- **Architecture Decision Records**: Document major design decisions
 
-## ファイル構成規則
+## Performance Considerations
+- **Async/Await**: Use for I/O operations
+- **Memory Management**: Proper disposal of resources
+- **Observable Collections**: Use for UI-bound lists
+- **Image Processing**: Stream-based processing for large files
 
-### 1つのファイル1つのクラス
-```csharp
-// ✅ Good: PdfService.cs
-public class PdfService : IPdfService { }
-
-// ❌ Bad: Services.cs に複数クラス
-```
-
-### 名前空間構造
-```csharp
-namespace DocOrganizer.Core.Models { }        // エンティティ
-namespace DocOrganizer.Application.Interfaces { } // アプリケーション層
-namespace DocOrganizer.Infrastructure.Services { } // インフラ層
-namespace DocOrganizer.UI.ViewModels { }      // UI層
-```
-
-## コメント規則
-
-### 日本語コメント使用
-```csharp
-/// <summary>
-/// PDFファイルを非同期で読み込む
-/// </summary>
-/// <param name="filePath">読み込むPDFファイルのパス</param>
-/// <returns>読み込まれたPDF文書</returns>
-public async Task<PdfDocument> LoadPdfAsync(string filePath)
-{
-    // HEIC処理可能性の事前確認
-    if (!IsHeicSupported())
-    {
-        throw new NotSupportedException("HEIC processing unavailable");
-    }
-    
-    return document;
-}
-```
-
-### デバッグコメント
-```csharp
-// デバッグ出力は System.Diagnostics.Debug.WriteLine使用
-System.Diagnostics.Debug.WriteLine($"[LoadThumbnail] 画像ファイルから生成 (HEIC: {isHeic}): {filePath}");
-```
-
-## エラーハンドリング
-
-### 例外処理
-```csharp
-try
-{
-    // メイン処理
-    var result = await ProcessImageAsync(imagePath);
-    return result;
-}
-catch (ImageProcessingException ex)
-{
-    _logger.LogError(ex, "画像処理エラー: {ImagePath}", imagePath);
-    throw;
-}
-catch (Exception ex)
-{
-    _logger.LogError(ex, "予期しないエラー: {ImagePath}", imagePath);
-    throw new ImageProcessingException($"画像処理に失敗しました: {imagePath}", ex);
-}
-```
-
-### ログ出力
-```csharp
-// 構造化ログ使用
-_logger.LogInformation("HEIC file detected, converting for preview: {FileName}", Path.GetFileName(imagePath));
-_logger.LogWarning("Failed to convert HEIC, skipping: {ImagePath}", imagePath);
-_logger.LogError(ex, "Failed to convert HEIC to JPEG: {HeicPath}", heicPath);
-```
-
-## 非同期処理
-
-### async/await パターン
-```csharp
-// ✅ Good: ConfigureAwait(false) 使用
-public async Task<byte[]> ProcessImageAsync(string imagePath)
-{
-    var data = await File.ReadAllBytesAsync(imagePath).ConfigureAwait(false);
-    return data;
-}
-
-// Task.Run使用時の注意
-_ = Task.Run(async () => await LoadThumbnailAsync().ConfigureAwait(false));
-```
-
-## MVVM パターン
-
-### ViewModelの実装
-```csharp
-public class MainViewModel : INotifyPropertyChanged
-{
-    private string _title;
-    public string Title 
-    { 
-        get => _title; 
-        set 
-        { 
-            _title = value; 
-            OnPropertyChanged(); 
-        } 
-    }
-    
-    protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
-}
-```
-
-## 依存性注入
-
-### インターフェース定義
-```csharp
-// Application層でインターフェース定義
-public interface IPdfService
-{
-    Task<PdfDocument> LoadAsync(string filePath);
-    Task SaveAsync(PdfDocument document, string outputPath);
-}
-
-// Infrastructure層で実装
-public class PdfService : IPdfService
-{
-    public async Task<PdfDocument> LoadAsync(string filePath) { /* 実装 */ }
-}
-```
-
-## テスト規約
-
-### テストクラス命名
-```csharp
-// テストクラス: [対象クラス]Tests
-public class PdfServiceTests
-{
-    // テストメソッド: [メソッド名]_[状況]_[期待結果]
-    [Fact]
-    public async Task LoadAsync_ValidPdfFile_ReturnsDocument()
-    {
-        // Arrange
-        var service = new PdfService();
-        var filePath = "test.pdf";
-        
-        // Act
-        var result = await service.LoadAsync(filePath);
-        
-        // Assert
-        Assert.NotNull(result);
-    }
-}
-```
+## Version Control
+- **Commit Messages**: Clear, descriptive messages
+- **Branch Strategy**: Main branch for stable releases
+- **PR Reviews**: Required for all changes
+- **Git Ignore**: Exclude bin/, obj/, .vs/ directories

@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:behaviors="clr-namespace:DocOrganizer.UI.Behaviors"
         mc:Ignorable="d"
-        Title="DocOrganizer 2.2" 
+        Title="DocOrganizer 3.0.003" 
         Height="700" Width="1000"
         WindowStartupLocation="CenterScreen"
         Background="#F0F0F0"
@@ -26,6 +26,11 @@
         <KeyBinding Key="OemPlus" Modifiers="Ctrl" Command="{Binding ZoomInCommand}"/>
         <KeyBinding Key="OemMinus" Modifiers="Ctrl" Command="{Binding ZoomOutCommand}"/>
     </Window.InputBindings>
+
+    <!-- Window Resources -->
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -147,14 +152,7 @@
         <!-- ツールバー -->
         <ToolBarTray Grid.Row="1" Background="White">
             <ToolBar x:Name="MainToolBar" Background="Transparent">
-                <!-- ファイル操作 -->
-                <Button Command="{Binding DocumentManagement.OpenCommand}" ToolTip="PDF・画像ファイルを開く (Ctrl+O)" Padding="4" x:Name="OpenButton">
-                    <TextBlock Text="📂" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Button>
-                <Button Command="{Binding DocumentManagement.SaveCommand}" ToolTip="保存 (Ctrl+S)" Padding="4">
-                    <TextBlock Text="💾" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Button>
-                <Separator/>
+                <!-- ファイル操作ボタンは削除済み -->
                 
                 <!-- ページ操作 -->
                 <Button Command="{Binding PageOperation.RotateLeftCommand}" ToolTip="左回転" Padding="4"
@@ -182,12 +180,10 @@
                 <Separator/>
                 
                 <!-- ページ順序変更 -->
-                <Button Command="{Binding PageOperation.MovePageUpCommand}" ToolTip="上に移動" Padding="4" Width="30" Height="24"
-                        IsEnabled="{Binding PageOperation.CanMoveUp}">
+                <Button Command="{Binding PageOperation.MovePageUpCommand}" ToolTip="上に移動" Padding="4" Width="30" Height="24">
                     <TextBlock Text="▲" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
-                <Button Command="{Binding PageOperation.MovePageDownCommand}" ToolTip="下に移動" Padding="4" Width="30" Height="24"
-                        IsEnabled="{Binding PageOperation.CanMoveDown}">
+                <Button Command="{Binding PageOperation.MovePageDownCommand}" ToolTip="下に移動" Padding="4" Width="30" Height="24">
                     <TextBlock Text="▼" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
                 <Separator/>
@@ -207,6 +203,22 @@
                     <ComboBoxItem>150%</ComboBoxItem>
                     <ComboBoxItem>200%</ComboBoxItem>
                 </ComboBox>
+                
+                <Separator/>
+                
+                <!-- 🎯 V3.0新機能: PDF出力 -->
+                <Button Command="{Binding ExportPdfCommand}" ToolTip="PDFとして保存" Padding="8,6"
+                        IsEnabled="{Binding CanExportPdf}"
+                        Background="#E8F5E8" BorderBrush="#4CAF50" BorderThickness="2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="📄" FontSize="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBlock Text="PDF出力" FontSize="12" VerticalAlignment="Center" FontWeight="Bold" Foreground="#2E7D32"/>
+                    </StackPanel>
+                </Button>
+                
+                <!-- 画質選択 -->
+                <ComboBox Width="120" SelectedItem="{Binding SelectedQuality}" Margin="4,0" ToolTip="PDF出力画質選択"
+                          ItemsSource="{Binding QualityOptions}" DisplayMemberPath="DisplayName"/>
             </ToolBar>
         </ToolBarTray>
 
@@ -409,9 +421,17 @@
             </StatusBarItem>
             
             <StatusBarItem Grid.Column="1">
-                <ProgressBar Width="150" Height="16" 
-                             Value="{Binding StatusManagement.ProgressValue}" 
-                             Visibility="{Binding StatusManagement.ProgressVisibility}"/>
+                <Grid>
+                    <!-- 通常処理用プログレスバー -->
+                    <ProgressBar Width="150" Height="16" 
+                                 Value="{Binding StatusManagement.ProgressValue}" 
+                                 Visibility="{Binding StatusManagement.ProgressVisibility}"/>
+                    <!-- PDF出力用プログレスバー -->
+                    <StackPanel Orientation="Horizontal" Visibility="{Binding IsExporting, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <ProgressBar Width="120" Height="16" Value="{Binding ExportProgress}" Maximum="100"/>
+                        <TextBlock Text="{Binding ExportStatusMessage}" Margin="8,0" FontSize="11"/>
+                    </StackPanel>
+                </Grid>
             </StatusBarItem>
             
             <StatusBarItem Grid.Column="2">

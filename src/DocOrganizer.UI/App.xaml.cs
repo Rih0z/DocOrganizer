@@ -8,6 +8,7 @@ using DocOrganizer.Application.Interfaces;
 using DocOrganizer.Application.Interfaces.V3;
 using DocOrganizer.Infrastructure.Services;
 using DocOrganizer.Infrastructure.Services.V3;
+using DocOrganizer.Application.Interfaces.V3;
 using DocOrganizer.UI.Services;
 using DocOrganizer.UI.ViewModels;
 using DocOrganizer.UI.ViewModels.V3;
@@ -59,6 +60,9 @@ namespace DocOrganizer.UI
                     services.AddSingleton<IHeicConversionService, HeicConversionService>();
                     services.AddSingleton<IImageValidationService, ImageValidationService>();
                     services.AddSingleton<IFileAdditionService, FileAdditionService>();
+                    
+                    // 🎯 V3.0新機能: PDF出力サービス
+                    services.AddSingleton<IPdfExportService, PdfExportService>();
                     
                     // アップデートサービスの登録
                     services.AddHttpClient<IUpdateService, GitHubUpdateService>();

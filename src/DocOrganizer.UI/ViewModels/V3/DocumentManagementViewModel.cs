@@ -113,7 +113,7 @@ namespace DocOrganizer.UI.ViewModels.V3
         /// <summary>
         /// 保存
         /// </summary>
-        [RelayCommand(CanExecute = nameof(HasDocument))]
+        [RelayCommand]
         private async Task SaveAsync()
         {
             if (_currentDocument == null) return;
@@ -141,7 +141,7 @@ namespace DocOrganizer.UI.ViewModels.V3
         /// <summary>
         /// 名前を付けて保存
         /// </summary>
-        [RelayCommand(CanExecute = nameof(HasDocument))]
+        [RelayCommand]
         private async Task SaveAsAsync()
         {
             if (_currentDocument == null) return;

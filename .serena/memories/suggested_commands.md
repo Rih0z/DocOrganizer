@@ -1,98 +1,106 @@
-# 推奨コマンド集
+# Suggested Commands for DocOrganizer Development
 
-## ビルド・実行コマンド
+## Core Development Commands
 
-### ビルドコマンド
-```powershell
-# クリーンビルド
+### Building the Project
+```bash
+# Clean and restore
 dotnet clean
 dotnet restore
+
+# Development build
+dotnet build --configuration Debug
+
+# Release build  
 dotnet build --configuration Release
 
-# 本番リリース用（自己完結型EXE生成）
+# Publish single-file executable
 dotnet publish src/DocOrganizer.UI/DocOrganizer.UI.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o release
 ```
 
-### テストコマンド
-```powershell
-# 全テスト実行
-dotnet test --configuration Release
+### Testing
+```bash
+# Run all tests
+dotnet test
 
-# 特定プロジェクトのテスト
+# Run tests with coverage
+dotnet test --collect:"XPlat Code Coverage"
+
+# Run specific test project
 dotnet test tests/DocOrganizer.Core.Tests/
-dotnet test tests/DocOrganizer.Application.Tests/
-dotnet test tests/DocOrganizer.UI.Tests/
 ```
 
-### アプリケーション実行
+### Useful PowerShell Test Scripts
 ```powershell
-# デバッグ実行
-dotnet run --project src/DocOrganizer.UI/
+# Quick automated test
+.\scripts\test\QuickAutoTest.ps1
 
-# リリース版実行（エクスプローラーから）
-# ⚠️ 管理者権限で起動しない（ドラッグ&ドロップが無効化される）
-release/DocOrganizer.exe
+# Comprehensive functionality test
+.\scripts\test\ComprehensiveTest.ps1
+
+# Test drag & drop functionality
+.\scripts\test\drag-drop-test.ps1
+
+# Test orientation correction
+.\scripts\test\test-orientation-correction.ps1
+
+# Test all sample files
+.\scripts\test\TestAllSampleFiles.ps1
 ```
 
-## Windows用ユーティリティコマンド
+### Git Operations
+```bash
+# Standard workflow
+git add .
+git commit -m "Description of changes"
+git push origin main
 
-### ファイル操作
-```cmd
-# ディレクトリ一覧
-dir /s /b *.cs        # C#ファイル一覧
-dir /s /b *.csproj    # プロジェクトファイル一覧
+# Pull latest changes (always do before starting work)
+git pull origin main
 
-# ファイル検索
-findstr /s /i "HEIC" *.cs    # ソースコード内文字列検索
-```
-
-### Git操作
-```powershell
-# 基本的なGit操作
+# Check status
 git status
-git pull origin main
-git add .
-git commit -m "変更内容"
-git push origin main
 ```
 
-### 自動化スクリプト
+### Windows System Commands
+```cmd
+# List files
+dir
+ls  # PowerShell alias
+
+# Change directory
+cd path\to\directory
+
+# Find files
+Get-ChildItem -Recurse -Name "*.cs" | Select-String "pattern"
+
+# Process management
+Get-Process DocOrganizer
+Stop-Process -Name DocOrganizer
+```
+
+### Debug and Logging
+```bash
+# View debug log
+type release\DEBUG_LOG.txt
+# or
+Get-Content release\DEBUG_LOG.txt -Wait  # Real-time monitoring
+```
+
+### Release Management
 ```powershell
-# ビルドスクリプト
-scripts/build/build-windows.ps1
-scripts/build/BUILD_ON_WINDOWS.bat
+# Build and create GitHub release
+.\scripts\build\build-and-release.ps1 -Version "2.2.0" -GitHubToken $env:GITHUB_TOKEN
 
-# テストスクリプト
-scripts/test/AutomatedTest.ps1
-scripts/test/ComprehensiveTest.ps1
-scripts/test/test-exe-simple.ps1
+# Upload existing build to GitHub
+.\scripts\utils\upload-release.ps1 -Version "2.2.0" -GitHubToken $env:GITHUB_TOKEN
 ```
 
-## 開発ワークフロー
-
-### 1. 作業開始時
-```powershell
-git pull origin main
-dotnet clean
-dotnet restore
-dotnet build --configuration Release
-```
-
-### 2. 作業完了時
-```powershell
-dotnet test --configuration Release
-dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o release
-git add .
-git commit -m "変更内容"
-git push origin main
-```
-
-### 3. トラブルシューティング
-```powershell
-# ビルドキャッシュクリア
-dotnet clean
-Remove-Item -Recurse -Force bin, obj -ErrorAction SilentlyContinue
-
-# NuGetキャッシュクリア
-dotnet nuget locals all --clear
-```
+## Development Workflow
+1. `git pull origin main` - Always sync before starting
+2. Make changes
+3. Run tests: `dotnet test`
+4. Build: `dotnet build --configuration Release`
+5. Test manually: `.\scripts\test\QuickAutoTest.ps1`
+6. Commit and push changes
+7. For releases: Use build-and-release.ps1 script

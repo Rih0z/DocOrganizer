@@ -4,8 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using PdfSharpCore.Pdf;
-using PdfSharpCore.Pdf.IO;
+using PdfSharp.Pdf;
+using PdfSharp.Pdf.IO;
 using SkiaSharp;
 using System.Text;
 using DocOrganizer.Application.Interfaces;
@@ -104,15 +104,15 @@ namespace DocOrganizer.Infrastructure.Services
             {
                 try
                 {
-                    var outputDoc = new PdfSharpCore.Pdf.PdfDocument();
+                    var outputDoc = new PdfSharp.Pdf.PdfDocument();
                     
                     // PDF品質設定（高品質）
                     outputDoc.Options.CompressContentStreams = true;
                     outputDoc.Options.NoCompression = false;
-                    outputDoc.Options.FlateEncodeMode = PdfSharpCore.Pdf.PdfFlateEncodeMode.BestCompression;
+                    outputDoc.Options.FlateEncodeMode = PdfSharp.Pdf.PdfFlateEncodeMode.BestCompression;
 
                     // 元のPDFを読み込み
-                    PdfSharpCore.Pdf.PdfDocument? sourceDoc = null;
+                    PdfSharp.Pdf.PdfDocument? sourceDoc = null;
                     if (!string.IsNullOrEmpty(document.FilePath) && File.Exists(document.FilePath))
                     {
                         sourceDoc = PdfReader.Open(document.FilePath, PdfDocumentOpenMode.Import);
@@ -504,14 +504,14 @@ using var originalBitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Wid
             {
                 try
                 {
-                    var outputDoc = new PdfSharpCore.Pdf.PdfDocument();
+                    var outputDoc = new PdfSharp.Pdf.PdfDocument();
                     
                     foreach (var imagePath in imagePaths)
                     {
                         var page = outputDoc.AddPage();
-                        page.Size = PdfSharpCore.PageSize.A4;
+                        page.Size = PdfSharp.PageSize.A4;
                         
-                        using (var graphics = PdfSharpCore.Drawing.XGraphics.FromPdfPage(page))
+                        using (var graphics = PdfSharp.Drawing.XGraphics.FromPdfPage(page))
                         {
                             // メモリストリーム経由で画像を読み込み（ImageSharp依存を回避）
                         // ⭐重要修正: SkiaSharpのEXIF Orientation自動適用を無効化
@@ -529,7 +529,7 @@ using (var bitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, cod
                                 }
 
                                 using (var ms = new MemoryStream(File.ReadAllBytes(tempPath)))
-                                using (var image = PdfSharpCore.Drawing.XImage.FromStream(() => ms))
+                                using (var image = PdfSharp.Drawing.XImage.FromStream(ms))
                             {
                                 var pageWidth = page.Width;
                                 var pageHeight = page.Height;
@@ -622,15 +622,15 @@ using (var bitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, cod
             {
                 try
                 {
-                    var outputDoc = new PdfSharpCore.Pdf.PdfDocument();
+                    var outputDoc = new PdfSharp.Pdf.PdfDocument();
                     var page = outputDoc.AddPage();
-                    page.Size = PdfSharpCore.PageSize.A4;
+                    page.Size = PdfSharp.PageSize.A4;
 
                     // ⭐重要修正: SkiaSharpのEXIF Orientation自動適用を無効化
 using var codec = SKCodec.Create(imagePath);
 using (var bitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, codec.Info.Height)))
                     {
-                        using (var graphics = PdfSharpCore.Drawing.XGraphics.FromPdfPage(page))
+                        using (var graphics = PdfSharp.Drawing.XGraphics.FromPdfPage(page))
                         {
                             // SkiaSharpのビットマップを一時的なPNG形式で保存
                             var tempPath = Path.GetTempFileName() + ".png";
@@ -645,7 +645,7 @@ using (var bitmap = SKBitmap.Decode(codec, new SKImageInfo(codec.Info.Width, cod
 
                                 // PDFsharpCoreで画像を読み込み（メモリストリーム経由）
                                 using (var ms = new MemoryStream(File.ReadAllBytes(tempPath)))
-                                using (var xImage = PdfSharpCore.Drawing.XImage.FromStream(() => ms))
+                                using (var xImage = PdfSharp.Drawing.XImage.FromStream(ms))
                                 {
                                     var pageWidth = page.Width;
                                     var pageHeight = page.Height;
