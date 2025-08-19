@@ -830,6 +830,7 @@ ai_coding_principles:
       - "コードコメントは最小限"
       - "READMEの継続的更新"
       - "API変更の記録"
+      - "V3アーキテクチャドキュメント: docs/V3_ARCHITECTURE_IMAGE_DISPLAY.md"
 
   success_criteria:
     phase_completion:

@@ -50,6 +50,7 @@ dotnet publish src/DocOrganizer.UI/DocOrganizer.UI.csproj -c Release -r win-x64 
 
 - **🐛 不具合報告**: [GitHub Issues](https://github.com/Rih0z/DocOrganizer/issues)
 - **📖 詳細情報**: [`docs/`](docs/)フォルダを参照
+  - [V3アーキテクチャ - 画像表示の仕組み](docs/V3_ARCHITECTURE_IMAGE_DISPLAY.md)
 - **📦 最新版**: [リリースページ](https://github.com/Rih0z/DocOrganizer/releases)
 
 ## 🏗️ プロジェクト構成

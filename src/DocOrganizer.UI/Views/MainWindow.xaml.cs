@@ -76,11 +76,63 @@ namespace DocOrganizer.UI.Views
             {
                 System.Diagnostics.Debug.WriteLine($"[MainWindow] ToolBar DataContext: {toolbar.DataContext?.GetType().Name}");
                 
+                int buttonIndex = 0;
                 foreach (var item in toolbar.Items)
                 {
                     if (item is Button button)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[MainWindow] Button: {button.Name}, Command: {button.Command?.GetType().Name}");
+                        System.Diagnostics.Debug.WriteLine($"[MainWindow] Button[{buttonIndex}]: ToolTip='{button.ToolTip}', Command={button.Command?.GetType().Name ?? "NULL"}, CommandParameter={button.CommandParameter ?? "NULL"}");
+                        
+                        // 上下移動ボタンを特定して詳細チェック
+                        if (button.ToolTip?.ToString() == "上に移動" || button.ToolTip?.ToString() == "下に移動")
+                        {
+                            System.Diagnostics.Debug.WriteLine($"  [詳細] DataContext={button.DataContext?.GetType().Name ?? "NULL"}");
+                            System.Diagnostics.Debug.WriteLine($"  [詳細] IsEnabled={button.IsEnabled}");
+                            
+                            // ViewModelから直接コマンドを取得して確認
+                            if (V3ViewModel?.PageOperation != null)
+                            {
+                                var moveUpCmd = V3ViewModel.PageOperation.MovePageUpCommand;
+                                var moveDownCmd = V3ViewModel.PageOperation.MovePageDownCommand;
+                                System.Diagnostics.Debug.WriteLine($"  [ViewModel] MovePageUpCommand={moveUpCmd != null}");
+                                System.Diagnostics.Debug.WriteLine($"  [ViewModel] MovePageDownCommand={moveDownCmd != null}");
+                                
+                                // 手動でクリックイベントを追加（テスト用）
+                                if (button.ToolTip?.ToString() == "上に移動")
+                                {
+                                    button.Click += (s, args) =>
+                                    {
+                                        System.Diagnostics.Debug.WriteLine("[手動Click] 上移動ボタンがクリックされました");
+                                        if (moveUpCmd != null && moveUpCmd.CanExecute(null))
+                                        {
+                                            System.Diagnostics.Debug.WriteLine("[手動Click] MovePageUpCommand実行");
+                                            moveUpCmd.Execute(null);
+                                        }
+                                        else
+                                        {
+                                            System.Diagnostics.Debug.WriteLine("[手動Click] MovePageUpCommand実行不可");
+                                        }
+                                    };
+                                }
+                                else if (button.ToolTip?.ToString() == "下に移動")
+                                {
+                                    button.Click += (s, args) =>
+                                    {
+                                        System.Diagnostics.Debug.WriteLine("[手動Click] 下移動ボタンがクリックされました");
+                                        if (moveDownCmd != null && moveDownCmd.CanExecute(null))
+                                        {
+                                            System.Diagnostics.Debug.WriteLine("[手動Click] MovePageDownCommand実行");
+                                            moveDownCmd.Execute(null);
+                                        }
+                                        else
+                                        {
+                                            System.Diagnostics.Debug.WriteLine("[手動Click] MovePageDownCommand実行不可");
+                                        }
+                                    };
+                                }
+                            }
+                        }
+                        buttonIndex++;
                     }
                 }
             }
@@ -465,6 +517,20 @@ namespace DocOrganizer.UI.Views
                         else
                         {
                             System.Diagnostics.Debug.WriteLine("[右側プレビューデバッグ] SourceImagePathがNULL");
+                        }
+                        
+                        // 選択状態を明示的に設定
+                        foreach (var page in V3ViewModel.Pages)
+                        {
+                            page.IsSelected = (page == selectedPage);
+                        }
+                        
+                        // ページ選択状態を更新（上下移動ボタンの有効化）
+                        // 🔧 根本修正: Pages.Clear()を削除し、通知のみ実行
+                        // Clear/Addは不要 - ObservableCollectionの破壊的操作がサムネイル消失の原因
+                        if (V3ViewModel.PageOperation != null)
+                        {
+                            V3ViewModel.PageOperation.NotifyPageSelectionChanged();
                         }
                     }
                     else
