@@ -351,6 +351,34 @@ ai_coding_principles:
         learning: "問題の理解が深まり、将来の問題予防に貢献"
         documentation: "修正履歴が明確になり、保守性向上"
       related_sections: ["第5条", "第7条", "troubleshooting", "quality_standards"]
+    第16条:
+      rule: "デバッグ用ログ出力は統一ファイル形式で実施する。ログファイルは release/DEBUG_LOG.txt に統一し、複数のログファイルを作成してはならない。デバッグログ機能を追加する場合は、AppendDebugLogAsync関数を使用して必ずDEBUG_LOG.txtに出力する。ログ出力は問題解決後に削除しないで残す。"
+      importance: "統一的なデバッグ情報管理とトラブルシューティング効率化"
+      mandatory: "例外なく守ること - ログファイルの分散は分析を困難にする"
+      implementation:
+        log_file_location: "C:\\Users\\217216X721451\\github\\DocOrganizer\\release\\DEBUG_LOG.txt"
+        log_format: "[YYYY-MM-DD HH:MM:SS.fff] [機能名] メッセージ内容"
+        function_template: |
+          private async Task AppendDebugLogAsync(string message)
+          {
+              try
+              {
+                  var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}";
+                  var logPath = @"C:\Users\217216X721451\github\DocOrganizer\release\DEBUG_LOG.txt";
+                  await System.IO.File.AppendAllTextAsync(logPath, logMessage + Environment.NewLine);
+                  System.Diagnostics.Debug.WriteLine($"[DEBUG] {message}");
+              }
+              catch { /* ログ出力エラーは無視 */ }
+          }
+        usage_examples:
+          - "await AppendDebugLogAsync(\"[PreviewManagement] プレビュー更新開始\");"
+          - "await AppendDebugLogAsync($\"[FileAddition] {files.Count}ファイル処理完了\");"
+        prohibited_practices:
+          - "新しいログファイル名の作成"
+          - "Console.WriteLineのみでのログ出力"
+          - "System.Diagnostics.Debug.WriteLineのみでのログ出力"
+          - "ログファイルの削除（問題解決後も保持）"
+      related_sections: ["第15条", "troubleshooting", "debugging_procedures"]
     
     file_organization_standards:
       description: "Mac・Windows両環境でのプロフェッショナルファイル構造基準"

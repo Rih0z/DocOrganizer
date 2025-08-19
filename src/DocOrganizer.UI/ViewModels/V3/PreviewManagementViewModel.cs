@@ -1,6 +1,10 @@
 using System;
 using System.Threading.Tasks;
+using System.Windows.Media.Imaging;
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 using CommunityToolkit.Mvvm.Input;
 using DocOrganizer.Application.Interfaces;
 using DocOrganizer.Application.Interfaces.V3;
@@ -61,11 +65,12 @@ namespace DocOrganizer.UI.ViewModels.V3
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[DEBUG] UpdatePreviewAsync開始: selectedPage={selectedPage?.PageNumber}, forceUpdate={forceUpdate}");
+                // 🚨 緊急デバッグ: ファイルに出力
+                await AppendDebugLogAsync($"[UpdatePreviewAsync開始] selectedPage={selectedPage?.PageNumber}, forceUpdate={forceUpdate}");
                 
                 if (selectedPage?.Page == null)
                 {
-                    System.Diagnostics.Debug.WriteLine("[DEBUG] SelectedPageがNULL - プレビュー表示不可");
+                    await AppendDebugLogAsync("[UpdatePreviewAsync] SelectedPageがNULL - プレビュー表示不可");
                     _logger.LogWarning("[V3_Preview] SelectedPageがNULL - プレビュー表示不可");
                     CurrentPageImage = null;
                     PageInfo = "";
@@ -73,8 +78,8 @@ namespace DocOrganizer.UI.ViewModels.V3
                     return;
                 }
                 
-                System.Diagnostics.Debug.WriteLine($"[DEBUG] _currentDocument={(_currentDocument != null ? "設定済み" : "NULL")}");
-                System.Diagnostics.Debug.WriteLine($"[DEBUG] selectedPage.Page.SourceImagePath={selectedPage.Page.SourceImagePath}");
+                await AppendDebugLogAsync($"[UpdatePreviewAsync] _currentDocument={(_currentDocument != null ? "設定済み" : "NULL")}");
+                await AppendDebugLogAsync($"[UpdatePreviewAsync] selectedPage.Page.SourceImagePath={selectedPage.Page.SourceImagePath}");
             
                 _logger.LogDebug("[V3_Preview] UpdatePreviewAsync開始: PageNumber={PageNumber}, ForceUpdate={ForceUpdate}", 
                     selectedPage.PageNumber, forceUpdate);
@@ -88,13 +93,13 @@ namespace DocOrganizer.UI.ViewModels.V3
                 // 🎯 V3新実装: OSS標準ImageLoaderService使用
                 await LoadPreviewImageAsync(selectedPage, forceUpdate);
                 
-                System.Diagnostics.Debug.WriteLine($"[DEBUG] UpdatePreviewAsync完了: CurrentPageImage={CurrentPageImage != null}");
+                await AppendDebugLogAsync($"[UpdatePreviewAsync完了] CurrentPageImage={CurrentPageImage != null}");
             }
             catch (Exception ex)
             {
                 // プレビュー更新エラーはUIに表示しない（頻繁に呼ばれるため）
-                System.Diagnostics.Debug.WriteLine($"[PreviewManagement] プレビュー更新エラー: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[PreviewManagement] エラー詳細: {ex}");
+                await AppendDebugLogAsync($"[UpdatePreviewAsync例外] プレビュー更新エラー: {ex.Message}");
+                await AppendDebugLogAsync($"[UpdatePreviewAsync例外] エラー詳細: {ex}");
                 _logger.LogError(ex, "[V3_Preview_ERROR] UpdatePreviewAsync失敗: SelectedPage={SelectedPage}", selectedPage?.PageNumber ?? -1);
             }
         }
@@ -148,13 +153,14 @@ namespace DocOrganizer.UI.ViewModels.V3
         // Private helper methods
         private async Task LoadPreviewImageAsync(V3PageViewModel pageViewModel, bool forceUpdate)
         {
-            System.Diagnostics.Debug.WriteLine($"[DEBUG] LoadPreviewImageAsync開始: forceUpdate={forceUpdate}");
-            System.Diagnostics.Debug.WriteLine($"[DEBUG] pageViewModel.PreviewImage={pageViewModel.PreviewImage != null}");
+            // 🚨 緊急デバッグ: ファイルに出力
+            await AppendDebugLogAsync($"[LoadPreviewImageAsync開始] forceUpdate={forceUpdate}");
+            await AppendDebugLogAsync($"[LoadPreviewImageAsync] pageViewModel.PreviewImage={pageViewModel.PreviewImage != null}");
             
             // PageViewModelに既にPreviewImageがある場合はそれを使用
             if (!forceUpdate && pageViewModel.PreviewImage != null)
             {
-                System.Diagnostics.Debug.WriteLine("[DEBUG] 既存のPreviewImageを使用");
+                await AppendDebugLogAsync("[LoadPreviewImageAsync] 既存のPreviewImageを使用");
                 await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     CurrentPageImage = pageViewModel.PreviewImage;
@@ -163,71 +169,180 @@ namespace DocOrganizer.UI.ViewModels.V3
                 return;
             }
 
-            System.Diagnostics.Debug.WriteLine($"[DEBUG] _currentDocument確認: {(_currentDocument != null ? "存在" : "NULL")}");
+            await AppendDebugLogAsync($"[LoadPreviewImageAsync] _currentDocument確認: {(_currentDocument != null ? "存在" : "NULL")}");
             
             // 🎯 V3新実装: 高品質プレビュー生成
             if (_currentDocument != null)
             {
                 var pageIndex = _currentDocument.Pages.ToList().IndexOf(pageViewModel.Page);
-                System.Diagnostics.Debug.WriteLine($"[DEBUG] pageIndex={pageIndex}");
+                await AppendDebugLogAsync($"[LoadPreviewImageAsync] pageIndex={pageIndex}");
                 
                 if (pageIndex >= 0)
                 {
                     var page = _currentDocument.Pages[pageIndex];
-                    System.Diagnostics.Debug.WriteLine($"[DEBUG] page.SourceImagePath='{page.SourceImagePath}'");
-                    System.Diagnostics.Debug.WriteLine($"[DEBUG] ファイル存在確認: {(!string.IsNullOrEmpty(page.SourceImagePath) && System.IO.File.Exists(page.SourceImagePath))}");
+                    await AppendDebugLogAsync($"[LoadPreviewImageAsync] page.SourceImagePath='{page.SourceImagePath}'");
+                    await AppendDebugLogAsync($"[LoadPreviewImageAsync] ファイル存在確認: {(!string.IsNullOrEmpty(page.SourceImagePath) && System.IO.File.Exists(page.SourceImagePath))}");
 
                     // 元画像パスが存在する場合は画像ベースでプレビュー
                     if (!string.IsNullOrEmpty(page.SourceImagePath) && System.IO.File.Exists(page.SourceImagePath))
                     {
-                        System.Diagnostics.Debug.WriteLine("[DEBUG] 画像ベースプレビューを実行");
+                        await AppendDebugLogAsync("[LoadPreviewImageAsync] 画像ベースプレビューを実行");
                         // 🎯 V3: OSS標準ImageLoaderServiceでEXIF処理
                         await LoadImageBasedPreviewAsync(page.SourceImagePath);
                     }
                     else
                     {
-                        System.Diagnostics.Debug.WriteLine("[DEBUG] PDFベースプレビューを実行");
+                        await AppendDebugLogAsync("[LoadPreviewImageAsync] PDFベースプレビューを実行");
                         // PDFベースでプレビュー生成
                         await LoadPdfBasedPreviewAsync(pageIndex);
                     }
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine("[DEBUG] エラー: pageIndexが見つからない");
+                    await AppendDebugLogAsync("[LoadPreviewImageAsync] エラー: pageIndexが見つからない");
                 }
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine("[DEBUG] エラー: _currentDocumentがNULL");
+                await AppendDebugLogAsync("[LoadPreviewImageAsync] エラー: _currentDocumentがNULL");
             }
             
-            System.Diagnostics.Debug.WriteLine($"[DEBUG] LoadPreviewImageAsync完了: CurrentPageImage={CurrentPageImage != null}");
+            await AppendDebugLogAsync($"[LoadPreviewImageAsync完了] CurrentPageImage={CurrentPageImage != null}");
         }
 
         private async Task LoadImageBasedPreviewAsync(string imagePath)
         {
-            System.Diagnostics.Debug.WriteLine($"[DEBUG] LoadImageBasedPreviewAsync開始: imagePath='{imagePath}'");
+            await AppendDebugLogAsync($"[LoadImageBasedPreview開始] imagePath='{imagePath}'");
             
-            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+            try
             {
-                try
+                // 🎯 完全修正: Task.Run内では同期版ログを使用
+                await AppendDebugLogAsync($"[完全修正] Task.Run開始");
+                
+                var bitmapImageBytes = await Task.Run(() =>
                 {
-                    System.Diagnostics.Debug.WriteLine("[DEBUG] BitmapImage作成開始");
-                    // 🎯 V3: OSS標準BitmapImage.Rotation使用
-                    var bitmap = CreateBitmapWithOSSStandardRotation(imagePath);
-                    System.Diagnostics.Debug.WriteLine($"[DEBUG] BitmapImage作成完了: bitmap={bitmap != null}");
-                    
-                    CurrentPageImage = bitmap;
-                    UpdatePreviewSize(bitmap);
-                    
-                    System.Diagnostics.Debug.WriteLine($"[DEBUG] CurrentPageImage設定完了: CurrentPageImage={CurrentPageImage != null}");
-                }
-                catch (Exception ex)
+                    try
+                    {
+                        // 🚨 重要: Task.Run内では同期版ログのみ使用
+                        AppendDebugLogSync($"[Task.Run] ImageSharp読み込み開始");
+                        
+                        // ImageSharpで画像読み込み（バックグラウンド）
+                        using var image = SixLabors.ImageSharp.Image.Load(imagePath);
+                        
+                        // EXIF自動補正（バックグラウンド）
+                        image.Mutate(x => x.AutoOrient());
+                        AppendDebugLogSync($"[Task.Run] AutoOrient完了: {image.Width}x{image.Height}");
+                        
+                        // プレビューサイズにリサイズ（バックグラウンド）
+                        var maxWidth = 800;
+                        var maxHeight = 600;
+                        var scale = Math.Min((double)maxWidth / image.Width, (double)maxHeight / image.Height);
+                        if (scale < 1.0)
+                        {
+                            var newWidth = (int)(image.Width * scale);
+                            var newHeight = (int)(image.Height * scale);
+                            image.Mutate(x => x.Resize(newWidth, newHeight));
+                            AppendDebugLogSync($"[Task.Run] リサイズ完了: {newWidth}x{newHeight}");
+                        }
+
+                        // PNG形式でバイト配列に変換（同期版）
+                        using var memoryStream = new MemoryStream();
+                        image.SaveAsPng(memoryStream); // 🎯 同期版に変更
+                        AppendDebugLogSync($"[Task.Run] PNG変換完了: {memoryStream.Length}バイト");
+                        return memoryStream.ToArray();
+                    }
+                    catch (Exception ex)
+                    {
+                        AppendDebugLogSync($"[Task.Run] 例外: {ex.Message}");
+                        return null;
+                    }
+                });
+                
+                if (bitmapImageBytes != null)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[PreviewManagement] 画像プレビューエラー: {ex.Message}");
-                    System.Diagnostics.Debug.WriteLine($"[PreviewManagement] 画像プレビューエラー詳細: {ex}");
+                    // UIスレッドでBitmapImage作成（軽量処理のみ）
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        try
+                        {
+                            var bitmapImage = new BitmapImage();
+                            bitmapImage.BeginInit();
+                            bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                            bitmapImage.StreamSource = new MemoryStream(bitmapImageBytes);
+                            bitmapImage.EndInit();
+                            bitmapImage.Freeze();
+                            
+                            CurrentPageImage = bitmapImage;
+                            OnPropertyChanged(nameof(CurrentPageImage));
+                            AppendDebugLogSync($"[UIスレッド] CurrentPageImage設定成功: {bitmapImage.Width}x{bitmapImage.Height}");
+                        }
+                        catch (Exception ex)
+                        {
+                            AppendDebugLogSync($"[UIスレッド] BitmapImage作成失敗: {ex.Message}");
+                            CurrentPageImage = null;
+                            OnPropertyChanged(nameof(CurrentPageImage));
+                        }
+                    });
                 }
-            });
+                else
+                {
+                    await AppendDebugLogAsync($"[完全修正] バイト配列取得失敗");
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        CurrentPageImage = null;
+                        OnPropertyChanged(nameof(CurrentPageImage));
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                await AppendDebugLogAsync($"[完全修正] 全体例外: {ex.Message}");
+                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    CurrentPageImage = null;
+                    OnPropertyChanged(nameof(CurrentPageImage));
+                });
+            }
+            
+            await AppendDebugLogAsync($"[LoadImageBasedPreview完了]");
+        }
+        
+        // 🎯 新規追加: Task.Run内用の同期版ログメソッド
+        private void AppendDebugLogSync(string message)
+        {
+            try
+            {
+                var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}";
+                var logPath = @"C:\Users\217216X721451\github\DocOrganizer\release\DEBUG_LOG.txt";
+                System.IO.File.AppendAllText(logPath, logMessage + Environment.NewLine);
+                
+                // Console.WriteLineにも出力
+                System.Diagnostics.Debug.WriteLine($"[PREVIEW_DEBUG] {message}");
+            }
+            catch
+            {
+                // ログ出力エラーは無視
+            }
+        }
+        
+        // 🎯 左側サムネイルと同じ変換メソッドを追加
+        private BitmapImage ConvertImageSharpToBitmapImage(SixLabors.ImageSharp.Image image)
+        {
+            using var memoryStream = new MemoryStream();
+            
+            // PNG形式でメモリストリームに書き込み
+            image.SaveAsPng(memoryStream);
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            
+            // WPF BitmapImageに変換
+            var bitmapImage = new BitmapImage();
+            bitmapImage.BeginInit();
+            bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+            bitmapImage.StreamSource = memoryStream;
+            bitmapImage.EndInit();
+            bitmapImage.Freeze(); // UIスレッド外でも使用可能にする
+            
+            return bitmapImage;
         }
 
         private async Task LoadPdfBasedPreviewAsync(int pageIndex)
@@ -282,19 +397,51 @@ namespace DocOrganizer.UI.ViewModels.V3
         // 🎯 V3新実装: OSS標準回転処理
         private System.Windows.Media.Imaging.BitmapSource CreateBitmapWithOSSStandardRotation(string imagePath)
         {
-            // Phase 1: EXIF Orientation検出（OSS標準パターン）
-            var rotation = GetRotationFromExif(imagePath);
+            try
+            {
+                // 🚨 デバッグ: CreateBitmap開始
+                AppendDebugLogAsync($"[CreateBitmap] 開始: {imagePath}").Wait();
+                
+                // Phase 1: EXIF Orientation検出（OSS標準パターン）
+                var rotation = GetRotationFromExif(imagePath);
+                AppendDebugLogAsync($"[CreateBitmap] Rotation取得完了: {rotation}").Wait();
 
-            // Phase 2: BitmapImage + WPF標準回転（OSS標準解決策）
-            var bitmap = new System.Windows.Media.Imaging.BitmapImage();
-            bitmap.BeginInit();
-            bitmap.UriSource = new Uri(imagePath);
-            bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-            bitmap.Rotation = rotation; // ← Stack Overflow実証済みパターン
-            bitmap.EndInit();
-            bitmap.Freeze();
+                // Phase 2: BitmapImage + WPF標準回転（OSS標準解決策）
+                var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                bitmap.BeginInit();
+                bitmap.UriSource = new Uri(imagePath);
+                bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                bitmap.Rotation = rotation; // ← Stack Overflow実証済みパターン
+                bitmap.EndInit();
+                bitmap.Freeze();
 
-            return bitmap;
+                AppendDebugLogAsync($"[CreateBitmap] 成功: Width={bitmap.Width}, Height={bitmap.Height}").Wait();
+                return bitmap;
+            }
+            catch (Exception ex)
+            {
+                AppendDebugLogAsync($"[CreateBitmap] 例外: {ex.Message}").Wait();
+                AppendDebugLogAsync($"[CreateBitmap] 詳細: {ex}").Wait();
+                
+                // フォールバック: シンプルなBitmapImage作成
+                try
+                {
+                    AppendDebugLogAsync($"[CreateBitmap] フォールバック実行").Wait();
+                    var simpleBitmap = new System.Windows.Media.Imaging.BitmapImage();
+                    simpleBitmap.BeginInit();
+                    simpleBitmap.UriSource = new Uri(imagePath);
+                    simpleBitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                    simpleBitmap.EndInit();
+                    simpleBitmap.Freeze();
+                    AppendDebugLogAsync($"[CreateBitmap] フォールバック成功").Wait();
+                    return simpleBitmap;
+                }
+                catch (Exception fallbackEx)
+                {
+                    AppendDebugLogAsync($"[CreateBitmap] フォールバック失敗: {fallbackEx.Message}").Wait();
+                    return null;
+                }
+            }
         }
 
         private System.Windows.Media.Imaging.Rotation GetRotationFromExif(string imagePath)
@@ -391,6 +538,26 @@ namespace DocOrganizer.UI.ViewModels.V3
             PageInfo = "";
             EmptyStateVisibility = "Visible";
             _selectedPage = null;
+        }
+
+        /// <summary>
+        /// 🚨 緊急デバッグ: ファイルに詳細ログを出力
+        /// </summary>
+        private async Task AppendDebugLogAsync(string message)
+        {
+            try
+            {
+                var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}";
+                var logPath = @"C:\Users\217216X721451\github\DocOrganizer\release\DEBUG_LOG.txt";
+                await System.IO.File.AppendAllTextAsync(logPath, logMessage + Environment.NewLine);
+                
+                // Console.WriteLineにも出力
+                System.Diagnostics.Debug.WriteLine($"[PREVIEW_DEBUG] {message}");
+            }
+            catch
+            {
+                // ログ出力エラーは無視
+            }
         }
 
         // Events for coordination

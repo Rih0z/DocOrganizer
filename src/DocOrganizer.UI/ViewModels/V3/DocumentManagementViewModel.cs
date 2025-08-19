@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using DocOrganizer.Application.Interfaces;
+using DocOrganizer.Application.Interfaces.V3;
 using DocOrganizer.Core.Models;
 
 namespace DocOrganizer.UI.ViewModels.V3
@@ -18,7 +19,8 @@ namespace DocOrganizer.UI.ViewModels.V3
     {
         private readonly IPdfEditorService _pdfEditorService;
         private readonly IDialogService _dialogService;
-        private readonly IImageProcessingService _imageProcessingService;
+        // 🎯 V3専用: V2のIImageProcessingService削除済み
+        private readonly IFileAdditionService _fileAdditionService;
 
         [ObservableProperty]
         private string statusMessage = "準備完了";
@@ -34,11 +36,12 @@ namespace DocOrganizer.UI.ViewModels.V3
         public DocumentManagementViewModel(
             IPdfEditorService pdfEditorService,
             IDialogService dialogService,
-            IImageProcessingService imageProcessingService)
+            IFileAdditionService fileAdditionService)
         {
             _pdfEditorService = pdfEditorService;
             _dialogService = dialogService;
-            _imageProcessingService = imageProcessingService;
+            // 🎯 V3専用: V2のIImageProcessingService削除済み
+            _fileAdditionService = fileAdditionService;
         }
 
         /// <summary>
@@ -211,11 +214,18 @@ namespace DocOrganizer.UI.ViewModels.V3
             try
             {
                 StatusMessage = $"画像変換中: {Path.GetFileName(filePath)}";
-                var pdfDocument = await _imageProcessingService.ConvertImageToPdfAsync(filePath);
+                
+                // 🎯 V3実装: FileAdditionService.CreateNewDocumentFromFilesAsyncを使用
+                var files = new[] { filePath };
+                var (pdfDocument, result) = await _fileAdditionService.CreateNewDocumentFromFilesAsync(files);
+                
                 _currentDocument = pdfDocument;
                 HasDocument = true;
                 FileInfo = Path.GetFileName(filePath);
                 StatusMessage = $"画像変換完了: {Path.GetFileName(filePath)}";
+                
+                // 🎯 V3イベント: ドキュメント開始イベント発火
+                OnDocumentOpened(pdfDocument);
             }
             catch (Exception ex)
             {

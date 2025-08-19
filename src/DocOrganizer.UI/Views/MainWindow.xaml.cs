@@ -448,8 +448,24 @@ namespace DocOrganizer.UI.Views
                     {
                         _logger?.LogInformation($"Selected page: {selectedPage.PageNumber}");
                         
-                        // 🎯 V3対応: MainCompositeViewModelのSelectedPageを更新
+                        // 🎯 V3対応: MainCompositeViewModel.SelectedPageを更新
                         V3ViewModel.SelectedPage = selectedPage;
+                        
+                        // 🚨 新規デバッグ: 詳細ログ出力
+                        System.Diagnostics.Debug.WriteLine($"[右側プレビューデバッグ] SelectedPage設定完了: PageNumber={selectedPage.PageNumber}");
+                        System.Diagnostics.Debug.WriteLine($"[右側プレビューデバッグ] V3ViewModel.PreviewManagement={V3ViewModel.PreviewManagement != null}");
+                        System.Diagnostics.Debug.WriteLine($"[右側プレビューデバッグ] V3ViewModel.PreviewManagement.CurrentPageImage={V3ViewModel.PreviewManagement?.CurrentPageImage != null}");
+                        
+                        // 🚨 新規デバッグ: SourceImagePath確認
+                        if (selectedPage.Page?.SourceImagePath != null)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[右側プレビューデバッグ] SourceImagePath='{selectedPage.Page.SourceImagePath}'");
+                            System.Diagnostics.Debug.WriteLine($"[右側プレビューデバッグ] ファイル存在確認={System.IO.File.Exists(selectedPage.Page.SourceImagePath)}");
+                        }
+                        else
+                        {
+                            System.Diagnostics.Debug.WriteLine("[右側プレビューデバッグ] SourceImagePathがNULL");
+                        }
                     }
                     else
                     {

@@ -49,7 +49,7 @@ namespace DocOrganizer.UI
                     services.AddSingleton<IRotationService, RotationService>();
                     services.AddSingleton<IPdfService, PdfService>();
                     services.AddSingleton<IPdfEditorService, PdfEditorService>();
-                    services.AddSingleton<IImageProcessingService, ImageProcessingService>();
+                    // 🎯 V3実装: IImageProcessingService削除済み（V2依存関係排除）
                     services.AddSingleton<ITextOrientationService, SafeIronOcrTextOrientationService>();
                     
                     // 🎯 V3 OSS標準サービス登録
@@ -81,22 +81,43 @@ namespace DocOrganizer.UI
 
         protected override async void OnStartup(StartupEventArgs e)
         {
+            var logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "STARTUP_LOG.txt");
+            
             try
             {
-                await _host.StartAsync();
-
-                var mainWindow = _host.Services.GetRequiredService<MainWindow>();
+                // 🎯 V3起動ログ: 起動プロセス詳細記録
+                File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] V3 Startup開始\n");
                 
-                // 🎯 V3 OSS標準: 常時V3使用 (環境変数依存削除)
+                File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Host.StartAsync開始\n");
+                await _host.StartAsync();
+                File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Host.StartAsync成功\n");
+
+                File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] MainWindow取得開始\n");
+                var mainWindow = _host.Services.GetRequiredService<MainWindow>();
+                File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] MainWindow取得成功\n");
+                
+                File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] MainCompositeViewModel取得開始\n");
                 var v3ViewModel = _host.Services.GetRequiredService<MainCompositeViewModel>();
+                File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] MainCompositeViewModel取得成功\n");
+                
+                File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] DataContext設定開始\n");
                 mainWindow.DataContext = v3ViewModel;
+                File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] DataContext設定成功\n");
+                
                 System.Diagnostics.Debug.WriteLine("🚀 V3 OSS標準: MainCompositeViewModel常時使用");
                 
+                File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] MainWindow.Show開始\n");
                 mainWindow.Show();
+                File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] MainWindow.Show成功\n");
+                
                 base.OnStartup(e);
+                File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] V3 Startup完了\n");
             }
             catch (Exception ex)
             {
+                var errorMsg = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] STARTUP ERROR: {ex.Message}\nStackTrace: {ex.StackTrace}\nInnerException: {ex.InnerException?.Message}\n";
+                File.AppendAllText(logPath, errorMsg);
+                
                 MessageBox.Show($"Application startup failed: {ex.Message}\n\nDetails: {ex.StackTrace}", 
                     "DocOrganizer - Startup Error", 
                     MessageBoxButton.OK, 

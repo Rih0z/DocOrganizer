@@ -347,7 +347,7 @@
                     </Border>
 
                     <!-- 空の状態表示 -->
-                    <Border Visibility="{Binding DocumentManagement.EmptyStateVisibility}" Background="White"
+                    <Border Visibility="{Binding PreviewManagement.EmptyStateVisibility}" Background="White"
                             AllowDrop="True">
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                             <TextBlock Text="PDFまたは画像ファイルを開いてください" 

@@ -22,6 +22,32 @@ namespace DocOrganizer.UI.Behaviors
     /// </summary>
     public static class V3AdvancedDragDropBehavior
     {
+        #region 🎯 V3デバッグ: 統一ログ出力
+        
+        /// <summary>
+        /// 🎯 V3デバッグ: 統一DEBUG_LOG.txtファイルへの非同期ログ出力
+        /// </summary>
+        private static async Task AppendDebugLogAsync(string message)
+        {
+            try
+            {
+                var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                var logEntry = $"[{timestamp}] [V3DragDrop] {message}{Environment.NewLine}";
+                
+                // 🎯 第16条準拠: release/DEBUG_LOG.txt に統一
+                var exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                var logFilePath = System.IO.Path.Combine(exeDirectory, "DEBUG_LOG.txt");
+                
+                await File.AppendAllTextAsync(logFilePath, logEntry);
+            }
+            catch
+            {
+                // ログ出力エラーは無視（メイン処理を妨げない）
+            }
+        }
+        
+        #endregion
+        
         #region OSS標準: アタッチドプロパティ (GongSolutionsパターン)
 
         /// <summary>
@@ -119,14 +145,17 @@ namespace DocOrganizer.UI.Behaviors
             {
                 if ((bool)e.NewValue)
                 {
+                    _ = AppendDebugLogAsync($"OnIsDropTargetChanged - ドロップターゲット有効化: {element.GetType().Name}");
                     element.AllowDrop = true;
                     element.DragEnter += OnDragEnter;
                     element.DragOver += OnDragOver;
                     element.Drop += OnDrop;
                     element.DragLeave += OnDragLeave;
+                    _ = AppendDebugLogAsync($"OnIsDropTargetChanged - イベントハンドラー登録完了: {element.GetType().Name}");
                 }
                 else
                 {
+                    _ = AppendDebugLogAsync($"OnIsDropTargetChanged - ドロップターゲット無効化: {element.GetType().Name}");
                     element.AllowDrop = false;
                     element.DragEnter -= OnDragEnter;
                     element.DragOver -= OnDragOver;
@@ -206,11 +235,13 @@ namespace DocOrganizer.UI.Behaviors
 
         private static async void OnDragEnter(object sender, DragEventArgs e)
         {
+            await AppendDebugLogAsync("OnDragEnter - ドラッグエンターイベント発火");
             await HandleDragOverAsync(sender as FrameworkElement, e);
         }
 
         private static async void OnDragOver(object sender, DragEventArgs e)
         {
+            await AppendDebugLogAsync("OnDragOver - ドラッグオーバーイベント発火");
             await HandleDragOverAsync(sender as FrameworkElement, e);
         }
 
@@ -245,27 +276,43 @@ namespace DocOrganizer.UI.Behaviors
 
         private static async void OnDrop(object sender, DragEventArgs e)
         {
+            await AppendDebugLogAsync("OnDrop開始 - ドラッグ&ドロップイベント発火");
+            
             try
             {
                 var target = sender as FrameworkElement;
+                await AppendDebugLogAsync($"OnDrop - target: {target?.GetType().Name ?? "null"}");
+                
                 var dropHandler = GetDropHandler(target);
+                await AppendDebugLogAsync($"OnDrop - dropHandler: {dropHandler?.GetType().Name ?? "null"}");
                 
                 if (dropHandler != null)
                 {
+                    await AppendDebugLogAsync("OnDrop - V3DropInfo作成開始");
                     var dropInfo = new V3DropInfo(e, target);
+                    await AppendDebugLogAsync("OnDrop - dropHandler.DropAsync呼び出し開始");
                     await dropHandler.DropAsync(dropInfo);
+                    await AppendDebugLogAsync("OnDrop - dropHandler.DropAsync完了");
+                }
+                else
+                {
+                    await AppendDebugLogAsync("OnDrop - dropHandlerがnullのため処理スキップ");
                 }
                 
                 // 🎯 OSS標準: ドロップゾーンフィードバック削除
                 HideDropZoneFeedback(target);
+                await AppendDebugLogAsync("OnDrop正常完了");
             }
             catch (Exception ex)
             {
+                await AppendDebugLogAsync($"OnDrop例外発生: {ex.Message}");
+                await AppendDebugLogAsync($"OnDropスタックトレース: {ex.StackTrace}");
                 System.Diagnostics.Debug.WriteLine($"🚨 V3 Drop Error: {ex.Message}");
             }
             finally
             {
                 e.Handled = true;
+                await AppendDebugLogAsync("OnDrop終了 - e.Handled = true");
             }
         }
 

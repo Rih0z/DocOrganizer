@@ -13,17 +13,15 @@ namespace DocOrganizer.Infrastructure.Services
     public class SafeIronOcrTextOrientationService : ITextOrientationService
     {
         private readonly ILogger<SafeIronOcrTextOrientationService> _logger;
-        private readonly IImageProcessingService _imageProcessingService;
+        // 🎯 V3修正: IImageProcessingService依存関係削除
         private object? _ocr;
         private bool _initialized = false;
         private bool _initializationFailed = false;
 
         public SafeIronOcrTextOrientationService(
-            ILogger<SafeIronOcrTextOrientationService> logger,
-            IImageProcessingService imageProcessingService)
+            ILogger<SafeIronOcrTextOrientationService> logger)
         {
             _logger = logger;
-            _imageProcessingService = imageProcessingService;
         }
 
         private async Task<bool> TryInitializeOcrAsync()

@@ -19,7 +19,7 @@ namespace DocOrganizer.UI.ViewModels
     {
         private readonly PdfPage _page;
         private readonly IThumbnailGeneratorService _thumbnailService;
-        private readonly IImageProcessingService _imageProcessingService;
+        // 🎯 V3修正: IImageProcessingService依存関係削除
         private readonly ITextOrientationService? _textOrientationService;
         
         [ObservableProperty]
@@ -50,12 +50,10 @@ namespace DocOrganizer.UI.ViewModels
         public V3PageViewModel(
             PdfPage page, 
             IThumbnailGeneratorService thumbnailService,
-            IImageProcessingService imageProcessingService,
             ITextOrientationService? textOrientationService = null)
         {
             _page = page;
             _thumbnailService = thumbnailService;
-            _imageProcessingService = imageProcessingService;
             _textOrientationService = textOrientationService;
             PageNumber = page.PageNumber;
             Rotation = page.Rotation;

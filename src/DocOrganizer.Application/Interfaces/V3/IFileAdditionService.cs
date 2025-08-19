@@ -13,6 +13,13 @@ namespace DocOrganizer.Application.Interfaces.V3
     public interface IFileAdditionService
     {
         /// <summary>
+        /// 🎯 V3 OSS標準: 新規ドキュメント作成
+        /// </summary>
+        /// <param name="files">ドキュメント作成元ファイル（画像・PDF混在可能）</param>
+        /// <returns>作成されたドキュメントと詳細情報</returns>
+        Task<(PdfDocument Document, FileAdditionResult Result)> CreateNewDocumentFromFilesAsync(IEnumerable<string> files);
+
+        /// <summary>
         /// 画像ファイルを既存PDFドキュメントに追加
         /// </summary>
         /// <param name="document">対象ドキュメント</param>

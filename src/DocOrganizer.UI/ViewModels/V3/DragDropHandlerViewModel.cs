@@ -19,7 +19,7 @@ namespace DocOrganizer.UI.ViewModels.V3
     /// </summary>
     public partial class DragDropHandlerViewModel : ObservableObject, IAdvancedDropHandler, IAdvancedDragHandler
     {
-        private readonly IImageProcessingService _imageProcessingService;
+        // 🎯 V3専用: V2のIImageProcessingService依存関係削除済み
         private readonly IImageLoaderService _imageLoaderService;
         private readonly IDialogService _dialogService;
         private readonly IFileAdditionService _fileAdditionService;
@@ -43,12 +43,11 @@ namespace DocOrganizer.UI.ViewModels.V3
         private PdfDocument? _currentDocument;
 
         public DragDropHandlerViewModel(
-            IImageProcessingService imageProcessingService,
             IImageLoaderService imageLoaderService,
             IDialogService dialogService,
             IFileAdditionService fileAdditionService)
         {
-            _imageProcessingService = imageProcessingService;
+            // 🎯 V3専用: V2のIImageProcessingService依存関係削除
             _imageLoaderService = imageLoaderService;
             _dialogService = dialogService;
             _fileAdditionService = fileAdditionService;
@@ -328,48 +327,35 @@ namespace DocOrganizer.UI.ViewModels.V3
         /// 🎯 OSS標準: 新規ドキュメント作成
         /// </summary>
         private async Task CreateNewDocumentFromFilesAsync(List<string> files)
-        {
-            try
-            {
-                StatusMessage = "新規ドキュメントを作成中...";
-                
-                var imageFiles = files.Where(IsImageFile).ToList();
-                var pdfFiles = files.Where(IsPdfFile).ToList();
+{
+    try
+    {
+        StatusMessage = "新規ドキュメントを作成中...";
+        
+        // 🚨 緊急デバッグ: ファイルに出力
+        await AppendDebugLogAsync($"[CreateNewDocument開始] files.Count={files.Count}");
+        
+        // 🎯 V3 OSS標準: FileAdditionService.CreateNewDocumentFromFilesAsync を使用
+        await AppendDebugLogAsync("[CreateNewDocument] FileAdditionService.CreateNewDocumentFromFilesAsync実行開始");
+        var (pdfDocument, result) = await _fileAdditionService.CreateNewDocumentFromFilesAsync(files);
+        
+        await AppendDebugLogAsync($"[CreateNewDocument] FileAdditionService完了: Document.Pages.Count={pdfDocument.Pages.Count}");
+        
+        // 🎯 V3イベント駆動: NewDocumentCreatedイベント発火
+        await AppendDebugLogAsync("[CreateNewDocument] NewDocumentCreatedイベント発火開始");
+        NewDocumentCreated?.Invoke(this, new NewDocumentCreatedEventArgs(pdfDocument, files));
+        await AppendDebugLogAsync("[CreateNewDocument] NewDocumentCreatedイベント発火完了");
 
-                if (imageFiles.Any())
-                {
-                    // 画像からPDF作成
-                    var pdfDocument = await _imageProcessingService.ConvertImagesToPdfAsync(imageFiles);
-                    
-                    // PDFファイルがある場合は結合
-                    if (pdfFiles.Any())
-                    {
-                        await _fileAdditionService.AddPdfFilesToDocumentAsync(pdfDocument, pdfFiles);
-                    }
-
-                    // 新規ドキュメント作成完了イベント
-                    NewDocumentCreated?.Invoke(this, new NewDocumentCreatedEventArgs(pdfDocument, files));
-                }
-                else if (pdfFiles.Any())
-                {
-                    // 最初のPDFを基準に他のPDFを結合
-                    // Use PdfEditorService to load PDF (not available in ImageProcessingService)
-                    var basePdf = new PdfDocument(pdfFiles.First());
-                    if (pdfFiles.Count > 1)
-                    {
-                        await _fileAdditionService.AddPdfFilesToDocumentAsync(basePdf, pdfFiles.Skip(1));
-                    }
-
-                    NewDocumentCreated?.Invoke(this, new NewDocumentCreatedEventArgs(basePdf, files));
-                }
-
-                StatusMessage = "新規ドキュメント作成完了";
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"新規ドキュメント作成失敗: {ex.Message}", ex);
-            }
-        }
+        StatusMessage = $"新規ドキュメント作成完了: {result.Summary}";
+        await AppendDebugLogAsync($"[CreateNewDocument完了] StatusMessage: {StatusMessage}");
+    }
+    catch (Exception ex)
+    {
+        await AppendDebugLogAsync($"[CreateNewDocument例外] エラー: {ex.Message}");
+        await AppendDebugLogAsync($"[CreateNewDocument例外] スタックトレース: {ex.StackTrace}");
+        throw new InvalidOperationException($"新規ドキュメント作成失敗: {ex.Message}", ex);
+    }
+}
 
         // FileAdditionService イベントハンドラー
         private void OnFileAdditionProgress(object? sender, FileAdditionProgressEventArgs e)
@@ -414,6 +400,24 @@ namespace DocOrganizer.UI.ViewModels.V3
         private bool IsPdfFile(string filePath)
         {
             return Path.GetExtension(filePath).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 🚨 緊急デバッグ: ファイルに詳細ログを出力（第16条準拠）
+        /// </summary>
+        private async Task AppendDebugLogAsync(string message)
+        {
+            try
+            {
+                var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}";
+                var logPath = @"C:\Users\217216X721451\github\DocOrganizer\release\DEBUG_LOG.txt";
+                await System.IO.File.AppendAllTextAsync(logPath, logMessage + Environment.NewLine);
+                System.Diagnostics.Debug.WriteLine($"[DRAGDROP_DEBUG] {message}");
+            }
+            catch
+            {
+                // ログ出力エラーは無視
+            }
         }
 
         // Events for coordination with other ViewModels

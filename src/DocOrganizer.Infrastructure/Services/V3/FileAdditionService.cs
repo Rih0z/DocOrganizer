@@ -4,23 +4,22 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using DocOrganizer.Core.Models;
 using DocOrganizer.Application.Interfaces;
 using DocOrganizer.Application.Interfaces.V3;
-using DocOrganizer.Core.Models;
 using Microsoft.Extensions.Logging;
 
 namespace DocOrganizer.Infrastructure.Services.V3
 {
     /// <summary>
-    /// 🎯 V3アーキテクチャ: OSS標準ファイル追加サービス
-    /// 責務: 既存PDFドキュメントへの新ファイル追加処理
-    /// OSS標準: Clean Architecture、SOLID原則、テスト容易性
+    /// 🎯 V3 OSS標準: ファイル追加サービス（V2依存関係完全削除版）
     /// </summary>
     public class FileAdditionService : IFileAdditionService
     {
-        private readonly IImageProcessingService _imageProcessingService;
+        // 🎯 V3専用: V2依存関係を完全削除
         private readonly IPdfEditorService _pdfEditorService;
         private readonly IImageValidationService _imageValidationService;
+        private readonly IImageLoaderService _imageLoaderService;
         private readonly ILogger<FileAdditionService> _logger;
 
         // 対応ファイル形式（OSS標準拡張子）
@@ -35,15 +34,117 @@ namespace DocOrganizer.Infrastructure.Services.V3
         };
 
         public FileAdditionService(
-            IImageProcessingService imageProcessingService,
             IPdfEditorService pdfEditorService,
             IImageValidationService imageValidationService,
+            IImageLoaderService imageLoaderService,
             ILogger<FileAdditionService> logger)
         {
-            _imageProcessingService = imageProcessingService;
             _pdfEditorService = pdfEditorService;
             _imageValidationService = imageValidationService;
+            _imageLoaderService = imageLoaderService;
             _logger = logger;
+        }
+
+        /// <summary>
+        /// 🎯 V3 OSS標準: 新規ドキュメント作成
+        /// </summary>
+        public async Task<(PdfDocument Document, FileAdditionResult Result)> CreateNewDocumentFromFilesAsync(IEnumerable<string> files)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            var result = new FileAdditionResult();
+            var filesList = files.ToList();
+
+            try
+            {
+                _logger.LogInformation("[V3_NewDocument] 新規ドキュメント作成開始: {Count}ファイル", filesList.Count);
+
+                // ファイルを種類別に分類
+                var imageFiles = filesList.Where(IsImageFile).ToList();
+                var pdfFiles = filesList.Where(IsPdfFile).ToList();
+
+                PdfDocument document;
+
+                if (imageFiles.Any())
+                {
+                    // 🎯 V3実装: 画像からPDF作成
+                    document = await CreatePdfFromImagesAsync(imageFiles);
+                    result.AddedPagesCount += imageFiles.Count;
+                    result.SuccessfulFiles.AddRange(imageFiles);
+
+                    // PDFファイルがある場合は結合
+                    if (pdfFiles.Any())
+                    {
+                        var pdfAddedCount = await AddPdfFilesToDocumentAsync(document, pdfFiles);
+                        result.AddedPagesCount += pdfAddedCount;
+                        result.SuccessfulFiles.AddRange(pdfFiles);
+                    }
+                }
+                else if (pdfFiles.Any())
+                {
+                    // 最初のPDFを基準に他のPDFを結合
+                    document = await _pdfEditorService.OpenPdfAsync(pdfFiles.First());
+                    result.AddedPagesCount += document.Pages.Count;
+                    result.SuccessfulFiles.Add(pdfFiles.First());
+
+                    if (pdfFiles.Count > 1)
+                    {
+                        var additionalPdfAddedCount = await AddPdfFilesToDocumentAsync(document, pdfFiles.Skip(1));
+                        result.AddedPagesCount += additionalPdfAddedCount;
+                        result.SuccessfulFiles.AddRange(pdfFiles.Skip(1));
+                    }
+                }
+                else
+                {
+                    throw new InvalidOperationException("有効なファイルが見つかりません");
+                }
+
+                stopwatch.Stop();
+                result.ProcessingTime = stopwatch.Elapsed;
+
+                _logger.LogInformation("[V3_NewDocument] 新規ドキュメント作成完了: {Summary}", result.Summary);
+
+                return (document, result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[V3_NewDocument] 新規ドキュメント作成エラー");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 🎯 V3専用: 画像ファイルからPDF作成（V2依存関係なし）
+        /// </summary>
+        private async Task<PdfDocument> CreatePdfFromImagesAsync(IEnumerable<string> imageFiles)
+        {
+            var document = new PdfDocument();
+            
+            foreach (var imageFile in imageFiles)
+            {
+                try
+                {
+                    // V3: ImageLoaderServiceで画像読み込み
+                    var imageSource = await _imageLoaderService.LoadImageWithOrientationAsync(imageFile);
+                    
+                    // PDF Pageを作成（基本実装）
+                    var page = new PdfPage(document.Pages.Count + 1)
+                    {
+                        SourceImagePath = imageFile,
+                        Rotation = 0 // デフォルト
+                    };
+                    
+                    document.AddPage(page);
+                    
+                    System.Diagnostics.Debug.WriteLine($"[V3_ImageToPdf] 画像追加成功: {Path.GetFileName(imageFile)}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[V3_ImageToPdf] 画像変換エラー: {FileName}", Path.GetFileName(imageFile));
+                    throw;
+                }
+            }
+
+            return document;
         }
 
         /// <summary>
@@ -68,38 +169,34 @@ namespace DocOrganizer.Infrastructure.Services.V3
 
                     try
                     {
-                        // 🎯 OSS標準: ImageProcessingServiceで画像→PDF変換
-                        var imagePdfDocument = await _imageProcessingService.ConvertImageToPdfAsync(imageFile);
+                        // 🎯 V3実装: V2依存関係なし
+                        var imageSource = await _imageLoaderService.LoadImageWithOrientationAsync(imageFile);
                         
-                        if (imagePdfDocument?.Pages?.Count > 0)
+                        var page = new PdfPage(document.Pages.Count + 1)
                         {
-                            // 指定位置に挿入または末尾追加
-                            var targetPosition = insertPosition == -1 ? document.Pages.Count : insertPosition + addedPagesCount;
-                            
-                            foreach (var page in imagePdfDocument.Pages)
-                            {
-                                // ページを適切な位置に挿入
-                                if (targetPosition >= document.Pages.Count)
-                                {
-                                    document.AddPage(page);
-                                }
-                                else
-                                {
-                                    // OSS標準: AddPage後に位置調整（PdfDocumentにInsertメソッドがないため）
-                                document.AddPage(page);
-                                if (targetPosition < document.Pages.Count - 1)
-                                {
-                                    document.MovePage(document.Pages.Count - 1, targetPosition);
-                                }
-                                }
-                                
-                                addedPagesCount++;
-                                targetPosition++;
-                            }
+                            SourceImagePath = imageFile,
+                            Rotation = 0
+                        };
 
-                            _logger.LogDebug("[V3_FileAddition] 画像追加成功: {FileName} -> {Pages}ページ", 
-                                Path.GetFileName(imageFile), imagePdfDocument.Pages.Count);
+                        // 指定位置に挿入または末尾追加
+                        var targetPosition = insertPosition == -1 ? document.Pages.Count : insertPosition + addedPagesCount;
+                        
+                        if (targetPosition >= document.Pages.Count)
+                        {
+                            document.AddPage(page);
                         }
+                        else
+                        {
+                            document.AddPage(page);
+                            if (targetPosition < document.Pages.Count - 1)
+                            {
+                                document.MovePage(document.Pages.Count - 1, targetPosition);
+                            }
+                        }
+                        
+                        addedPagesCount++;
+
+                        _logger.LogDebug("[V3_FileAddition] 画像追加成功: {FileName}", Path.GetFileName(imageFile));
                     }
                     catch (Exception ex)
                     {

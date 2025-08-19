@@ -25,9 +25,8 @@ namespace DocOrganizer.UI.ViewModels.V3
         public DragDropHandlerViewModel DragDropHandler { get; }
         public StatusManagementViewModel StatusManagement { get; }
         
-        // 🎯 V3 OSS標準: サービス注入
+        // 🎯 V3専用: V2依存関係完全削除
         private readonly IThumbnailGeneratorService _thumbnailService;
-        private readonly IImageProcessingService _imageProcessingService;
         private readonly ITextOrientationService _textOrientationService;
 
         [ObservableProperty]
@@ -46,7 +45,6 @@ namespace DocOrganizer.UI.ViewModels.V3
             DragDropHandlerViewModel dragDropHandler,
             StatusManagementViewModel statusManagement,
             IThumbnailGeneratorService thumbnailService,
-            IImageProcessingService imageProcessingService,
             ITextOrientationService textOrientationService)
         {
             DocumentManagement = documentManagement;
@@ -55,7 +53,6 @@ namespace DocOrganizer.UI.ViewModels.V3
             DragDropHandler = dragDropHandler;
             StatusManagement = statusManagement;
             _thumbnailService = thumbnailService;
-            _imageProcessingService = imageProcessingService;
             _textOrientationService = textOrientationService;
 
             InitializeEventHandlers();
@@ -107,19 +104,28 @@ namespace DocOrganizer.UI.ViewModels.V3
                 // 🎯 V3修正: PreviewManagementViewModelにCurrentDocument設定（必須）
                 PreviewManagement.SetCurrentDocument(CurrentDocument);
                 
+                // 🚨 緊急デバッグ: ドキュメント詳細ログ
+                System.Diagnostics.Debug.WriteLine($"[緊急デバッグ] OnDocumentOpened開始: Document.Pages.Count={e.Document.Pages.Count}");
+                
                 // ページコレクション更新
                 Pages.Clear();
                 foreach (var page in e.Document.Pages)
                 {
-                    var pageViewModel = new V3PageViewModel(page, _thumbnailService, _imageProcessingService, _textOrientationService);
+                    // 🎯 V3修正: V2依存関係除去 - IImageProcessingServiceを削除
+                    var pageViewModel = new V3PageViewModel(page, _thumbnailService, _textOrientationService);
                     await pageViewModel.LoadLeftThumbnailAsync(); // V3 OSS標準サムネイル生成
                     Pages.Add(pageViewModel);
+                    System.Diagnostics.Debug.WriteLine($"[緊急デバッグ] Page追加: PageNumber={pageViewModel.PageNumber}, SourceImagePath='{page.SourceImagePath}'");
                 }
 
+                // 🚨 緊急デバッグ: Pagesコレクション状況
+                System.Diagnostics.Debug.WriteLine($"[緊急デバッグ] Pages.Count={Pages.Count}");
+                
                 // 最初のページを選択
                 if (Pages.Count > 0)
                 {
                     SelectedPage = Pages[0];
+                    System.Diagnostics.Debug.WriteLine($"[緊急デバッグ] SelectedPage設定: PageNumber={SelectedPage.PageNumber}");
                     await PreviewManagement.UpdatePreviewAsync(SelectedPage, true);
                 }
 
@@ -128,6 +134,7 @@ namespace DocOrganizer.UI.ViewModels.V3
             catch (Exception ex)
             {
                 StatusManagement.ShowError($"ドキュメント読み込みエラー: {ex.Message}", ex);
+                System.Diagnostics.Debug.WriteLine($"[緊急デバッグ] OnDocumentOpened例外: {ex.Message}");
             }
         }
 
@@ -194,17 +201,8 @@ namespace DocOrganizer.UI.ViewModels.V3
             {
                 if (e.ImageFiles.Count > 0)
                 {
-                    // 🎯 V3修正: 画像ファイルからPDF生成処理を実装
-                    StatusManagement.UpdateProgress(50, "ページ追加中...");
-                    
-                    // 画像ファイルからPdfDocumentを生成
-                    var pdfDocument = await _imageProcessingService.ConvertImageToPdfAsync(e.ImageFiles[0]);
-                    
-                    if (pdfDocument != null)
-                    {
-                        // 🎯 V3修正: DocumentOpenedイベント直接発火（OnDocumentOpenedで統一処理）
-                        DocumentManagement.DocumentOpened?.Invoke(DocumentManagement, new DocumentOpenedEventArgs(pdfDocument));
-                    }
+                    // 🎯 V3修正: 画像ファイル処理はNewDocumentCreatedイベントに移行済み
+                    // このメソッドは廃止予定 - DragDropHandlerがV3サービスを使用
                     
                     StatusManagement.CompleteOperation($"{e.ImageFiles.Count}個の画像ファイルを追加しました");
                 }
@@ -239,7 +237,8 @@ namespace DocOrganizer.UI.ViewModels.V3
                 Pages.Clear();
                 foreach (var page in e.UpdatedDocument.Pages)
                 {
-                    var pageViewModel = new V3PageViewModel(page, _thumbnailService, _imageProcessingService, _textOrientationService);
+                    // 🎯 V3修正: V2依存関係除去 - IImageProcessingServiceを削除
+                    var pageViewModel = new V3PageViewModel(page, _thumbnailService, _textOrientationService);
                     Pages.Add(pageViewModel);
                 }
 
@@ -278,40 +277,54 @@ namespace DocOrganizer.UI.ViewModels.V3
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[DEBUG] OnNewDocumentCreated開始: Pages={e.Document.Pages.Count}");
+                // 🚨 緊急デバッグ: ファイルに出力
+                await AppendDebugLogAsync($"[OnNewDocumentCreated開始] Pages={e.Document.Pages.Count}");
                 StatusManagement.StartOperation("新規ドキュメント読み込み中...");
 
                 // ドキュメント更新
                 CurrentDocument = e.Document;
-                System.Diagnostics.Debug.WriteLine($"[DEBUG] CurrentDocument設定完了: CurrentDocument={CurrentDocument != null}");
+                await AppendDebugLogAsync($"[OnNewDocumentCreated] CurrentDocument設定完了: CurrentDocument={CurrentDocument != null}");
+                
+                // 🎯 V3修正: 先にPreviewManagementにCurrentDocumentを設定（重要！）
+                await AppendDebugLogAsync("[OnNewDocumentCreated] PreviewManagementにCurrentDocument設定開始");
+                PreviewManagement.SetCurrentDocument(CurrentDocument);
+                await AppendDebugLogAsync("[OnNewDocumentCreated] PreviewManagementにCurrentDocument設定完了");
                 
                 // ページコレクション完全更新
+                await AppendDebugLogAsync("[OnNewDocumentCreated] Pages.Clear()開始");
                 Pages.Clear();
                 foreach (var page in e.Document.Pages)
                 {
-                    var pageViewModel = new V3PageViewModel(page, _thumbnailService, _imageProcessingService, _textOrientationService);
+                    // 🎯 V3修正: V2依存関係除去 - IImageProcessingServiceを削除
+                    var pageViewModel = new V3PageViewModel(page, _thumbnailService, _textOrientationService);
                     await pageViewModel.LoadLeftThumbnailAsync(); // V3 OSS標準サムネイル生成
                     Pages.Add(pageViewModel);
                 }
+                await AppendDebugLogAsync($"[OnNewDocumentCreated] Pages追加完了: Pages.Count={Pages.Count}");
 
-                // 最初のページを選択
+                // 🎯 V3修正: PreviewManagement設定後に最初のページを選択
                 if (Pages.Count > 0)
                 {
                     SelectedPage = Pages[0];
+                    await AppendDebugLogAsync($"[OnNewDocumentCreated] SelectedPage設定: PageNumber={SelectedPage.PageNumber}");
+                    await AppendDebugLogAsync("[OnNewDocumentCreated] PreviewManagement.UpdatePreviewAsync実行開始");
                     await PreviewManagement.UpdatePreviewAsync(SelectedPage, true);
+                    await AppendDebugLogAsync("[OnNewDocumentCreated] PreviewManagement.UpdatePreviewAsync実行完了");
                 }
 
                 // 他のViewModelに変更を通知
-                System.Diagnostics.Debug.WriteLine("[DEBUG] 他ViewModelにCurrentDocument通知開始");
+                await AppendDebugLogAsync("[OnNewDocumentCreated] 他ViewModelにCurrentDocument通知開始");
                 PageOperation.SetCurrentDocument(CurrentDocument);
-                PreviewManagement.SetCurrentDocument(CurrentDocument);
                 DragDropHandler.SetCurrentDocument(CurrentDocument);
-                System.Diagnostics.Debug.WriteLine("[DEBUG] 他ViewModelにCurrentDocument通知完了");
+                await AppendDebugLogAsync("[OnNewDocumentCreated] 他ViewModelにCurrentDocument通知完了");
 
                 StatusManagement.CompleteOperation($"{e.SourceFiles.Count}個のファイルから{Pages.Count}ページのドキュメントを作成しました");
+                await AppendDebugLogAsync($"[OnNewDocumentCreated完了] 処理完了: {e.SourceFiles.Count}ファイル → {Pages.Count}ページ");
             }
             catch (Exception ex)
             {
+                await AppendDebugLogAsync($"[OnNewDocumentCreated例外] エラー: {ex.Message}");
+                await AppendDebugLogAsync($"[OnNewDocumentCreated例外] スタックトレース: {ex.StackTrace}");
                 StatusManagement.ShowError($"新規ドキュメント作成後の更新エラー: {ex.Message}", ex);
             }
         }
@@ -332,7 +345,8 @@ namespace DocOrganizer.UI.ViewModels.V3
                 Pages.Clear();
                 foreach (var page in e.Document.Pages)
                 {
-                    var pageViewModel = new V3PageViewModel(page, _thumbnailService, _imageProcessingService, _textOrientationService);
+                    // 🎯 V3修正: V2依存関係除去 - IImageProcessingServiceを削除
+                    var pageViewModel = new V3PageViewModel(page, _thumbnailService, _textOrientationService);
                     await pageViewModel.LoadLeftThumbnailAsync(); // V3 OSS標準サムネイル生成
                     Pages.Add(pageViewModel);
                 }
@@ -430,6 +444,24 @@ namespace DocOrganizer.UI.ViewModels.V3
             {
                 // 選択解除時はプレビュークリア
                 PreviewManagement.ClearPreview();
+            }
+        }
+
+        /// <summary>
+        /// 🚨 緊急デバッグ: ファイルに詳細ログを出力（第16条準拠）
+        /// </summary>
+        private async Task AppendDebugLogAsync(string message)
+        {
+            try
+            {
+                var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}";
+                var logPath = @"C:\Users\217216X721451\github\DocOrganizer\release\DEBUG_LOG.txt";
+                await System.IO.File.AppendAllTextAsync(logPath, logMessage + Environment.NewLine);
+                System.Diagnostics.Debug.WriteLine($"[MAIN_COMPOSITE_DEBUG] {message}");
+            }
+            catch
+            {
+                // ログ出力エラーは無視
             }
         }
 
