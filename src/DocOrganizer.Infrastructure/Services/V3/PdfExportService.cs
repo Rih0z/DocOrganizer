@@ -161,11 +161,16 @@ public class PdfExportService : IPdfExportService
 
             using var image = await SixLabors.ImageSharp.Image.LoadAsync<SixLabors.ImageSharp.PixelFormats.Rgba32>(pageData.ImagePath);
 
+            // 🎯 サムネイルと同じ処理: EXIF Orientation自動補正（最重要修正）
+            image.Mutate(x => x.AutoOrient());
+            await AppendDebugLogAsync($"[ProcessPageImageAsync] AutoOrient()適用完了 - サムネイルと同じ向き処理");
+
             // 回転適用
             if (pageData.Rotation > 0)
             {
                 image.Mutate(x => x.Rotate(pageData.Rotation));
                 _logger.LogDebug("[PdfExportService] 画像回転適用: {Rotation}度", pageData.Rotation);
+                await AppendDebugLogAsync($"[ProcessPageImageAsync] 追加回転適用: {pageData.Rotation}度");
             }
 
             // 画質設定に基づくリサイズ
@@ -181,19 +186,24 @@ public class PdfExportService : IPdfExportService
                 }));
                 _logger.LogDebug("[PdfExportService] 画像リサイズ: {OriginalSize} → {TargetSize}", 
                     currentSize, targetSize);
+                await AppendDebugLogAsync($"[ProcessPageImageAsync] リサイズ完了: {currentSize} → {targetSize}");
             }
 
-            // JPEG形式でエンコード
+            // JPEG形式でエンコード（EXIF情報除去 + 高品質設定）
             using var ms = new MemoryStream();
             await image.SaveAsJpegAsync(ms, new JpegEncoder 
             { 
-                Quality = qualitySettings.CompressionLevel 
+                Quality = qualitySettings.CompressionLevel,
+                // EXIF情報を除去してPDFsharpでの重複回転を防ぐ
+                SkipMetadata = true
             });
 
+            await AppendDebugLogAsync($"[ProcessPageImageAsync] JPEG保存完了: {ms.Length}バイト, 品質: {qualitySettings.CompressionLevel}");
             return ms.ToArray();
         }
         catch (Exception ex)
         {
+            await AppendDebugLogAsync($"[ProcessPageImageAsync] ❌ 画像処理エラー: {ex.Message}");
             _logger.LogError(ex, "[PdfExportService] 画像処理エラー: {ImagePath}, {Error}", 
                 pageData.ImagePath, ex.Message);
             throw;

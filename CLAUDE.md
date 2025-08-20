@@ -12,7 +12,7 @@ ai_coding_principles:
   repository_info:
     github_url: "https://github.com/Rih0z/DocOrganizer"
     latest_exe_path: "C:\\Users\\217216X721451\\github\\DocOrganizer\\release\\DocOrganizer.exe"
-    version: "3.0.002"
+    version: "3.0.005"
     features:
       - "PDF編集機能（CubePDF Utility互換）"
       - "画像→PDF変換（HEIC/JPG/PNG/JPEG対応）"
@@ -22,16 +22,36 @@ ai_coding_principles:
       - "PDF結合・分割"
     build_command: "dotnet publish src/DocOrganizer.UI/DocOrganizer.UI.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o release"
     
+  user_documentation:
+    description: "ユーザー向け使用ガイド"
+    pdf_export_guide: "docs/PDF保存機能使用ガイド.md"
+    main_readme: "README.md"
+    last_updated: "2025-08-19"
+    coverage: "V3.0.005の完全な使用方法とトラブルシューティング"
+    
   version_management:
     description: "ビルド時自動バージョン管理システム"
     last_updated: "2025-08-19"
     mandatory: "ビルドの度に最後の桁を自動インクリメント"
     
-    current_version: "3.0.002"
+    current_version: "3.0.005"
     version_format: "メジャー.マイナー.ビルド番号"
     increment_rule: "ビルドの度に最後の桁（ビルド番号）を1つずつ上げる"
     
     version_history:
+      "3.0.005":
+        date: "2025-08-19"
+        changes: "画像向き問題完全解決 - AutoOrient()統一実装"
+        build_reason: "サムネイルとPDF出力の画像向き完全一致"
+        technical_detail: "ProcessPageImageAsync内にAutoOrient()追加でサムネイル生成と同一処理パイプライン実現"
+      "3.0.004":
+        date: "2025-08-19"
+        changes: "EXIF除去実装 - SkipMetadata=true追加"
+        build_reason: "PDFsharp重複回転防止"
+      "3.0.003":
+        date: "2025-08-19"
+        changes: "PDFsharp（オリジナル版）採用 - PdfSharpCore→PDFsharp変更"
+        build_reason: "ImageSharp互換性問題解決"
       "3.0.002": 
         date: "2025-08-19"
         changes: "PDF出力実装変更 - System.Drawing使用でImageSharp依存削除"
@@ -47,7 +67,7 @@ ai_coding_principles:
     
     title_bar_display:
       format: "DocOrganizer {version}"
-      example: "DocOrganizer 3.0.001"
+      example: "DocOrganizer 3.0.005"
       location: "MainWindow.xaml Title属性"
       update_requirement: "ビルド毎に必ず更新"
     

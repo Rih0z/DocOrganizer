@@ -1,6 +1,6 @@
 # DocOrganizer
 
-[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://github.com/Rih0z/DocOrganizer/releases)
+[![Version](https://img.shields.io/badge/version-3.0.005-blue.svg)](https://github.com/Rih0z/DocOrganizer/releases)
 [![.NET](https://img.shields.io/badge/.NET-6.0-purple.svg)](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -40,6 +40,7 @@ dotnet publish src/DocOrganizer.UI/DocOrganizer.UI.csproj -c Release -r win-x64 
 
 | 項目 | 場所 |
 |------|------|
+| **📄 PDF保存機能** | [`docs/PDF保存機能使用ガイド.md`](docs/PDF保存機能使用ガイド.md) |
 | **📖 完全ガイド** | [`docs/PROJECT_OVERVIEW.md`](docs/PROJECT_OVERVIEW.md) |
 | **🏗️ アーキテクチャ** | [`docs/PROJECT_OVERVIEW.md#technical-architecture`](docs/PROJECT_OVERVIEW.md#technical-architecture) |
 | **🔧 開発ガイド** | [`docs/PROJECT_OVERVIEW.md#development-workflow`](docs/PROJECT_OVERVIEW.md#development-workflow) |
