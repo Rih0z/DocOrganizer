@@ -1,0 +1,9 @@
+C:\Users\217216X721451\github\DocOrganizer\release-final\DocOrganizer.pdb
+C:\Users\217216X721451\github\DocOrganizer\release-final\Tesseract.Native.deployment.json
+C:\Users\217216X721451\github\DocOrganizer\release-final\eng.user-patterns
+C:\Users\217216X721451\github\DocOrganizer\release-final\eng.user-words
+C:\Users\217216X721451\github\DocOrganizer\release-final\pdf.ttx
+C:\Users\217216X721451\github\DocOrganizer\release-final\DocOrganizer.Application.pdb
+C:\Users\217216X721451\github\DocOrganizer\release-final\DocOrganizer.Core.pdb
+C:\Users\217216X721451\github\DocOrganizer\release-final\DocOrganizer.Infrastructure.pdb
+C:\Users\217216X721451\github\DocOrganizer\release-final\DocOrganizer.exe

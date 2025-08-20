@@ -75,6 +75,15 @@ namespace DocOrganizer.Application.Interfaces
         /// <param name="title">タイトル</param>
         /// <returns>ユーザーが「はい」を選択した場合はtrue</returns>
         bool ShowConfirmation(string message, string title = "確認");
+
+        /// <summary>
+        /// 入力ダイアログを表示します
+        /// </summary>
+        /// <param name="message">入力要求メッセージ</param>
+        /// <param name="title">タイトル</param>
+        /// <param name="defaultValue">デフォルト値</param>
+        /// <returns>ユーザーが入力した値。キャンセルされた場合はnull</returns>
+        string? ShowInputDialog(string message, string title = "入力", string? defaultValue = null);
     }
 
     /// <summary>

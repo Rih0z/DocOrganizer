@@ -7,6 +7,7 @@ using Microsoft.Win32;
 using DocOrganizer.Application.Interfaces;
 using DocOrganizer.Application.Interfaces.V3;
 using DocOrganizer.Core.Models;
+using System.Linq;
 
 namespace DocOrganizer.UI.ViewModels.V3
 {
@@ -32,6 +33,23 @@ namespace DocOrganizer.UI.ViewModels.V3
         private string fileInfo = "";
 
         private PdfDocument? _currentDocument;
+
+        // 🆕 PDF編集機能追加
+        [ObservableProperty]
+        private bool isPdfDocument;
+
+        [ObservableProperty]
+        private bool canSplitPdf;
+
+        [ObservableProperty]
+        private bool canMergePdf;
+
+        // 🆕 HEIC/GIF対応フラグ
+        [ObservableProperty]
+        private bool hasHeicFiles;
+
+        [ObservableProperty]
+        private bool hasGifFiles;
 
         public DocumentManagementViewModel(
             IPdfEditorService pdfEditorService,
@@ -175,6 +193,153 @@ namespace DocOrganizer.UI.ViewModels.V3
         }
 
         /// <summary>
+        /// 🆕 PDF分割機能
+        /// </summary>
+        [RelayCommand]
+        private async Task SplitPdfAsync()
+        {
+            if (_currentDocument == null || !IsPdfDocument || _currentDocument.Pages.Count <= 1)
+            {
+                _dialogService.ShowInformation("PDF分割を実行するには2ページ以上のPDFが必要です");
+                return;
+            }
+
+            try
+            {
+                // 分割位置の選択（簡易入力）
+                var splitPosition = _dialogService.ShowInputDialog(
+                    $"PDF分割位置を入力してください (1-{_currentDocument.Pages.Count - 1})",
+                    "PDF分割",
+                    "1");
+
+                if (!int.TryParse(splitPosition, out var splitIndex) || 
+                    splitIndex < 1 || splitIndex >= _currentDocument.Pages.Count)
+                {
+                    _dialogService.ShowError("有効な分割位置を入力してください");
+                    return;
+                }
+
+                // 出力ディレクトリ準備
+                var outputDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "output");
+                if (!Directory.Exists(outputDir))
+                {
+                    Directory.CreateDirectory(outputDir);
+                }
+
+                var firstHalfPath = Path.Combine(outputDir, $"document_part1_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
+                var secondHalfPath = Path.Combine(outputDir, $"document_part2_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
+
+                // ✅ 既存PdfDocumentメソッドを活用した安全な分割
+                var firstHalf = new PdfDocument();
+                var secondHalf = new PdfDocument();
+
+                // 前半部分のページをコピー
+                for (int i = 0; i < splitIndex; i++)
+                {
+                    var pageClone = ClonePdfPage(_currentDocument.Pages[i]);
+                    firstHalf.AddPage(pageClone);
+                }
+
+                // 後半部分のページをコピー
+                for (int i = splitIndex; i < _currentDocument.Pages.Count; i++)
+                {
+                    var pageClone = ClonePdfPage(_currentDocument.Pages[i]);
+                    secondHalf.AddPage(pageClone);
+                }
+
+                // ✅ 既存保存メソッドを活用
+                var firstSaved = await _pdfEditorService.SavePdfAsync(firstHalf, firstHalfPath);
+                var secondSaved = await _pdfEditorService.SavePdfAsync(secondHalf, secondHalfPath);
+
+                if (firstSaved && secondSaved)
+                {
+                    StatusMessage = $"PDF分割完了: {Path.GetFileName(firstHalfPath)}, {Path.GetFileName(secondHalfPath)}";
+                    _dialogService.ShowInformation($"PDF分割が完了しました:\n前半: {firstHalfPath}\n後半: {secondHalfPath}");
+                }
+                else
+                {
+                    _dialogService.ShowError("PDF分割中にエラーが発生しました");
+                }
+
+                // リソース解放
+                firstHalf.Dispose();
+                secondHalf.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"PDF分割エラー: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 🆕 PDF結合機能
+        /// </summary>
+        [RelayCommand]
+        private async Task MergePdfAsync()
+        {
+            if (_currentDocument == null)
+            {
+                _dialogService.ShowInformation("結合する基準となるPDFを開いてください");
+                return;
+            }
+
+            try
+            {
+                var openFileDialog = new OpenFileDialog
+                {
+                    Filter = "PDF ファイル (*.pdf)|*.pdf",
+                    Title = "結合するPDFファイルを選択",
+                    Multiselect = true
+                };
+
+                if (openFileDialog.ShowDialog() == true)
+                {
+                    var mergedDocument = new PdfDocument();
+
+                    // ✅ 現在の文書のページを最初に追加
+                    foreach (var page in _currentDocument.Pages)
+                    {
+                        var pageClone = ClonePdfPage(page);
+                        mergedDocument.AddPage(pageClone);
+                    }
+
+                    // ✅ 選択されたPDFファイルを順次結合
+                    foreach (var filePath in openFileDialog.FileNames)
+                    {
+                        try
+                        {
+                            var otherDoc = await _pdfEditorService.OpenPdfAsync(filePath);
+                            foreach (var page in otherDoc.Pages)
+                            {
+                                var pageClone = ClonePdfPage(page);
+                                mergedDocument.AddPage(pageClone);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _dialogService.ShowError($"ファイル結合エラー ({Path.GetFileName(filePath)}): {ex.Message}");
+                        }
+                    }
+
+                    // 結合結果を現在の文書として設定
+                    _currentDocument?.Dispose();
+                    _currentDocument = mergedDocument;
+                    
+                    // UI状態更新
+                    UpdateDocumentState();
+                    StatusMessage = $"PDF結合完了: {openFileDialog.FileNames.Length + 1}ファイル結合";
+                    
+                    // イベント通知
+                    OnDocumentOpened(mergedDocument);
+                }
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"PDF結合エラー: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// ドキュメントを閉じる
         /// </summary>
         [RelayCommand]
@@ -187,6 +352,9 @@ namespace DocOrganizer.UI.ViewModels.V3
                 HasDocument = false;
                 FileInfo = "";
                 StatusMessage = "準備完了";
+                
+                // 🆕 PDF編集フラグリセット
+                UpdateDocumentState();
             }
         }
 
@@ -201,6 +369,9 @@ namespace DocOrganizer.UI.ViewModels.V3
                 HasDocument = true;
                 FileInfo = Path.GetFileName(filePath);
                 StatusMessage = $"読み込み完了: {Path.GetFileName(filePath)}";
+                
+                // 🆕 PDF編集状態更新
+                UpdateDocumentState();
             }
             catch (Exception ex)
             {
@@ -223,6 +394,9 @@ namespace DocOrganizer.UI.ViewModels.V3
                 HasDocument = true;
                 FileInfo = Path.GetFileName(filePath);
                 StatusMessage = $"画像変換完了: {Path.GetFileName(filePath)}";
+                
+                // 🆕 ファイル形式判定とフラグ設定
+                UpdateDocumentState();
                 
                 // 🎯 V3イベント: ドキュメント開始イベント発火
                 OnDocumentOpened(pdfDocument);
@@ -269,6 +443,40 @@ namespace DocOrganizer.UI.ViewModels.V3
             }
         }
 
+        /// <summary>
+        /// 🆕 PDF編集状態の更新
+        /// </summary>
+        private void UpdateDocumentState()
+        {
+            IsPdfDocument = _currentDocument?.FilePath?.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) == true;
+            CanSplitPdf = IsPdfDocument && _currentDocument?.Pages?.Count > 1;
+            CanMergePdf = IsPdfDocument;
+            
+            // ファイル形式判定
+            if (_currentDocument?.SourceImagePaths?.Any() == true)
+            {
+                HasHeicFiles = _currentDocument.SourceImagePaths.Any(IsHeicFile);
+                HasGifFiles = _currentDocument.SourceImagePaths.Any(IsGifFile);
+            }
+            else
+            {
+                HasHeicFiles = false;
+                HasGifFiles = false;
+            }
+        }
+
+        /// <summary>
+        /// 🆕 PDFページの安全なクローン
+        /// </summary>
+        private PdfPage ClonePdfPage(PdfPage original)
+        {
+            // 新しいPdfPageインスタンスを作成
+            var clone = new PdfPage(original.PageNumber);
+            
+            clone.Rotation = original.Rotation;
+            return clone;
+        }
+
         private bool IsPdfFile(string filePath)
         {
             return Path.GetExtension(filePath).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
@@ -286,6 +494,24 @@ namespace DocOrganizer.UI.ViewModels.V3
                    extension.Equals(".tiff", StringComparison.OrdinalIgnoreCase) ||
                    extension.Equals(".gif", StringComparison.OrdinalIgnoreCase) ||
                    extension.Equals(".webp", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 🆕 HEIC判定
+        /// </summary>
+        private bool IsHeicFile(string filePath)
+        {
+            var extension = Path.GetExtension(filePath);
+            return extension.Equals(".heic", StringComparison.OrdinalIgnoreCase) ||
+                   extension.Equals(".heif", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 🆕 GIF判定
+        /// </summary>
+        private bool IsGifFile(string filePath)
+        {
+            return Path.GetExtension(filePath).Equals(".gif", StringComparison.OrdinalIgnoreCase);
         }
 
         // Public properties for external access

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -78,7 +79,7 @@ namespace DocOrganizer.UI.ViewModels.V3
                 _dialogService.ShowInformation("ページを選択してから回転操作を行ってください");
                 return;
             }
-            await RotateSelectedPagesAsync(270); // 左回転 = 270度（反時計回り）
+            await RotateSelectedPagesAdvancedAsync(270); // 左回転 = 270度（反時計回り）
         }
 
         /// <summary>
@@ -92,7 +93,7 @@ namespace DocOrganizer.UI.ViewModels.V3
                 _dialogService.ShowInformation("ページを選択してから回転操作を行ってください");
                 return;
             }
-            await RotateSelectedPagesAsync(90); // 右回転 = 90度（時計回り）
+            await RotateSelectedPagesAdvancedAsync(90); // 右回転 = 90度（時計回り）
         }
 
         /// <summary>
@@ -342,6 +343,166 @@ namespace DocOrganizer.UI.ViewModels.V3
             {
                 _dialogService.ShowError($"回転エラー: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// 🆕 HEIC編集対応: 選択ページの形式に応じた回転処理
+        /// </summary>
+        private async Task RotateSelectedPagesAdvancedAsync(int degrees)
+        {
+            try
+            {
+                if (_currentDocument == null) return;
+
+                var selectedPages = Pages.Where(p => p.IsSelected).ToList();
+                if (!selectedPages.Any()) return;
+
+                foreach (var pageVm in selectedPages)
+                {
+                    // HEIC形式の場合は特別処理
+                    if (IsHeicSource(pageVm))
+                    {
+                        await RotateHeicPageAsync(pageVm, degrees);
+                    }
+                    else
+                    {
+                        // 通常の回転処理（既存実装）
+                        await RotateStandardPageAsync(pageVm, degrees);
+                    }
+                }
+
+                StatusMessage = $"{selectedPages.Count} ページを{Math.Abs(degrees)}度回転しました";
+                
+                // イベント通知
+                PagesChanged?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"回転エラー: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 🆕 HEICページの特別回転処理
+        /// </summary>
+        private async Task RotateHeicPageAsync(V3PageViewModel pageVm, int degrees)
+        {
+            try
+            {
+                // Core層データ更新（回転角度計算）
+                var newRotation = (pageVm.Page.Rotation + degrees) % 360;
+                if (newRotation < 0) newRotation += 360;
+
+                pageVm.Page.Rotation = newRotation;
+
+                // ページViewModelの回転更新
+                pageVm.UpdateRotationSync();
+
+                // 🎯 HEICの場合はより高品質なサムネイル再生成
+                await pageVm.RegenerateThumbnailAfterRotationAsync();
+
+                await AppendDebugLogAsync($"[HEIC_ROTATION] HEIC回転処理完了 - ページ{pageVm.PageNumber}: {degrees}度, 累積回転: {newRotation}度");
+            }
+            catch (Exception ex)
+            {
+                await AppendDebugLogAsync($"[HEIC_ROTATION_ERROR] HEICページ回転エラー - ページ{pageVm.PageNumber}: {ex.Message}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 🆕 標準ページの回転処理
+        /// </summary>
+        private async Task RotateStandardPageAsync(V3PageViewModel pageVm, int degrees)
+        {
+            try
+            {
+                // Core層データ更新（回転角度計算）
+                var newRotation = (pageVm.Page.Rotation + degrees) % 360;
+                if (newRotation < 0) newRotation += 360;
+
+                pageVm.Page.Rotation = newRotation;
+
+                // ページViewModelの回転更新
+                pageVm.UpdateRotationSync();
+
+                // サムネイル再生成
+                await pageVm.RegenerateThumbnailAfterRotationAsync();
+
+                await AppendDebugLogAsync($"[STANDARD_ROTATION] 標準回転処理完了 - ページ{pageVm.PageNumber}: {degrees}度, 累積回転: {newRotation}度");
+            }
+            catch (Exception ex)
+            {
+                await AppendDebugLogAsync($"[STANDARD_ROTATION_ERROR] 標準ページ回転エラー - ページ{pageVm.PageNumber}: {ex.Message}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 🆕 HEIC形式判定
+        /// </summary>
+        private bool IsHeicSource(V3PageViewModel pageVm)
+        {
+            // ページの元ファイルパスからHEIC判定
+            var sourcePath = pageVm.Page?.ImagePath ?? "";
+            if (string.IsNullOrEmpty(sourcePath)) return false;
+            
+            var extension = Path.GetExtension(sourcePath).ToLowerInvariant();
+            return extension == ".heic" || extension == ".heif";
+        }
+
+        /// <summary>
+        /// 🆕 GIF形式判定
+        /// </summary>
+        private bool IsGifSource(V3PageViewModel pageVm)
+        {
+            var sourcePath = pageVm.Page?.ImagePath ?? "";
+            if (string.IsNullOrEmpty(sourcePath)) return false;
+            
+            return Path.GetExtension(sourcePath).ToLowerInvariant() == ".gif";
+        }
+
+        /// <summary>
+        /// 🆕 統一編集可能性判定
+        /// </summary>
+        public bool CanEditSelectedPages()
+        {
+            var selectedPages = Pages.Where(p => p.IsSelected).ToList();
+            if (!selectedPages.Any()) return false;
+
+            // 全ての選択ページが編集可能形式かチェック
+            foreach (var page in selectedPages)
+            {
+                if (!IsEditableFormat(page))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 🆕 編集可能形式判定
+        /// </summary>
+        private bool IsEditableFormat(V3PageViewModel pageVm)
+        {
+            // PDF、HEIC、GIF、標準画像形式は全て編集可能
+            return IsHeicSource(pageVm) || IsGifSource(pageVm) || IsStandardImageFormat(pageVm);
+        }
+
+        /// <summary>
+        /// 🆕 標準画像形式判定
+        /// </summary>
+        private bool IsStandardImageFormat(V3PageViewModel pageVm)
+        {
+            var sourcePath = pageVm.Page?.ImagePath ?? "";
+            if (string.IsNullOrEmpty(sourcePath)) return true; // PDFページの場合
+
+            var extension = Path.GetExtension(sourcePath).ToLowerInvariant();
+            return extension == ".jpg" || extension == ".jpeg" || 
+                   extension == ".png" || extension == ".bmp" || 
+                   extension == ".tiff" || extension == ".webp";
         }
 
         private void UpdatePageNumbers()

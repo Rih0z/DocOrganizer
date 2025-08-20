@@ -2,6 +2,9 @@ using System.Windows;
 using Microsoft.Win32;
 using DocOrganizer.Application.Interfaces;
 using DialogResult = DocOrganizer.Application.Interfaces.DialogResult;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 
 namespace DocOrganizer.UI.Services
 {
@@ -88,6 +91,70 @@ namespace DocOrganizer.UI.Services
         {
             var result = System.Windows.MessageBox.Show(message, title, MessageBoxButton.YesNo, MessageBoxImage.Question);
             return result == MessageBoxResult.Yes;
+        }
+
+        public string? ShowInputDialog(string message, string title = "入力", string? defaultValue = null)
+        {
+            // シンプルな入力ダイアログの実装（MessageBoxの代替）
+            var inputWindow = new Window
+            {
+                Title = title,
+                Width = 400,
+                Height = 200,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                ResizeMode = ResizeMode.NoResize
+            };
+
+            var stackPanel = new StackPanel { Margin = new Thickness(20) };
+            
+            var messageBlock = new TextBlock 
+            { 
+                Text = message, 
+                Margin = new Thickness(0, 0, 0, 15),
+                TextWrapping = TextWrapping.Wrap
+            };
+            
+            var textBox = new TextBox 
+            { 
+                Text = defaultValue ?? "",
+                Margin = new Thickness(0, 0, 0, 15)
+            };
+            
+            var buttonPanel = new StackPanel 
+            { 
+                Orientation = Orientation.Horizontal, 
+                HorizontalAlignment = HorizontalAlignment.Right 
+            };
+            
+            var okButton = new Button 
+            { 
+                Content = "OK", 
+                Width = 75, 
+                Margin = new Thickness(0, 0, 10, 0),
+                IsDefault = true
+            };
+            
+            var cancelButton = new Button 
+            { 
+                Content = "キャンセル", 
+                Width = 75,
+                IsCancel = true
+            };
+
+            okButton.Click += (s, e) => { inputWindow.DialogResult = true; inputWindow.Close(); };
+            cancelButton.Click += (s, e) => { inputWindow.DialogResult = false; inputWindow.Close(); };
+
+            buttonPanel.Children.Add(okButton);
+            buttonPanel.Children.Add(cancelButton);
+            
+            stackPanel.Children.Add(messageBlock);
+            stackPanel.Children.Add(textBox);
+            stackPanel.Children.Add(buttonPanel);
+            
+            inputWindow.Content = stackPanel;
+            textBox.Focus();
+
+            return inputWindow.ShowDialog() == true ? textBox.Text : null;
         }
 
 

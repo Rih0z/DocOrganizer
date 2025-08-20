@@ -1,0 +1,15 @@
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Infrastructure\obj\Release\net6.0-windows\DocOrganizer.Infrastructure.csproj.AssemblyReference.cache
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Infrastructure\obj\Release\net6.0-windows\DocOrganizer.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Infrastructure\obj\Release\net6.0-windows\DocOrganizer.Infrastructure.csproj.CoreCompileInputs.cache
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Infrastructure\bin\Release\net6.0-windows\DocOrganizer.Infrastructure.deps.json
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Infrastructure\bin\Release\net6.0-windows\DocOrganizer.Infrastructure.dll
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Infrastructure\bin\Release\net6.0-windows\DocOrganizer.Infrastructure.pdb
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Infrastructure\bin\Release\net6.0-windows\DocOrganizer.Application.dll
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Infrastructure\bin\Release\net6.0-windows\DocOrganizer.Core.dll
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Infrastructure\bin\Release\net6.0-windows\DocOrganizer.Application.pdb
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Infrastructure\bin\Release\net6.0-windows\DocOrganizer.Core.pdb
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Infrastructure\obj\Release\net6.0-windows\DocOrganizer.Infrastructure.csproj.CopyComplete
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Infrastructure\obj\Release\net6.0-windows\DocOrganizer.Infrastructure.dll
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Infrastructure\obj\Release\net6.0-windows\refint\DocOrganizer.Infrastructure.dll
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Infrastructure\obj\Release\net6.0-windows\DocOrganizer.Infrastructure.pdb
+C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.Infrastructure\obj\Release\net6.0-windows\ref\DocOrganizer.Infrastructure.dll

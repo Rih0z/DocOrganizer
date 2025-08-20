@@ -8,6 +8,7 @@ using DocOrganizer.Application.Interfaces;
 using DocOrganizer.Application.Interfaces.V3;
 using DocOrganizer.Infrastructure.Services;
 using DocOrganizer.Infrastructure.Services.V3;
+using DocOrganizer.Infrastructure.Extensions;
 using DocOrganizer.Application.Interfaces.V3;
 using DocOrganizer.UI.Services;
 using DocOrganizer.UI.ViewModels;
@@ -53,12 +54,17 @@ namespace DocOrganizer.UI
                     // 🎯 V3実装: IImageProcessingService削除済み（V2依存関係排除）
                     services.AddSingleton<ITextOrientationService, SafeIronOcrTextOrientationService>();
                     
-                    // 🎯 V3 OSS標準サービス登録
-                    services.AddSingleton<IImageLoaderService, ImageLoaderService>();
-                    services.AddSingleton<IThumbnailGeneratorService, ThumbnailGeneratorService>();
+                    // 🏗️ V3.0.009 究極拡張可能アーキテクチャ統合 - 全プロバイダー自動登録
+                    services.AddImageProcessingProviders(); // 🚀 統一プロバイダーアーキテクチャによる全画像処理サービス統合
+                    
+                    // V3.0.009 で統合された従来サービス（プロバイダー経由で自動提供）:
+                    // - IImageLoaderService → プロバイダーアーキテクチャ
+                    // - IThumbnailGeneratorService → プロバイダーアーキテクチャ  
+                    // - IImageValidationService → プロバイダーアーキテクチャ
+                    
+                    // 残存する専用サービス
                     services.AddSingleton<IExifOrientationService, ExifOrientationService>();
                     services.AddSingleton<IHeicConversionService, HeicConversionService>();
-                    services.AddSingleton<IImageValidationService, ImageValidationService>();
                     services.AddSingleton<IFileAdditionService, FileAdditionService>();
                     
                     // 🎯 V3.0新機能: PDF出力サービス

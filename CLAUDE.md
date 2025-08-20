@@ -12,7 +12,7 @@ ai_coding_principles:
   repository_info:
     github_url: "https://github.com/Rih0z/DocOrganizer"
     latest_exe_path: "C:\\Users\\217216X721451\\github\\DocOrganizer\\release\\DocOrganizer.exe"
-    version: "3.0.005"
+    version: "3.0.009"
     features:
       - "PDF編集機能（CubePDF Utility互換）"
       - "画像→PDF変換（HEIC/JPG/PNG/JPEG対応）"
@@ -26,19 +26,46 @@ ai_coding_principles:
     description: "ユーザー向け使用ガイド"
     pdf_export_guide: "docs/PDF保存機能使用ガイド.md"
     main_readme: "README.md"
-    last_updated: "2025-08-19"
-    coverage: "V3.0.005の完全な使用方法とトラブルシューティング"
+    last_updated: "2025-08-20"
+    coverage: "V3.0.009の完全な使用方法とトラブルシューティング"
+    
+  technical_documentation:
+    description: "技術実装ドキュメント"
+    heic_support_guide: "docs/HEIC_Support_Complete_Guide.md"
+    architecture_guide: "docs/V3_ARCHITECTURE_IMAGE_DISPLAY.md"
+    last_updated: "2025-08-20"
+    coverage: "V3.0.009のHEIC完全対応とプロバイダーアーキテクチャ実装"
     
   version_management:
     description: "ビルド時自動バージョン管理システム"
-    last_updated: "2025-08-19"
+    last_updated: "2025-08-20"
     mandatory: "ビルドの度に最後の桁を自動インクリメント"
     
-    current_version: "3.0.005"
+    current_version: "3.0.009"
     version_format: "メジャー.マイナー.ビルド番号"
     increment_rule: "ビルドの度に最後の桁（ビルド番号）を1つずつ上げる"
     
     version_history:
+      "3.0.009":
+        date: "2025-08-20"
+        changes: "HEIC完全対応実装完了 - プレビュー表示・アスペクト比問題完全解決"
+        build_reason: "右側プレビュー表示失敗とアスペクト比崩れの根本修正"
+        technical_detail: "PreviewManagementViewModel修正でプロバイダーアーキテクチャ採用、全プロバイダーでアスペクト比保持ロジック実装、CalculatePreviewSize()追加、DecodePixelサイズ指定最適化"
+      "3.0.008":
+        date: "2025-08-20"
+        changes: "プロバイダーアーキテクチャ基盤実装"
+        build_reason: "企業レベル拡張可能設計によるHEIC表示問題根本解決準備"
+        technical_detail: "統一プロバイダーインターフェース設計、ImageProcessingProviderManager実装、属性ベース自動登録システム準備"
+      "3.0.007":
+        date: "2025-08-20"
+        changes: "企業レベルプロバイダーアーキテクチャ実装 - HEIC検証問題根本解決"
+        build_reason: "Strategy Pattern + Provider Pattern によるHEICドラッグ&ドロップバグ完全修正"
+        technical_detail: "IImageValidationProvider基盤システム実装、HeicValidationProvider/StandardImageValidationProvider/GifValidationProvider統合、形式別最適化検証"
+      "3.0.006":
+        date: "2025-08-20"
+        changes: "バグ分析・アーキテクチャ設計完了"
+        build_reason: "HEIC検証問題の根本原因分析と企業レベル解決策設計"
+        technical_detail: "OSS研究、ベストプラクティス分析、プロバイダーアーキテクチャ設計文書作成"
       "3.0.005":
         date: "2025-08-19"
         changes: "画像向き問題完全解決 - AutoOrient()統一実装"

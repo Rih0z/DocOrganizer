@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:behaviors="clr-namespace:DocOrganizer.UI.Behaviors"
         mc:Ignorable="d"
-        Title="DocOrganizer 3.0.005" 
+        Title="DocOrganizer 3.0.009" 
         Height="700" Width="1000"
         WindowStartupLocation="CenterScreen"
         Background="#F0F0F0"
@@ -91,6 +91,38 @@
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
+                <MenuItem Header="ページ削除(_D)" Command="{Binding PageOperation.DeleteSelectedPagesCommand}">
+                    <MenuItem.Icon>
+                        <TextBlock Text="🗑️" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="ページ移動(_M)">
+                    <MenuItem Header="上に移動(_U)" Command="{Binding PageOperation.MovePageUpCommand}">
+                        <MenuItem.Icon>
+                            <TextBlock Text="⬆️" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="下に移動(_D)" Command="{Binding PageOperation.MovePageDownCommand}">
+                        <MenuItem.Icon>
+                            <TextBlock Text="⬇️" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                </MenuItem>
+            </MenuItem>
+
+            <!-- 🆕 PDF編集メニュー -->
+            <MenuItem Header="PDF編集(_P)" Visibility="{Binding DocumentManagement.IsPdfDocument, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <MenuItem Header="PDF分割(_S)..." Command="{Binding DocumentManagement.SplitPdfCommand}" IsEnabled="{Binding DocumentManagement.CanSplitPdf}">
+                    <MenuItem.Icon>
+                        <TextBlock Text="📄➗" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="PDF結合(_M)..." Command="{Binding DocumentManagement.MergePdfCommand}" IsEnabled="{Binding DocumentManagement.CanMergePdf}">
+                    <MenuItem.Icon>
+                        <TextBlock Text="📄➕" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
                 <MenuItem Header="削除(_D)" Command="{Binding PageOperation.DeleteSelectedPagesCommand}" InputGestureText="Delete">
                     <MenuItem.Icon>
                         <TextBlock Text="🗑" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -167,6 +199,18 @@
                         IsEnabled="{Binding PageOperation.HasSelectedPages}">
                     <TextBlock Text="🗑" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
+                
+                <Separator/>
+                
+                <!-- ページ移動 -->
+                <Button Command="{Binding PageOperation.MovePageUpCommand}" ToolTip="上に移動" Padding="4"
+                        IsEnabled="{Binding PageOperation.CanMoveUp}">
+                    <TextBlock Text="▲" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Button>
+                <Button Command="{Binding PageOperation.MovePageDownCommand}" ToolTip="下に移動" Padding="4"
+                        IsEnabled="{Binding PageOperation.CanMoveDown}">
+                    <TextBlock Text="▼" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Button>
                 <Separator/>
                 
                 <!-- 📖 全ページ自動回転ボタン -->
@@ -176,15 +220,6 @@
                         <TextBlock Text="📖" FontSize="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
                         <TextBlock Text="自動回転" FontSize="11" VerticalAlignment="Center" FontWeight="Bold" Foreground="#1976D2"/>
                     </StackPanel>
-                </Button>
-                <Separator/>
-                
-                <!-- ページ順序変更 -->
-                <Button Command="{Binding PageOperation.MovePageUpCommand}" ToolTip="上に移動" Padding="4" Width="30" Height="24">
-                    <TextBlock Text="▲" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Button>
-                <Button Command="{Binding PageOperation.MovePageDownCommand}" ToolTip="下に移動" Padding="4" Width="30" Height="24">
-                    <TextBlock Text="▼" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
                 <Separator/>
                 
@@ -219,6 +254,65 @@
                 <!-- 画質選択 -->
                 <ComboBox Width="120" SelectedItem="{Binding SelectedQuality}" Margin="4,0" ToolTip="PDF出力画質選択"
                           ItemsSource="{Binding QualityOptions}" DisplayMemberPath="DisplayName"/>
+                          
+                <Separator/>
+                
+                <!-- キーボードショートカット表示 -->
+                <TextBlock Text="Ctrl+S: 保存 | Ctrl+O: 開く | Delete: 削除" FontSize="10" Foreground="Gray" VerticalAlignment="Center" Margin="8,0"/>
+            </ToolBar>
+            
+            <!-- 🆕 PDF編集専用ツールバー -->
+            <ToolBar x:Name="PdfEditingToolBar" Background="Transparent" 
+                     Visibility="{Binding DocumentManagement.IsPdfDocument, Converter={StaticResource BooleanToVisibilityConverter}}">
+                
+                <!-- PDF分割ボタン -->
+                <Button Command="{Binding DocumentManagement.SplitPdfCommand}" ToolTip="PDF分割" Padding="6,4"
+                        IsEnabled="{Binding DocumentManagement.CanSplitPdf}" Background="#FFF3E0" BorderBrush="#FF9800">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="📄➗" FontSize="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="分割" FontSize="11" VerticalAlignment="Center" FontWeight="Bold" Foreground="#FF9800"/>
+                    </StackPanel>
+                </Button>
+                
+                <!-- PDF結合ボタン -->
+                <Button Command="{Binding DocumentManagement.MergePdfCommand}" ToolTip="PDF結合" Padding="6,4"
+                        IsEnabled="{Binding DocumentManagement.CanMergePdf}" Background="#E8F5E8" BorderBrush="#4CAF50">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="📄➕" FontSize="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="結合" FontSize="11" VerticalAlignment="Center" FontWeight="Bold" Foreground="#4CAF50"/>
+                    </StackPanel>
+                </Button>
+                
+                <Separator/>
+                
+                <!-- PDF編集情報表示 -->
+                <TextBlock Text="PDF編集モード" FontSize="11" FontWeight="Bold" Foreground="#1976D2" 
+                           VerticalAlignment="Center" Margin="8,0"/>
+                
+            </ToolBar>
+            
+            <!-- 🆕 HEIC/GIF対応表示ツールバー -->
+            <ToolBar x:Name="FormatSupportToolBar" Background="Transparent"
+                     Visibility="{Binding DocumentManagement.HasHeicFiles, Converter={StaticResource BooleanToVisibilityConverter}}">
+                
+                <!-- HEIC対応表示 -->
+                <Border Background="#F3E5F5" BorderBrush="#9C27B0" BorderThickness="1" CornerRadius="3" Padding="4,2"
+                        Visibility="{Binding DocumentManagement.HasHeicFiles, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="📱" FontSize="12" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                        <TextBlock Text="HEIC対応" FontSize="10" VerticalAlignment="Center" FontWeight="Bold" Foreground="#9C27B0"/>
+                    </StackPanel>
+                </Border>
+                
+                <!-- GIF対応表示 -->
+                <Border Background="#E1F5FE" BorderBrush="#03A9F4" BorderThickness="1" CornerRadius="3" Padding="4,2" Margin="4,0,0,0"
+                        Visibility="{Binding DocumentManagement.HasGifFiles, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🎞️" FontSize="12" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                        <TextBlock Text="GIF対応" FontSize="10" VerticalAlignment="Center" FontWeight="Bold" Foreground="#03A9F4"/>
+                    </StackPanel>
+                </Border>
+                
             </ToolBar>
         </ToolBarTray>
 

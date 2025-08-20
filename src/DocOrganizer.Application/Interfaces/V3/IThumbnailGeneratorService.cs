@@ -45,25 +45,4 @@ namespace DocOrganizer.Application.Interfaces.V3
         /// <returns>サムネイル配列</returns>
         Task<ImageSource[]> GenerateBatchThumbnailsAsync(string[] filePaths, ThumbnailSize thumbnailSize);
     }
-
-    /// <summary>
-    /// サムネイルサイズ定義
-    /// </summary>
-    public enum ThumbnailSize
-    {
-        /// <summary>
-        /// 左パネル用小サイズ（150x200）
-        /// </summary>
-        LeftPanel,
-        
-        /// <summary>
-        /// 右プレビュー用高解像度（1920x1080上限）
-        /// </summary>
-        RightPreview,
-        
-        /// <summary>
-        /// PDF用中サイズ（300x400）
-        /// </summary>
-        PdfPreview
-    }
 }

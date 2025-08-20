@@ -216,69 +216,26 @@ namespace DocOrganizer.UI.ViewModels.V3
             
             try
             {
-                // 🎯 完全修正: Task.Run内では同期版ログを使用
-                await AppendDebugLogAsync($"[完全修正] Task.Run開始");
+                // 🎯 V3.0.009修正: プロバイダーアーキテクチャを使用してHEIC対応
+                await AppendDebugLogAsync($"[V3修正] IImageLoaderService使用開始");
                 
-                var bitmapImageBytes = await Task.Run(() =>
-                {
-                    try
-                    {
-                        // 🚨 重要: Task.Run内では同期版ログのみ使用
-                        AppendDebugLogSync($"[Task.Run] ImageSharp読み込み開始");
-                        
-                        // ImageSharpで画像読み込み（バックグラウンド）
-                        using var image = SixLabors.ImageSharp.Image.Load(imagePath);
-                        
-                        // EXIF自動補正（バックグラウンド）
-                        image.Mutate(x => x.AutoOrient());
-                        AppendDebugLogSync($"[Task.Run] AutoOrient完了: {image.Width}x{image.Height}");
-                        
-                        // プレビューサイズにリサイズ（バックグラウンド）
-                        var maxWidth = 800;
-                        var maxHeight = 600;
-                        var scale = Math.Min((double)maxWidth / image.Width, (double)maxHeight / image.Height);
-                        if (scale < 1.0)
-                        {
-                            var newWidth = (int)(image.Width * scale);
-                            var newHeight = (int)(image.Height * scale);
-                            image.Mutate(x => x.Resize(newWidth, newHeight));
-                            AppendDebugLogSync($"[Task.Run] リサイズ完了: {newWidth}x{newHeight}");
-                        }
-
-                        // PNG形式でバイト配列に変換（同期版）
-                        using var memoryStream = new MemoryStream();
-                        image.SaveAsPng(memoryStream); // 🎯 同期版に変更
-                        AppendDebugLogSync($"[Task.Run] PNG変換完了: {memoryStream.Length}バイト");
-                        return memoryStream.ToArray();
-                    }
-                    catch (Exception ex)
-                    {
-                        AppendDebugLogSync($"[Task.Run] 例外: {ex.Message}");
-                        return null;
-                    }
-                });
+                // プロバイダーアーキテクチャによる高品質プレビュー画像生成
+                var previewImage = await _imageLoaderService.LoadHighQualityImageAsync(imagePath);
                 
-                if (bitmapImageBytes != null)
+                if (previewImage != null)
                 {
-                    // UIスレッドでBitmapImage作成（軽量処理のみ）
+                    // UIスレッドでCurrentPageImage設定
                     await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                     {
                         try
                         {
-                            var bitmapImage = new BitmapImage();
-                            bitmapImage.BeginInit();
-                            bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                            bitmapImage.StreamSource = new MemoryStream(bitmapImageBytes);
-                            bitmapImage.EndInit();
-                            bitmapImage.Freeze();
-                            
-                            CurrentPageImage = bitmapImage;
+                            CurrentPageImage = previewImage;
                             OnPropertyChanged(nameof(CurrentPageImage));
-                            AppendDebugLogSync($"[UIスレッド] CurrentPageImage設定成功: {bitmapImage.Width}x{bitmapImage.Height}");
+                            AppendDebugLogSync($"[V3修正] CurrentPageImage設定成功: プロバイダー経由");
                         }
                         catch (Exception ex)
                         {
-                            AppendDebugLogSync($"[UIスレッド] BitmapImage作成失敗: {ex.Message}");
+                            AppendDebugLogSync($"[V3修正] CurrentPageImage設定失敗: {ex.Message}");
                             CurrentPageImage = null;
                             OnPropertyChanged(nameof(CurrentPageImage));
                         }
@@ -286,7 +243,7 @@ namespace DocOrganizer.UI.ViewModels.V3
                 }
                 else
                 {
-                    await AppendDebugLogAsync($"[完全修正] バイト配列取得失敗");
+                    await AppendDebugLogAsync($"[V3修正] プロバイダーからの画像取得失敗");
                     await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                     {
                         CurrentPageImage = null;
@@ -296,7 +253,7 @@ namespace DocOrganizer.UI.ViewModels.V3
             }
             catch (Exception ex)
             {
-                await AppendDebugLogAsync($"[完全修正] 全体例外: {ex.Message}");
+                await AppendDebugLogAsync($"[V3修正] 全体例外: {ex.Message}");
                 await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     CurrentPageImage = null;
