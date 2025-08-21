@@ -230,13 +230,16 @@
                 <Button Command="{Binding ZoomOutCommand}" ToolTip="縮小" Padding="4">
                     <TextBlock Text="🔍-" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
-                <ComboBox Width="80" SelectedItem="{Binding PreviewManagement.ZoomLevel}" Margin="4,0">
-                    <ComboBoxItem>50%</ComboBoxItem>
-                    <ComboBoxItem>75%</ComboBoxItem>
-                    <ComboBoxItem IsSelected="True">100%</ComboBoxItem>
-                    <ComboBoxItem>125%</ComboBoxItem>
-                    <ComboBoxItem>150%</ComboBoxItem>
-                    <ComboBoxItem>200%</ComboBoxItem>
+                <ComboBox Width="80" 
+                          Text="{Binding PreviewManagement.ZoomLevel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          IsEditable="True" Margin="4,0">
+                    <ComboBoxItem Content="25%"/>
+                    <ComboBoxItem Content="50%"/>
+                    <ComboBoxItem Content="75%"/>
+                    <ComboBoxItem Content="100%"/>
+                    <ComboBoxItem Content="125%"/>
+                    <ComboBoxItem Content="150%"/>
+                    <ComboBoxItem Content="200%"/>
                 </ComboBox>
                 
                 <Separator/>
@@ -428,8 +431,8 @@
                                 VerticalAlignment="Center">
                             <Image Source="{Binding PreviewManagement.CurrentPageImage}" 
                                    Stretch="Uniform"
-                                   MaxWidth="{Binding PreviewManagement.PreviewWidth}"
-                                   MaxHeight="{Binding PreviewManagement.PreviewHeight}"
+                                   Width="{Binding PreviewManagement.PreviewWidth}"
+                                   Height="{Binding PreviewManagement.PreviewHeight}"
                                    RenderOptions.BitmapScalingMode="HighQuality"/>
                         </Border>
                     </ScrollViewer>

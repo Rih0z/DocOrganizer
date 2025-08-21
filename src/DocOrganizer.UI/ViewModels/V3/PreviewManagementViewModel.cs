@@ -37,6 +37,20 @@ namespace DocOrganizer.UI.ViewModels.V3
         [ObservableProperty]
         private string zoomLevel = "100%";
 
+        partial void OnZoomLevelChanged(string value)
+        {
+            if (!string.IsNullOrEmpty(value) && value.EndsWith("%"))
+            {
+                var zoomText = value.Replace("%", "");
+                if (double.TryParse(zoomText, out var zoom))
+                {
+                    ApplyZoom(zoom);
+                }
+            }
+        }
+
+
+
         [ObservableProperty]
         private string pageInfo = "";
 
@@ -45,6 +59,8 @@ namespace DocOrganizer.UI.ViewModels.V3
 
         private V3PageViewModel? _selectedPage;
         private PdfDocument? _currentDocument;
+        
+
 
         public PreviewManagementViewModel(
             IImageLoaderService imageLoaderService,
@@ -474,8 +490,9 @@ namespace DocOrganizer.UI.ViewModels.V3
         private void ApplyZoom(double zoomPercentage)
         {
             ZoomLevel = $"{zoomPercentage:F0}%";
-
-            if (_selectedPage?.PreviewImage is System.Windows.Media.Imaging.BitmapImage bitmap)
+            
+            // ✅ プレビューエリアのズーム（CurrentPageImage使用）
+            if (CurrentPageImage is System.Windows.Media.Imaging.BitmapImage bitmap)
             {
                 var scale = zoomPercentage / 100.0;
                 PreviewWidth = bitmap.PixelWidth * scale;
