@@ -32,9 +32,11 @@ ai_coding_principles:
   technical_documentation:
     description: "技術実装ドキュメント"
     heic_support_guide: "docs/HEIC_Support_Complete_Guide.md"
-    architecture_guide: "docs/V3_ARCHITECTURE_IMAGE_DISPLAY.md"
-    last_updated: "2025-08-20"
-    coverage: "V3.0.009のHEIC完全対応とプロバイダーアーキテクチャ実装"
+    complete_architecture: "docs/V3_COMPLETE_ARCHITECTURE.md"
+    image_display_architecture: "docs/V3_ARCHITECTURE_IMAGE_DISPLAY.md"
+    rotation_features: "docs/V3_ROTATION_AND_IMAGE_REPLACEMENT.md"
+    last_updated: "2025-08-21"
+    coverage: "V3.0.009完全アーキテクチャ解説、HEIC完全対応、プロバイダーパターン実装詳細"
     
   version_management:
     description: "ビルド時自動バージョン管理システム"

@@ -32,7 +32,8 @@
 |------|--------|
 | **🎯 使用方法** | [`docs/PDF保存機能使用ガイド.md`](docs/PDF保存機能使用ガイド.md) |
 | **🖼️ HEIC対応詳細** | [`docs/HEIC_Support_Complete_Guide.md`](docs/HEIC_Support_Complete_Guide.md) |
-| **🏗️ 技術仕様** | [`docs/V3_ARCHITECTURE_IMAGE_DISPLAY.md`](docs/V3_ARCHITECTURE_IMAGE_DISPLAY.md) |
+| **🏗️ V3完全アーキテクチャ** | [`docs/V3_COMPLETE_ARCHITECTURE.md`](docs/V3_COMPLETE_ARCHITECTURE.md) |
+| **📱 画像表示システム** | [`docs/V3_ARCHITECTURE_IMAGE_DISPLAY.md`](docs/V3_ARCHITECTURE_IMAGE_DISPLAY.md) |
 | **🔧 機能仕様** | [`docs/V3_ROTATION_AND_IMAGE_REPLACEMENT.md`](docs/V3_ROTATION_AND_IMAGE_REPLACEMENT.md) |
 
 ## 🛠️ 開発者向け
