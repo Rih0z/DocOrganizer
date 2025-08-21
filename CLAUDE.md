@@ -35,8 +35,9 @@ ai_coding_principles:
     complete_architecture: "docs/V3_COMPLETE_ARCHITECTURE.md"
     image_display_architecture: "docs/V3_ARCHITECTURE_IMAGE_DISPLAY.md"
     rotation_features: "docs/V3_ROTATION_AND_IMAGE_REPLACEMENT.md"
+    heic_pdf_bug_fix_report: "docs/HEIC_PDF_Export_Bug_Fix_Complete_Report_20250821.md"
     last_updated: "2025-08-21"
-    coverage: "V3.0.009完全アーキテクチャ解説、HEIC完全対応、プロバイダーパターン実装詳細"
+    coverage: "V3.0.009完全アーキテクチャ解説、HEIC完全対応、プロバイダーパターン実装詳細、HEIC PDF出力バグ修正完了報告"
     
   version_management:
     description: "ビルド時自動バージョン管理システム"

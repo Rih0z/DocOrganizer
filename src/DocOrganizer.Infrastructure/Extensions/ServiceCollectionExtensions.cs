@@ -70,6 +70,9 @@ namespace DocOrganizer.Infrastructure.Extensions
                         provider.GetRequiredService<IImageProcessingProviderManager>(),
                         provider.GetRequiredService<ILogger<ImageValidationService>>()));
 
+                // ✅ 新しいV3変換サービスを追加
+                services.AddScoped<IDocumentToV3ConverterService, DocumentToV3ConverterService>();
+
                 extensionLogger.LogInformation("[V3_DI] ✅ 究極拡張可能アーキテクチャ統合完了!");
                 
                 return services;

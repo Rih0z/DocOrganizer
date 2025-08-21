@@ -22,6 +22,8 @@ namespace DocOrganizer.UI.ViewModels.V3
         private readonly IDialogService _dialogService;
         // 🎯 V3専用: V2のIImageProcessingService削除済み
         private readonly IFileAdditionService _fileAdditionService;
+        private readonly IPdfExportService _pdfExportService;                    // ✅ 追加
+        private readonly IDocumentToV3ConverterService _v3ConverterService;      // ✅ 追加
 
         [ObservableProperty]
         private string statusMessage = "準備完了";
@@ -52,15 +54,18 @@ namespace DocOrganizer.UI.ViewModels.V3
         private bool hasGifFiles;
 
         public DocumentManagementViewModel(
-            IPdfEditorService pdfEditorService,
-            IDialogService dialogService,
-            IFileAdditionService fileAdditionService)
-        {
-            _pdfEditorService = pdfEditorService;
-            _dialogService = dialogService;
-            // 🎯 V3専用: V2のIImageProcessingService削除済み
-            _fileAdditionService = fileAdditionService;
-        }
+        IPdfEditorService pdfEditorService,
+        IDialogService dialogService,
+        IFileAdditionService fileAdditionService,
+        IPdfExportService pdfExportService,
+        IDocumentToV3ConverterService v3ConverterService)
+    {
+        _pdfEditorService = pdfEditorService;
+        _dialogService = dialogService;
+        _fileAdditionService = fileAdditionService;
+        _pdfExportService = pdfExportService;        // ✅ 追加
+        _v3ConverterService = v3ConverterService;    // ✅ 追加
+    }
 
         /// <summary>
         /// 新規ドキュメント作成
@@ -409,39 +414,94 @@ namespace DocOrganizer.UI.ViewModels.V3
         }
 
         private async Task SaveDocumentAsync(string filePath)
+    {
+        if (_currentDocument == null) return;
+
+        try
         {
-            if (_currentDocument == null) return;
+            StatusMessage = "PDF を保存中...";
+            
+            // 🚨 緊急デバッグログ追加
+            await AppendDebugLogAsync($"[SaveDocument] PDF保存開始: {filePath}");
+            await AppendDebugLogAsync($"[SaveDocument] _currentDocument != null: {_currentDocument != null}");
+            await AppendDebugLogAsync($"[SaveDocument] _currentDocument.Pages.Count: {_currentDocument?.Pages?.Count}");
+            await AppendDebugLogAsync($"[SaveDocument] _currentDocument.SourceImagePaths?.Count: {_currentDocument?.SourceImagePaths?.Count}");
 
-            try
+            // output フォルダの作成
+            var outputDir = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
             {
-                StatusMessage = "PDF を保存中...";
+                Directory.CreateDirectory(outputDir);
+            }
 
-                // outputフォルダの作成
-                var outputDir = Path.GetDirectoryName(filePath);
-                if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
-                {
-                    Directory.CreateDirectory(outputDir);
-                }
+            // 🚨 V3判定の詳細ログ
+            await AppendDebugLogAsync($"[SaveDocument] V3判定開始");
+            var hasV3Content = await _v3ConverterService.HasV3EditableContentAsync(_currentDocument);
+            await AppendDebugLogAsync($"[SaveDocument] HasV3EditableContent: {hasV3Content}");
 
-                // PDF保存
-                var success = await _pdfEditorService.SavePdfAsync(_currentDocument, filePath);
+            if (hasV3Content)
+            {
+                await AppendDebugLogAsync($"[SaveDocument] V3処理分岐開始");
+                
+                // ✅ V3統一処理（画像ベースのPDF）
+                var pageData = await _v3ConverterService.GetCurrentEditStateAsync(_currentDocument);
+                await AppendDebugLogAsync($"[SaveDocument] V3PageData取得完了: {pageData?.Count}ページ");
+                
+                var settings = new PdfQualitySettings(
+                    DocOrganizer.Core.Models.QualityLevel.High,
+                    1920,
+                    1080, 
+                    95,
+                    "高品質"
+                );
 
+                await AppendDebugLogAsync($"[SaveDocument] V3 ExportCurrentStateAsync開始");
+                var success = await _pdfExportService.ExportCurrentStateAsync(pageData, settings, filePath);
+                await AppendDebugLogAsync($"[SaveDocument] V3 ExportCurrentStateAsync結果: {success}");
+                
                 if (success)
                 {
                     StatusMessage = $"保存完了: {Path.GetFileName(filePath)}";
                     _currentDocument.FilePath = filePath;
                     FileInfo = Path.GetFileName(filePath);
+                    await AppendDebugLogAsync($"[SaveDocument] V3処理成功");
                 }
                 else
                 {
-                    _dialogService.ShowError("PDFの保存に失敗しました");
+                    await AppendDebugLogAsync($"[SaveDocument] V3処理失敗");
+                    _dialogService.ShowError("V3 PDF出力に失敗しました");
                 }
             }
-            catch (Exception ex)
+            else
             {
-                _dialogService.ShowError($"保存エラー: {ex.Message}");
+                await AppendDebugLogAsync($"[SaveDocument] 従来処理分岐開始");
+                
+                // ✅ 従来処理（通常のPDF文書）
+                await AppendDebugLogAsync($"[SaveDocument] 従来 SavePdfAsync開始");
+                var success = await _pdfEditorService.SavePdfAsync(_currentDocument, filePath);
+                await AppendDebugLogAsync($"[SaveDocument] 従来 SavePdfAsync結果: {success}");
+                
+                if (success)
+                {
+                    StatusMessage = $"保存完了: {Path.GetFileName(filePath)}";
+                    _currentDocument.FilePath = filePath;
+                    FileInfo = Path.GetFileName(filePath);
+                    await AppendDebugLogAsync($"[SaveDocument] 従来処理成功");
+                }
+                else
+                {
+                    await AppendDebugLogAsync($"[SaveDocument] 従来処理失敗");
+                    _dialogService.ShowError("PDF保存に失敗しました");
+                }
             }
         }
+        catch (Exception ex)
+        {
+            await AppendDebugLogAsync($"[SaveDocument] 例外発生: {ex.Message}");
+            await AppendDebugLogAsync($"[SaveDocument] StackTrace: {ex.StackTrace}");
+            _dialogService.ShowError($"保存エラー: {ex.Message}");
+        }
+    }
 
         /// <summary>
         /// 🆕 PDF編集状態の更新
@@ -530,6 +590,21 @@ namespace DocOrganizer.UI.ViewModels.V3
         protected virtual void OnDocumentClosed()
         {
             DocumentClosed?.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>
+        /// 🚨 緊急デバッグログ出力メソッド
+        /// </summary>
+        private async Task AppendDebugLogAsync(string message)
+        {
+            try
+            {
+                var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}";
+                var logPath = @"C:\Users\217216X721451\github\DocOrganizer\release\DEBUG_LOG.txt";
+                await System.IO.File.AppendAllTextAsync(logPath, logMessage + Environment.NewLine);
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] {message}");
+            }
+            catch { /* ログ出力エラーは無視 */ }
         }
 
         protected virtual void OnDocumentSaved(string filePath)

@@ -53,6 +53,9 @@ namespace DocOrganizer.Infrastructure.Services.V3
                 // 🎯 既存サービス新アーキテクチャ対応
                 services.AddScoped<IImageValidationService, EnterpriseImageValidationService>();
 
+                // ✅ 新しいサービスを追加
+                services.AddScoped<IDocumentToV3ConverterService, DocumentToV3ConverterService>();
+
                 return services;
             }
             catch (Exception ex)

@@ -23,13 +23,18 @@ public class PdfExportService : IPdfExportService
 {
     private readonly IPdfService _pdfService;
     private readonly ILogger<PdfExportService> _logger;
+    private readonly IHeicConversionService _heicConversionService;
 
     public event EventHandler<PdfExportProgressEventArgs>? ProgressChanged;
 
-    public PdfExportService(IPdfService pdfService, ILogger<PdfExportService> logger)
+    public PdfExportService(
+        IPdfService pdfService, 
+        ILogger<PdfExportService> logger,
+        IHeicConversionService heicConversionService)
     {
         _pdfService = pdfService;
         _logger = logger;
+        _heicConversionService = heicConversionService;
     }
 
     public async Task<bool> ExportCurrentStateAsync(
@@ -159,7 +164,23 @@ public class PdfExportService : IPdfExportService
             _logger.LogDebug("[PdfExportService] 画像処理開始: {ImagePath}, 回転: {Rotation}度", 
                 pageData.ImagePath, pageData.Rotation);
 
-            using var image = await SixLabors.ImageSharp.Image.LoadAsync<SixLabors.ImageSharp.PixelFormats.Rgba32>(pageData.ImagePath);
+            var imagePath = pageData.ImagePath;
+            
+            // ✅ HEIC判定と事前変換
+            if (IsHeicFile(imagePath))
+            {
+                _logger.LogDebug("[PdfExportService] HEIC形式を検出、JPEG変換を実行: {OriginalPath}", imagePath);
+                await AppendDebugLogAsync($"[ProcessPageImageAsync] HEIC形式検出: {imagePath}");
+                
+                // HeicConversionServiceを使用してJPEG変換
+                imagePath = await _heicConversionService.ConvertHeicToTempJpegAsync(imagePath);
+                
+                _logger.LogDebug("[PdfExportService] HEIC→JPEG変換完了: {ConvertedPath}", imagePath);
+                await AppendDebugLogAsync($"[ProcessPageImageAsync] HEIC→JPEG変換完了: {imagePath}");
+            }
+
+            // ImageSharpで処理（変換済みJPEGまたは他形式）
+            using var image = await SixLabors.ImageSharp.Image.LoadAsync<SixLabors.ImageSharp.PixelFormats.Rgba32>(imagePath);
 
             // 🎯 サムネイルと同じ処理: EXIF Orientation自動補正（最重要修正）
             image.Mutate(x => x.AutoOrient());
@@ -350,5 +371,14 @@ public class PdfExportService : IPdfExportService
         {
             // ログ出力エラーは無視
         }
+    }
+
+    /// <summary>
+    /// HEIC形式のファイルかどうかを判定
+    /// </summary>
+    private static bool IsHeicFile(string filePath)
+    {
+        var extension = Path.GetExtension(filePath).ToLowerInvariant();
+        return extension == ".heic" || extension == ".heif";
     }
 }
