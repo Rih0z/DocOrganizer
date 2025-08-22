@@ -1,0 +1,12 @@
+[2025-08-22 14:20:31] V3 Startup開始
+[2025-08-22 14:20:31] Host.StartAsync開始
+[2025-08-22 14:20:31] Host.StartAsync成功
+[2025-08-22 14:20:31] MainWindow取得開始
+[2025-08-22 14:20:31] MainWindow取得成功
+[2025-08-22 14:20:31] MainCompositeViewModel取得開始
+[2025-08-22 14:20:31] MainCompositeViewModel取得成功
+[2025-08-22 14:20:31] DataContext設定開始
+[2025-08-22 14:20:31] DataContext設定成功
+[2025-08-22 14:20:31] MainWindow.Show開始
+[2025-08-22 14:20:32] MainWindow.Show成功
+[2025-08-22 14:20:32] V3 Startup完了

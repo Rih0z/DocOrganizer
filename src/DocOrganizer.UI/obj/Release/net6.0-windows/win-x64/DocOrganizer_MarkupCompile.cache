@@ -1,5 +1,5 @@
 ﻿DocOrganizer
-3.0.009.0
+3.0.024.0
 
 winexe
 C#
@@ -12,7 +12,7 @@ TRACE;RELEASE;NET;NET6_0;NETCOREAPP
 C:\Users\217216X721451\github\DocOrganizer\src\DocOrganizer.UI\App.xaml
 1-1644662438
 
-15-1119439631
+16-509106153
 2531452607931
 Views\MainWindow.xaml;
 

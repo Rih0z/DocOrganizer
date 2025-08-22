@@ -3143,7 +3143,7 @@
           "build/net6.0/xunit.runner.visualstudio.props": {}
         }
       },
-      "DocOrganizer/3.0.9": {
+      "DocOrganizer/3.0.24": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v6.0",
         "dependencies": {
@@ -8943,7 +8943,7 @@
         "xunit.runner.visualstudio.nuspec"
       ]
     },
-    "DocOrganizer/3.0.9": {
+    "DocOrganizer/3.0.24": {
       "type": "project",
       "path": "../../src/DocOrganizer.UI/DocOrganizer.UI.csproj",
       "msbuildProject": "../../src/DocOrganizer.UI/DocOrganizer.UI.csproj"
@@ -8966,7 +8966,7 @@
   },
   "projectFileDependencyGroups": {
     "net6.0-windows7.0": [
-      "DocOrganizer >= 3.0.9",
+      "DocOrganizer >= 3.0.24",
       "FluentAssertions >= 6.12.0",
       "Microsoft.NET.Test.Sdk >= 17.8.0",
       "Moq >= 4.20.69",

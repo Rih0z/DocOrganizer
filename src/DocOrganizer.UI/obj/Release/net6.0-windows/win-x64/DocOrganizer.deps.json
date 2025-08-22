@@ -7,7 +7,7 @@
   "targets": {
     ".NETCoreApp,Version=v6.0": {},
     ".NETCoreApp,Version=v6.0/win-x64": {
-      "DocOrganizer/3.0.009": {
+      "DocOrganizer/3.0.024": {
         "dependencies": {
           "CommunityToolkit.Mvvm": "8.2.2",
           "DocOrganizer.Application": "1.0.0",
@@ -1691,7 +1691,7 @@
     }
   },
   "libraries": {
-    "DocOrganizer/3.0.009": {
+    "DocOrganizer/3.0.024": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

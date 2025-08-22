@@ -370,20 +370,7 @@ namespace DocOrganizer.UI.ViewModels.V3
             }
         }
 
-        /// <summary>
-        /// デバッグログ出力ヘルパー（V3.0.025）
-        /// </summary>
-        private async Task AppendDebugLogAsync(string message)
-        {
-            try
-            {
-                var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}";
-                var logPath = @"C:\Users\217216X721451\github\DocOrganizer\release\DEBUG_LOG.txt";
-                await System.IO.File.AppendAllTextAsync(logPath, logMessage + Environment.NewLine);
-                System.Diagnostics.Debug.WriteLine($"[DEBUG] {message}");
-            }
-            catch { /* ログ出力エラーは無視 */ }
-        }
+
 
         // Private helper methods
         private async Task RotateSelectedPagesAsync(int degrees)

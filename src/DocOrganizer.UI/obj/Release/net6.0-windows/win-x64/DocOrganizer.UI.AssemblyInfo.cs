@@ -12,11 +12,11 @@ using System.Reflection;
 
 [assembly: System.Reflection.AssemblyCompanyAttribute("DocOrganizer Project")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
-[assembly: System.Reflection.AssemblyFileVersionAttribute("3.0.009.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("3.0.009")]
+[assembly: System.Reflection.AssemblyFileVersionAttribute("3.0.024.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("3.0.024")]
 [assembly: System.Reflection.AssemblyProductAttribute("DocOrganizer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DocOrganizer")]
-[assembly: System.Reflection.AssemblyVersionAttribute("3.0.009.0")]
+[assembly: System.Reflection.AssemblyVersionAttribute("3.0.024.0")]
 [assembly: System.Runtime.Versioning.TargetPlatformAttribute("Windows7.0")]
 [assembly: System.Runtime.Versioning.SupportedOSPlatformAttribute("Windows7.0")]
 

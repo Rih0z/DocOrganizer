@@ -1,6 +1,6 @@
 # DocOrganizer
 
-[![Version](https://img.shields.io/badge/version-3.0.009-blue.svg)](https://github.com/Rih0z/DocOrganizer/releases)
+[![Version](https://img.shields.io/badge/version-3.0.025-blue.svg)](https://github.com/Rih0z/DocOrganizer/releases)
 [![.NET](https://img.shields.io/badge/.NET-6.0-purple.svg)](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -35,6 +35,7 @@
 | **🏗️ V3完全アーキテクチャ** | [`docs/V3_COMPLETE_ARCHITECTURE.md`](docs/V3_COMPLETE_ARCHITECTURE.md) |
 | **📱 画像表示システム** | [`docs/V3_ARCHITECTURE_IMAGE_DISPLAY.md`](docs/V3_ARCHITECTURE_IMAGE_DISPLAY.md) |
 | **🔧 機能仕様** | [`docs/V3_ROTATION_AND_IMAGE_REPLACEMENT.md`](docs/V3_ROTATION_AND_IMAGE_REPLACEMENT.md) |
+| **🎯 ドラッグ&ドロップ並び替え完全実装** ⭐ | [`docs/V3_Drag_Drop_Complete_Implementation_Report_20250822.md`](docs/V3_Drag_Drop_Complete_Implementation_Report_20250822.md) |
 | **🔧 HEIC PDF出力バグ修正** | [`docs/HEIC_PDF_Export_Bug_Fix_Complete_Report_20250821.md`](docs/HEIC_PDF_Export_Bug_Fix_Complete_Report_20250821.md) |
 | **🔍 UI拡大機能バグ修正** | [`docs/UI_Zoom_Feature_Bug_Fix_Complete_Report_20250821.md`](docs/UI_Zoom_Feature_Bug_Fix_Complete_Report_20250821.md) |
 
@@ -54,4 +55,4 @@ dotnet publish src/DocOrganizer.UI/DocOrganizer.UI.csproj -c Release -r win-x64 
 
 ---
 
-**DocOrganizer V3.0.009** - プロフェッショナルな文書整理を簡単に
+**DocOrganizer V3.0.025** - プロフェッショナルな文書整理を簡単に
