@@ -411,8 +411,22 @@ namespace DocOrganizer.UI.ViewModels.V3
         {
             try
             {
-                // PageOperationViewModelに並び替え処理を委譲
-                _ = PageOperation.ReorderPagesAsync(e.PagesToMove, e.TargetPage);
+                // 🎯 V3.0.025: InsertIndex優先でPageOperationViewModelに並び替え処理を委譲
+                if (e.InsertIndex >= 0)
+                {
+                    // InsertIndexが有効な場合（ドラッグ&ドロップ）
+                    _ = PageOperation.ReorderPagesAsync(e.PagesToMove, e.InsertIndex);
+                }
+                else if (e.TargetPage != null)
+                {
+                    // TargetPageが指定されている場合（従来の方法）
+                    _ = PageOperation.ReorderPagesAsync(e.PagesToMove, e.TargetPage);
+                }
+                else
+                {
+                    // 🎯 V3.0.025: どちらも無効な場合はエラーログ出力
+                    StatusManagement.ShowError("ページ並び替えエラー: InsertIndexとTargetPageの両方が無効です", null);
+                }
             }
             catch (Exception ex)
             {

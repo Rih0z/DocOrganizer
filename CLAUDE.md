@@ -12,7 +12,7 @@ ai_coding_principles:
   repository_info:
     github_url: "https://github.com/Rih0z/DocOrganizer"
     latest_exe_path: "C:\\Users\\217216X721451\\github\\DocOrganizer\\release\\DocOrganizer.exe"
-    version: "3.0.009"
+    version: "3.0.017"
     features:
       - "PDF編集機能（CubePDF Utility互換）"
       - "画像→PDF変換（HEIC/JPG/PNG/JPEG対応）"
@@ -44,11 +44,56 @@ ai_coding_principles:
     last_updated: "2025-08-20"
     mandatory: "ビルドの度に最後の桁を自動インクリメント"
     
-    current_version: "3.0.009"
+    current_version: "3.0.025"
     version_format: "メジャー.マイナー.ビルド番号"
     increment_rule: "ビルドの度に最後の桁（ビルド番号）を1つずつ上げる"
     
     version_history:
+      "3.0.025":
+        date: "2025-08-22"
+        changes: "ドラッグ&ドロップ並び替え機能完全実装完了 - 3段階修正による根本解決"
+        build_reason: "V3.0.024視覚フィードバック成功後、実際の並び替え機能が動作しない3つの根本問題を完全解決"
+        technical_detail: "Phase1: V3AdvancedDragDropBehavior.OnDrop()イベント重複防止フラグ実装、Phase2: V3DropInfo.CalculateInsertIndex()座標系変換修正・堅牢化、Phase3: MainCompositeViewModel.OnPageReorderRequested()でInsertIndex優先使用・PageOperationViewModel InsertIndexベースオーバーロード追加、完全なサムネイル並び替え動作実現"
+      "3.0.020":
+        date: "2025-08-22"
+        changes: "InsertIndex計算実装完了 - サムネイル並び替え機能の完全動作実現"
+        build_reason: "V3.0.019でInsertIndex=-1固定問題を解決し、正確なドロップ位置計算を実装"
+        technical_detail: "V3DropInfo修正: 1)CalculateInsertIndex()メソッド追加 2)ListBoxItem位置ベース挿入インデックス計算 3)ドロップ位置の上半分/下半分判定 4)FindParentListBox()ヘルパーメソッド実装 5)完全なサムネイル並び替え機能実現"
+      "3.0.019":
+        date: "2025-08-22"
+        changes: "静的キャッシュによる安全なサムネイル並び替え実装完了 - V3.0.018クラッシュ問題根本解決"
+        build_reason: "V3.0.018のOnDragOver無限ループ問題を解決し、WPF制約準拠の安全な実装に変更"
+        technical_detail: "DragDropHandlerViewModel実装: 1)静的キャッシュDictionary<string,V3PageViewModel>導入 2)StartDragAsync→DataFormats.Text+GUID方式に変更 3)DropAsync→キャッシュベース並び替え対応 4)自動クリーンアップTimer実装 5)包括的エラーハンドリング 6)V3.0.019詳細ログトレース機能"
+      "3.0.017":
+        date: "2025-08-22"
+        changes: "DropAsync詳細ログ大幅強化完了 - 7段階詳細分析ログでドラッグ&ドロップ問題の完全特定"
+        build_reason: "V3.0.016で並び替え機能が動作しない根本原因を特定するため、DropAsync内の全処理分岐に詳細ログを追加"
+        technical_detail: "DragDropHandlerViewModel.DropAsync内に1)基本情報確認 2)IDataObjectキャスト確認 3)データ形式完全列挙 4)各形式存在確認 5)内部ページ並び替え処理詳細 6)Serializableデータ取得確認 7)ドロップターゲット検索詳細の7段階詳細ログを実装、DEBUG_LOG.txtで完全な実行フロー追跡可能に"
+      "3.0.014":
+        date: "2025-08-21"
+        changes: "V3DropInfo根本修正完了 - HitTestによる正確なTargetElement特定実装"
+        build_reason: "サムネイル並び替え失敗の真の原因「TargetElementが常にMainWindow」問題を解決"
+        technical_detail: "V3DropInfoコンストラクター修正でFindActualTargetElement追加、HitTest→ListBoxItem検索→V3PageViewModel確認の段階的要素特定、System.Windows.Controls/Mediaのusing追加、DragDropHandlerViewModelのFindTargetPageViewModelが正しく動作する環境を構築"
+      "3.0.013":
+        date: "2025-08-21"
+        changes: "サムネイル並び替え根本問題修正完了 - TargetElement検索ロジック3段階実装"
+        build_reason: "ログ分析によりTargetElement.DataContextがnullのため処理スキップされる問題を特定・解決"
+        technical_detail: "FindTargetPageViewModel追加で1)直接DataContext 2)祖先ListBoxItem検索 3)HitTest位置ベース検索の3段階フォールバック実装、FindAncestorOfType/FindTargetByHitTestヘルパーメソッド追加、System.Windows.Controls/MediaのusingDirective追加"
+      "3.0.012":
+        date: "2025-08-21"
+        changes: "双目的ドロップターゲット問題修正完了 - 内部並び替えと外部ファイルドロップの統合処理"
+        build_reason: "ユーザー報告「並び替えが画像追加になる・右側ドロップ無効化」問題の根本解決"
+        technical_detail: "DragDropHandlerViewModel.DropAsync拡張でDataFormats.FileDrop(外部ファイル)とDataFormats.Serializable(内部並び替え)の処理分岐実装、両方のドロップエリアでファイル追加・並び替え対応、詳細デバッグログによる動作トレーサビリティ確保"
+      "3.0.011":
+        date: "2025-08-21"
+        changes: "サムネイルドラッグ&ドロップ機能修正 - ListBoxItemにIsDragSource設定追加・デバッグログ強化"
+        build_reason: "ユーザー報告「左側サムネイルをドラッグしても何も起こらない」問題の根本修正"
+        technical_detail: "MainWindow.xamlのListBox.ItemContainerStyleにV3AdvancedDragDropBehavior.IsDragSource=True追加、DragDropHandlerViewModel・V3AdvancedDragDropBehaviorに詳細デバッグログ追加、実際のドラッグ操作を可能にする修正完了"
+      "3.0.010":
+        date: "2025-08-21"
+        changes: "サムネイル画像ドラッグ&ドロップ並び替え機能実装完了"
+        build_reason: "視覚的インジケーター付きドラッグ&ドロップによるUX大幅向上"
+        technical_detail: "挿入位置判定ロジック拡張、InsertionIndicatorAdorner実装、V3AdvancedDragDropBehavior統合、Phase1-3完全実装"
       "3.0.009":
         date: "2025-08-20"
         changes: "HEIC完全対応実装完了 - プレビュー表示・アスペクト比問題完全解決"

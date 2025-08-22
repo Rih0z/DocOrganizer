@@ -11,6 +11,7 @@ using System.Windows.Shapes;
 using System.Windows.Controls;
 // Microsoft.Xaml.Behaviors.Wpfは未使用 - 削除
 using DocOrganizer.UI.ViewModels.V3;
+using DocOrganizer.UI.ViewModels;
 using DocOrganizer.UI.Adorners;
 using DocOrganizer.UI.Models.V3;
 
@@ -130,11 +131,15 @@ namespace DocOrganizer.UI.Behaviors
                 {
                     element.MouseMove += OnMouseMove;
                     element.MouseLeftButtonDown += OnMouseLeftButtonDown;
+                    element.GiveFeedback += OnGiveFeedback; // 🎯 V3.0.024: 視覚フィードバック追加
+                    _ = AppendDebugLogAsync($"[OnIsDragSourceChanged] ドラッグソース有効化: {element.GetType().Name} - DataContext: {element.DataContext?.GetType().Name ?? "null"}");
                 }
                 else
                 {
                     element.MouseMove -= OnMouseMove;
                     element.MouseLeftButtonDown -= OnMouseLeftButtonDown;
+                    element.GiveFeedback -= OnGiveFeedback; // 🎯 V3.0.024: 視覚フィードバック削除
+                    _ = AppendDebugLogAsync($"[OnIsDragSourceChanged] ドラッグソース無効化: {element.GetType().Name}");
                 }
             }
         }
@@ -171,26 +176,81 @@ namespace DocOrganizer.UI.Behaviors
 
         private static Point _dragStartPoint;
         private static bool _isDragging;
+        private static bool _isDropProcessing; // 🎯 V3.0.025: イベント重複防止フラグ
 
         private static void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             _dragStartPoint = e.GetPosition(null);
             _isDragging = false;
+            _ = AppendDebugLogAsync($"[OnMouseLeftButtonDown] ドラッグ開始点設定 - sender: {sender?.GetType().Name}, Position: X={_dragStartPoint.X:F1}, Y={_dragStartPoint.Y:F1}");
         }
 
         private static async void OnMouseMove(object sender, MouseEventArgs e)
         {
             if (e.LeftButton == MouseButtonState.Pressed && !_isDragging)
             {
+                await AppendDebugLogAsync($"[OnMouseMove] マウス移動検出 - sender: {sender?.GetType().Name}");
+                
                 var currentPosition = e.GetPosition(null);
                 var diff = _dragStartPoint - currentPosition;
 
                 if (Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance ||
                     Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance)
                 {
+                    await AppendDebugLogAsync($"[OnMouseMove] ドラッグ距離閾値越え - 距離: X={Math.Abs(diff.X):F1}, Y={Math.Abs(diff.Y):F1}");
                     _isDragging = true;
                     await StartDragAsync(sender as FrameworkElement, e);
                 }
+            }
+        }
+
+        /// <summary>
+        /// 🎯 V3.0.024: 視覚フィードバック - マウスカーソル制御
+        /// OSS標準: GiveFeedbackイベント処理による動的カーソル変更
+        /// </summary>
+        private static async void OnGiveFeedback(object sender, GiveFeedbackEventArgs e)
+        {
+            try
+            {
+                await AppendDebugLogAsync($"[OnGiveFeedback] フィードバック要求 - Effects: {e.Effects}, UseDefaultCursors: {e.UseDefaultCursors}");
+                
+                // 🎯 OSS標準: ドラッグ効果に応じたカーソル変更
+                if (e.Effects.HasFlag(DragDropEffects.Move))
+                {
+                    // サムネイル並び替え用: 掴みカーソル
+                    Mouse.SetCursor(Cursors.Hand);
+                    await AppendDebugLogAsync("[OnGiveFeedback] ✅ Move効果: 掴みカーソル(Hand)設定");
+                    e.UseDefaultCursors = false;
+                    e.Handled = true;
+                }
+                else if (e.Effects.HasFlag(DragDropEffects.Copy))
+                {
+                    // ファイルドロップ用: コピーカーソル
+                    Mouse.SetCursor(Cursors.Cross);
+                    await AppendDebugLogAsync("[OnGiveFeedback] ✅ Copy効果: コピーカーソル(Cross)設定");
+                    e.UseDefaultCursors = false;
+                    e.Handled = true;
+                }
+                else if (e.Effects == DragDropEffects.None)
+                {
+                    // ドロップ不可: 禁止カーソル
+                    Mouse.SetCursor(Cursors.No);
+                    await AppendDebugLogAsync("[OnGiveFeedback] ⚠️ None効果: 禁止カーソル(No)設定");
+                    e.UseDefaultCursors = false;
+                    e.Handled = true;
+                }
+                else
+                {
+                    // その他: デフォルトカーソル使用
+                    await AppendDebugLogAsync($"[OnGiveFeedback] 🔄 その他効果({e.Effects}): デフォルトカーソル使用");
+                    e.UseDefaultCursors = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                await AppendDebugLogAsync($"[OnGiveFeedback] ❌ エラー: {ex.Message}");
+                // エラー時はデフォルトカーソルにフォールバック
+                e.UseDefaultCursors = true;
             }
         }
 
@@ -198,18 +258,28 @@ namespace DocOrganizer.UI.Behaviors
         {
             try
             {
+                await AppendDebugLogAsync($"[StartDragAsync] 開始 - source: {source?.GetType().Name}, DataContext: {source?.DataContext?.GetType().Name ?? "null"}");
+                
                 var dragHandler = GetDragHandler(source);
+                await AppendDebugLogAsync($"[StartDragAsync] dragHandler: {dragHandler?.GetType().Name ?? "null"}");
+                
                 if (dragHandler != null)
                 {
                     var dragInfo = new V3DragInfo(source, e);
+                    await AppendDebugLogAsync($"[StartDragAsync] V3DragInfo作成完了 - SourceItem: {dragInfo.SourceItem?.GetType().Name ?? "null"}");
+                    
                     var dragData = await dragHandler.StartDragAsync(dragInfo);
+                    await AppendDebugLogAsync($"[StartDragAsync] dragHandler.StartDragAsync完了 - dragData: {dragData?.GetType().Name ?? "null"}");
                     
                     if (dragData != null)
                     {
+                        await AppendDebugLogAsync("[StartDragAsync] DragDrop.DoDragDrop実行開始");
+                        
                         // 🎯 OSS標準: ビジュアルフィードバック表示
                         var adorner = CreateDragAdorner(source, dragData);
                         
                         var result = DragDrop.DoDragDrop(source, dragData, DragDropEffects.Copy | DragDropEffects.Move);
+                        await AppendDebugLogAsync($"[StartDragAsync] DragDrop.DoDragDrop完了 - result: {result}");
                         
                         // 🎯 OSS標準: ドラッグ完了処理
                         await dragHandler.DragCompletedAsync(new V3DragCompletedInfo(dragInfo, result));
@@ -217,15 +287,25 @@ namespace DocOrganizer.UI.Behaviors
                         // Adorner削除
                         RemoveDragAdorner(adorner);
                     }
+                    else
+                    {
+                        await AppendDebugLogAsync("[StartDragAsync] dragData is null - ドラッグ開始キャンセル");
+                    }
+                }
+                else
+                {
+                    await AppendDebugLogAsync("[StartDragAsync] dragHandler is null - ドラッグ不可");
                 }
             }
             catch (Exception ex)
             {
+                await AppendDebugLogAsync($"[StartDragAsync] 例外: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"🚨 V3 DragStart Error: {ex.Message}");
             }
             finally
             {
                 _isDragging = false;
+                await AppendDebugLogAsync("[StartDragAsync] 終了 - _isDragging = false");
             }
         }
 
@@ -257,6 +337,16 @@ namespace DocOrganizer.UI.Behaviors
                     
                     e.Effects = canDrop ? DragDropEffects.Copy : DragDropEffects.None;
                     
+                    // 🎯 Phase 1: 詳細な挿入位置判定
+                    var insertionInfo = CalculateInsertionInfo(e, target);
+                    if (insertionInfo != null && canDrop)
+                    {
+                        await AppendDebugLogAsync($"[DragOver] 挿入位置: {insertionInfo.Position} at Y:{insertionInfo.MousePosition.Y:F1}");
+                        
+                        // 🎯 Phase 2: 挿入位置インジケーター表示
+                        ShowInsertionIndicator(insertionInfo);
+                    }
+                    
                     // 🎯 OSS標準: ドロップゾーンビジュアルフィードバック
                     ShowDropZoneFeedback(target, canDrop);
                 }
@@ -268,6 +358,7 @@ namespace DocOrganizer.UI.Behaviors
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"🚨 V3 DragOver Error: {ex.Message}");
+                await AppendDebugLogAsync($"[HandleDragOverAsync] エラー: {ex.Message}");
                 e.Effects = DragDropEffects.None;
             }
             
@@ -276,7 +367,17 @@ namespace DocOrganizer.UI.Behaviors
 
         private static async void OnDrop(object sender, DragEventArgs e)
         {
-            await AppendDebugLogAsync("OnDrop開始 - ドラッグ&ドロップイベント発火");
+            // 🎯 V3.0.025: イベント重複防止チェック
+            if (_isDropProcessing)
+            {
+                await AppendDebugLogAsync("OnDrop - イベント重複検出: 処理をスキップします");
+                e.Handled = true;
+                return;
+            }
+
+            // 🎯 V3.0.025: 処理開始フラグ設定
+            _isDropProcessing = true;
+            await AppendDebugLogAsync("OnDrop開始 - ドラッグ&ドロップイベント発火 (_isDropProcessing = true)");
             
             try
             {
@@ -311,8 +412,10 @@ namespace DocOrganizer.UI.Behaviors
             }
             finally
             {
+                // 🎯 V3.0.025: 処理完了フラグリセット
+                _isDropProcessing = false;
                 e.Handled = true;
-                await AppendDebugLogAsync("OnDrop終了 - e.Handled = true");
+                await AppendDebugLogAsync("OnDrop終了 - e.Handled = true (_isDropProcessing = false)");
             }
         }
 
@@ -320,6 +423,9 @@ namespace DocOrganizer.UI.Behaviors
         {
             // 🎯 OSS標準: ドロップゾーンフィードバック削除
             HideDropZoneFeedback(sender as FrameworkElement);
+            
+            // 🎯 Phase 2: 挿入位置インジケーター非表示
+            HideInsertionIndicator();
         }
 
         #endregion
@@ -374,6 +480,145 @@ namespace DocOrganizer.UI.Behaviors
                     panel.ClearValue(Panel.BackgroundProperty);
                 else if (target is Control control)
                     control.ClearValue(Control.BackgroundProperty);
+            }
+        }
+
+        #endregion
+
+        #region 🎯 Phase 1: 挿入位置判定ロジック拡張
+
+        /// <summary>
+        /// 挿入位置の種類
+        /// </summary>
+        public enum InsertionPosition
+        {
+            Before,  // 対象アイテムの前に挿入
+            After,   // 対象アイテムの後に挿入
+            On       // 対象アイテムの位置に置換
+        }
+
+        /// <summary>
+        /// 挿入位置情報
+        /// </summary>
+        public class InsertionInfo
+        {
+            public InsertionPosition Position { get; set; }
+            public FrameworkElement TargetItem { get; set; }
+            public V3PageViewModel TargetData { get; set; }
+            public Point MousePosition { get; set; }
+        }
+
+        /// <summary>
+        /// マウス位置に基づく詳細な挿入位置計算
+        /// </summary>
+        private static InsertionInfo CalculateInsertionInfo(DragEventArgs e, FrameworkElement target)
+        {
+            try
+            {
+                var position = e.GetPosition(target);
+                var listBoxItem = FindAncestor<ListBoxItem>(target);
+                
+                if (listBoxItem != null)
+                {
+                    var itemPosition = e.GetPosition(listBoxItem);
+                    var itemHeight = listBoxItem.ActualHeight;
+                    
+                    InsertionPosition insertPos;
+                    if (itemPosition.Y < itemHeight / 3)
+                        insertPos = InsertionPosition.Before;
+                    else if (itemPosition.Y > itemHeight * 2 / 3)
+                        insertPos = InsertionPosition.After;
+                    else
+                        insertPos = InsertionPosition.On;
+                        
+                    return new InsertionInfo
+                    {
+                        Position = insertPos,
+                        TargetItem = listBoxItem,
+                        TargetData = listBoxItem.DataContext as V3PageViewModel,
+                        MousePosition = itemPosition
+                    };
+                }
+                
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _ = AppendDebugLogAsync($"[CalculateInsertionInfo] エラー: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// UIツリー内で指定した型の祖先要素を検索
+        /// </summary>
+        private static T FindAncestor<T>(DependencyObject current) where T : class
+        {
+            do
+            {
+                if (current is T ancestor)
+                    return ancestor;
+                current = VisualTreeHelper.GetParent(current);
+            }
+            while (current != null);
+            
+            return null;
+        }
+
+        /// <summary>
+        /// 現在表示中の挿入インジケーター
+        /// </summary>
+        private static InsertionIndicatorAdorner _currentInsertionIndicator;
+
+        /// <summary>
+        /// 挿入位置インジケーターの表示
+        /// </summary>
+        private static void ShowInsertionIndicator(InsertionInfo insertionInfo)
+        {
+            try
+            {
+                // 既存インジケーターをクリア
+                HideInsertionIndicator();
+                
+                if (insertionInfo?.TargetItem != null)
+                {
+                    var adornerLayer = AdornerLayer.GetAdornerLayer(insertionInfo.TargetItem);
+                    if (adornerLayer != null)
+                    {
+                        _currentInsertionIndicator = new InsertionIndicatorAdorner(
+                            insertionInfo.TargetItem, 
+                            insertionInfo.Position);
+                        adornerLayer.Add(_currentInsertionIndicator);
+                        
+                        _ = AppendDebugLogAsync($"[ShowInsertionIndicator] 位置: {insertionInfo.Position}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _ = AppendDebugLogAsync($"[ShowInsertionIndicator] エラー: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 挿入位置インジケーターの非表示
+        /// </summary>
+        private static void HideInsertionIndicator()
+        {
+            try
+            {
+                if (_currentInsertionIndicator != null)
+                {
+                    var adornerLayer = AdornerLayer.GetAdornerLayer(_currentInsertionIndicator.AdornedElement);
+                    adornerLayer?.Remove(_currentInsertionIndicator);
+                    _currentInsertionIndicator = null;
+                    
+                    _ = AppendDebugLogAsync("[HideInsertionIndicator] インジケーター非表示");
+                }
+            }
+            catch (Exception ex)
+            {
+                _ = AppendDebugLogAsync($"[HideInsertionIndicator] エラー: {ex.Message}");
             }
         }
 

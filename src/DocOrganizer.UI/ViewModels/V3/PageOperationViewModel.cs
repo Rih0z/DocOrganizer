@@ -306,6 +306,85 @@ namespace DocOrganizer.UI.ViewModels.V3
             }
         }
 
+        /// <summary>
+        /// 🎯 V3.0.025: InsertIndexベースのページ並び替え（ドラッグ&ドロップ対応）
+        /// </summary>
+        public async Task ReorderPagesAsync(List<V3PageViewModel> pagesToMove, int insertIndex)
+        {
+            if (_currentDocument == null || pagesToMove == null || insertIndex < 0)
+                return;
+
+            try
+            {
+                await AppendDebugLogAsync($"[ReorderPagesAsync] InsertIndex版開始 - 移動ページ数: {pagesToMove.Count}, 挿入位置: {insertIndex}");
+
+                // 挿入位置がページ数を超えないよう調整
+                int targetIndex = Math.Min(insertIndex, Pages.Count);
+                await AppendDebugLogAsync($"[ReorderPagesAsync] 調整後のターゲットインデックス: {targetIndex}");
+
+                // ドラッグされたページを一時的に削除
+                var movingPages = new List<(V3PageViewModel page, int originalIndex)>();
+                foreach (var page in pagesToMove.OrderByDescending(p => Pages.IndexOf(p)))
+                {
+                    int originalIndex = Pages.IndexOf(page);
+                    if (originalIndex != -1)
+                    {
+                        movingPages.Insert(0, (page, originalIndex));
+                        Pages.RemoveAt(originalIndex);
+                        await AppendDebugLogAsync($"[ReorderPagesAsync] ページ削除: インデックス {originalIndex}");
+
+                        // ターゲットインデックスの調整（削除されたページが挿入位置より前にある場合）
+                        if (originalIndex < targetIndex)
+                            targetIndex--;
+                    }
+                }
+
+                await AppendDebugLogAsync($"[ReorderPagesAsync] 最終挿入位置: {targetIndex}");
+
+                // ターゲット位置に挿入
+                foreach (var (page, originalIndex) in movingPages)
+                {
+                    Pages.Insert(targetIndex, page);
+                    await AppendDebugLogAsync($"[ReorderPagesAsync] ページ挿入: 位置 {targetIndex}, 元インデックス {originalIndex}");
+                    targetIndex++;
+                }
+
+                // ページ番号を再設定
+                UpdatePageNumbers();
+                await AppendDebugLogAsync("[ReorderPagesAsync] ページ番号更新完了");
+
+                // 実際のPDFドキュメントのページ順序も更新
+                _pdfEditorService.ReorderPages(_currentDocument, Pages.Select(p => p.Page).ToArray());
+                await AppendDebugLogAsync("[ReorderPagesAsync] PDFドキュメント並び替え完了");
+
+                StatusMessage = $"{pagesToMove.Count} ページを位置 {insertIndex} に移動しました";
+
+                // イベント通知
+                PagesChanged?.Invoke(this, EventArgs.Empty);
+                await AppendDebugLogAsync("[ReorderPagesAsync] InsertIndex版完了");
+            }
+            catch (Exception ex)
+            {
+                await AppendDebugLogAsync($"[ReorderPagesAsync] 例外発生: {ex.Message}");
+                _dialogService.ShowError($"並び替えエラー: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// デバッグログ出力ヘルパー（V3.0.025）
+        /// </summary>
+        private async Task AppendDebugLogAsync(string message)
+        {
+            try
+            {
+                var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}";
+                var logPath = @"C:\Users\217216X721451\github\DocOrganizer\release\DEBUG_LOG.txt";
+                await System.IO.File.AppendAllTextAsync(logPath, logMessage + Environment.NewLine);
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] {message}");
+            }
+            catch { /* ログ出力エラーは無視 */ }
+        }
+
         // Private helper methods
         private async Task RotateSelectedPagesAsync(int degrees)
         {
