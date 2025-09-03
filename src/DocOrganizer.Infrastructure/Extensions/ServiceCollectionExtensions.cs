@@ -73,6 +73,12 @@ namespace DocOrganizer.Infrastructure.Extensions
                 // ✅ 新しいV3変換サービスを追加
                 services.AddScoped<IDocumentToV3ConverterService, DocumentToV3ConverterService>();
 
+                // 🎯 PDF専用レンダリングサービス（V3.0.029 - Magick.NET実装修正・DI登録不整合解消）
+                services.AddScoped<IPdfRenderingService, PdfiumViewerRenderingService>();
+                
+                // 🎯 PDFパフォーマンス監視サービス（V3.0.025）
+                services.AddScoped<PdfPerformanceMonitor>();
+
                 extensionLogger.LogInformation("[V3_DI] ✅ 究極拡張可能アーキテクチャ統合完了!");
                 
                 return services;

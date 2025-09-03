@@ -18,10 +18,12 @@
     <PackageReference Include="PDFsharp" Version="6.1.1" />
     <PackageReference Include="SkiaSharp" Version="2.88.8" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
+    <PackageReference Include="PdfiumViewer.Updated" Version="2.14.5" />
     <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
     <PackageReference Include="IronOcr" Version="2025.1.2" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
   </ItemGroup>
 
 </Project>

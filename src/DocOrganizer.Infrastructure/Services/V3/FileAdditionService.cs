@@ -25,7 +25,7 @@ namespace DocOrganizer.Infrastructure.Services.V3
         // 対応ファイル形式（OSS標準拡張子）
         private static readonly string[] SupportedImageExtensions = 
         {
-            ".jpg", ".jpeg", ".png", ".heic", ".heif", ".bmp", ".tiff", ".gif", ".webp"
+            ".jpg", ".jpeg", ".png", ".heic", ".heif", ".bmp", ".tiff", ".gif", ".webp", ".psd"
         };
         
         private static readonly string[] SupportedPdfExtensions = 
@@ -401,6 +401,12 @@ namespace DocOrganizer.Infrastructure.Services.V3
 
                         // ファイルサイズ確認
                         var fileInfo = new FileInfo(file);
+                        if (fileInfo.Length == 0)
+                        {
+                            result.InvalidFiles.Add(file);
+                            result.ValidationErrors.Add($"ファイルサイズが0バイトです: {Path.GetFileName(file)}");
+                            continue;
+                        }
                         result.EstimatedSizeBytes += fileInfo.Length;
 
                         // 画像ファイルの詳細検証
@@ -411,6 +417,42 @@ namespace DocOrganizer.Infrastructure.Services.V3
                             {
                                 result.InvalidFiles.Add(file);
                                 result.ValidationErrors.Add($"画像ファイル検証エラー: {Path.GetFileName(file)}");
+                                continue;
+                            }
+                        }
+
+                        // 🎯 V3.0.026 新規追加: PDFファイルの詳細検証
+                        if (IsPdfFile(file))
+                        {
+                            try
+                            {
+                                _logger.LogDebug("[V3_FileAddition] PDF詳細検証開始: {FileName}", Path.GetFileName(file));
+                                
+                                // PdfEditorServiceを使用してPDF有効性確認
+                                var testPdfDocument = await _pdfEditorService.OpenPdfAsync(file);
+                                
+                                if (testPdfDocument == null)
+                                {
+                                    result.InvalidFiles.Add(file);
+                                    result.ValidationErrors.Add($"PDFファイル読み込みエラー: {Path.GetFileName(file)}");
+                                    continue;
+                                }
+
+                                if (testPdfDocument.Pages == null || testPdfDocument.Pages.Count == 0)
+                                {
+                                    result.InvalidFiles.Add(file);
+                                    result.ValidationErrors.Add($"PDFファイルにページが含まれていません: {Path.GetFileName(file)}");
+                                    continue;
+                                }
+
+                                _logger.LogDebug("[V3_FileAddition] PDF検証成功: {FileName}, {PageCount}ページ", 
+                                    Path.GetFileName(file), testPdfDocument.Pages.Count);
+                            }
+                            catch (Exception pdfEx)
+                            {
+                                _logger.LogWarning(pdfEx, "[V3_FileAddition] PDF検証エラー: {FileName}", Path.GetFileName(file));
+                                result.InvalidFiles.Add(file);
+                                result.ValidationErrors.Add($"PDF検証エラー: {Path.GetFileName(file)} - {pdfEx.Message}");
                                 continue;
                             }
                         }

@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-08-22T18:00:49.764185",
+  "results": [
+    {
+      "repo": "dlemstra/Magick.NET",
+      "status": "ERROR",
+      "error": "HTTPSConnectionPool(host='api.github.com', port=443): Max retries exceeded with url: /repos/dlemstra/Magick.NET (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')))"
+    },
+    {
+      "repo": "SixLabors/ImageSharp",
+      "status": "ERROR",
+      "error": "HTTPSConnectionPool(host='api.github.com', port=443): Max retries exceeded with url: /repos/SixLabors/ImageSharp (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')))"
+    },
+    {
+      "repo": "dotnet/extensions",
+      "status": "ERROR",
+      "error": "HTTPSConnectionPool(host='api.github.com', port=443): Max retries exceeded with url: /repos/dotnet/extensions (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')))"
+    }
+  ]
+}

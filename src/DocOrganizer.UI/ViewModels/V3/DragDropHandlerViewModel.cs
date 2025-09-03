@@ -403,7 +403,11 @@ namespace DocOrganizer.UI.ViewModels.V3
         /// </summary>
         public async Task HandleFilesDropAsync(IEnumerable<string> filePaths)
         {
-            if (IsProcessing) return;
+            if (IsProcessing) 
+            {
+                await AppendDebugLogAsync("[HandleFilesDropAsync] ⏸️ 既に処理中のため、新規ドロップをスキップ");
+                return;
+            }
 
             try
             {
@@ -412,47 +416,123 @@ namespace DocOrganizer.UI.ViewModels.V3
                 ProgressPercentage = 0;
 
                 var filesList = filePaths.ToList();
+                await AppendDebugLogAsync($"[HandleFilesDropAsync] 🎯 V3.0.026 ドロップ処理開始 - {filesList.Count}ファイル");
+                
+                // 🎯 V3.0.026 Phase3: ファイル種別詳細分析
+                var imageFiles = filesList.Where(IsImageFile).ToList();
+                var pdfFiles = filesList.Where(IsPdfFile).ToList();
+                var otherFiles = filesList.Except(imageFiles).Except(pdfFiles).ToList();
+                
+                await AppendDebugLogAsync($"[HandleFilesDropAsync] 📊 ファイル分析結果:");
+                await AppendDebugLogAsync($"  - 画像ファイル: {imageFiles.Count}個 [{string.Join(", ", imageFiles.Select(Path.GetFileName))}]");
+                await AppendDebugLogAsync($"  - PDFファイル: {pdfFiles.Count}個 [{string.Join(", ", pdfFiles.Select(Path.GetFileName))}]");
+                await AppendDebugLogAsync($"  - その他ファイル: {otherFiles.Count}個 [{string.Join(", ", otherFiles.Select(Path.GetFileName))}]");
+
                 StatusMessage = $"{filesList.Count} 個のファイルを検証中...";
 
-                // 🎯 OSS標準: 事前検証
+                // 🎯 OSS標準: 事前検証（Phase3強化: PDF詳細ログ追加）
+                await AppendDebugLogAsync("[HandleFilesDropAsync] 🔍 FileAdditionService検証開始");
                 var validationResult = await _fileAdditionService.ValidateFilesForAdditionAsync(filesList);
+                
+                await AppendDebugLogAsync($"[HandleFilesDropAsync] 🔍 検証結果詳細:");
+                await AppendDebugLogAsync($"  - IsValid: {validationResult.IsValid}");
+                await AppendDebugLogAsync($"  - ValidFiles: {validationResult.ValidFiles.Count}個");
+                await AppendDebugLogAsync($"  - InvalidFiles: {validationResult.InvalidFiles.Count}個");
+                await AppendDebugLogAsync($"  - ValidationErrors: {validationResult.ValidationErrors.Count}個");
+                
+                if (validationResult.ValidationErrors.Any())
+                {
+                    await AppendDebugLogAsync("[HandleFilesDropAsync] ⚠️ 検証エラー詳細:");
+                    foreach (var error in validationResult.ValidationErrors)
+                    {
+                        await AppendDebugLogAsync($"    - {error}");
+                        
+                        // 🎯 V3.0.026 Phase3: PDF関連エラーの特別処理
+                        if (error.Contains("PDF") || error.Contains("pdf"))
+                        {
+                            await AppendDebugLogAsync($"[HandleFilesDropAsync] 🚨 PDFエラー検出: {error}");
+                            
+                            // GhostScript関連エラーの可能性チェック
+                            if (error.Contains("Ghostscript") || error.Contains("native library") || 
+                                error.Contains("MagickReadException") || error.Contains("delegate"))
+                            {
+                                await AppendDebugLogAsync("[HandleFilesDropAsync] 💡 GhostScript依存関係問題の可能性が高い");
+                                await AppendDebugLogAsync("    解決方法: GhostScriptをインストールしてください");
+                                await AppendDebugLogAsync("    URL: https://www.ghostscript.com/download/gsdnld.html");
+                            }
+                        }
+                    }
+                }
                 
                 if (!validationResult.IsValid)
                 {
+                    await AppendDebugLogAsync("[HandleFilesDropAsync] ❌ 検証失敗 - ユーザーに警告表示");
                     _dialogService.ShowWarning($"無効なファイルが含まれています:\n{string.Join("\n", validationResult.ValidationErrors)}");
                     
                     if (!validationResult.ValidFiles.Any())
                     {
                         StatusMessage = "追加可能なファイルがありません";
+                        await AppendDebugLogAsync("[HandleFilesDropAsync] ❌ 処理終了 - 有効ファイル0個");
                         return;
                     }
                 }
 
                 var validFiles = validationResult.ValidFiles;
+                await AppendDebugLogAsync($"[HandleFilesDropAsync] ✅ 有効ファイル {validFiles.Count}個で処理続行");
+                
                 StatusMessage = $"{validFiles.Count} 個のファイルを処理中...";
 
                 // 🎯 OSS標準: 既存ドキュメントへの追加 vs 新規ドキュメント作成
                 if (_currentDocument != null)
                 {
-                    // 既存ドキュメントに追加
+                    await AppendDebugLogAsync($"[HandleFilesDropAsync] 📄 既存ドキュメント追加モード (現在のページ数: {_currentDocument.Pages?.Count ?? 0})");
                     await AddFilesToExistingDocumentAsync(validFiles);
                 }
                 else
                 {
-                    // 新規ドキュメント作成
+                    await AppendDebugLogAsync("[HandleFilesDropAsync] 📄 新規ドキュメント作成モード");
                     await CreateNewDocumentFromFilesAsync(validFiles);
                 }
 
                 StatusMessage = $"{validFiles.Count} 個のファイル処理完了";
+                await AppendDebugLogAsync($"[HandleFilesDropAsync] ✅ 処理完了 - StatusMessage: {StatusMessage}");
 
                 // イベント通知
+                await AppendDebugLogAsync("[HandleFilesDropAsync] 📡 FilesProcessedイベント発火");
                 FilesProcessed?.Invoke(this, new FilesProcessedEventArgs(
                     validFiles.Where(IsImageFile).ToList(),
                     validFiles.Where(IsPdfFile).ToList()));
+                await AppendDebugLogAsync("[HandleFilesDropAsync] 📡 FilesProcessedイベント完了");
             }
             catch (Exception ex)
             {
-                _dialogService.ShowError($"ファイル処理エラー: {ex.Message}");
+                await AppendDebugLogAsync($"[HandleFilesDropAsync] 🚨 予期しないエラー発生:");
+                await AppendDebugLogAsync($"  - Message: {ex.Message}");
+                await AppendDebugLogAsync($"  - Type: {ex.GetType().Name}");
+                await AppendDebugLogAsync($"  - StackTrace: {ex.StackTrace}");
+                
+                // 🎯 V3.0.026 Phase3: PDF関連例外の詳細分析
+                if (ex.Message.Contains("PDF") || ex.Message.Contains("Magick") || 
+                    ex.Message.Contains("Ghostscript") || ex.GetType().Name.Contains("Magick"))
+                {
+                    await AppendDebugLogAsync("[HandleFilesDropAsync] 🔍 PDF処理関連例外と判定");
+                    await AppendDebugLogAsync("  📋 トラブルシューティング情報:");
+                    await AppendDebugLogAsync("    1. GhostScriptがインストールされているか確認");
+                    await AppendDebugLogAsync("    2. Magick.NET設定が正しいか確認");
+                    await AppendDebugLogAsync("    3. PDFファイルが破損していないか確認");
+                    
+                    // 詳細なエラー情報をユーザーに提供
+                    _dialogService.ShowError($"PDF処理エラー: {ex.Message}\n\n" +
+                        "解決方法:\n" +
+                        "1. GhostScriptがインストールされているか確認してください\n" +
+                        "2. PDFファイルが破損していないか確認してください\n" +
+                        "3. 詳細はDEBUG_LOG.txtをご確認ください");
+                }
+                else
+                {
+                    _dialogService.ShowError($"ファイル処理エラー: {ex.Message}");
+                }
+                
                 StatusMessage = "ファイル処理エラー";
             }
             finally
@@ -460,6 +540,8 @@ namespace DocOrganizer.UI.ViewModels.V3
                 IsProcessing = false;
                 ProgressPercentage = 0;
                 ProgressDetail = "";
+                
+                await AppendDebugLogAsync("[HandleFilesDropAsync] 🏁 finally処理完了 - IsProcessing=false");
             }
         }
 
@@ -519,22 +601,93 @@ namespace DocOrganizer.UI.ViewModels.V3
         /// </summary>
         private async Task AddFilesToExistingDocumentAsync(List<string> files)
         {
-            if (_currentDocument == null) return;
+            if (_currentDocument == null)
+            {
+                await AppendDebugLogAsync("[AddFilesToExistingDocument] ❌ _currentDocumentがnull");
+                return;
+            }
 
             try
             {
+                await AppendDebugLogAsync($"[AddFilesToExistingDocument] 🎯 V3.0.026 Phase3 開始");
+                await AppendDebugLogAsync($"  - 追加対象ファイル数: {files.Count}");
+                await AppendDebugLogAsync($"  - 現在のドキュメントページ数: {_currentDocument.Pages?.Count ?? 0}");
+                
+                // 🎯 V3.0.026 Phase3: ファイル種別詳細分析
+                var imageFiles = files.Where(IsImageFile).ToList();
+                var pdfFiles = files.Where(IsPdfFile).ToList();
+                
+                await AppendDebugLogAsync($"  - 画像ファイル: {imageFiles.Count}個");
+                await AppendDebugLogAsync($"  - PDFファイル: {pdfFiles.Count}個");
+                
+                if (pdfFiles.Any())
+                {
+                    await AppendDebugLogAsync($"[AddFilesToExistingDocument] 🔍 PDF追加詳細:");
+                    foreach (var pdfFile in pdfFiles)
+                    {
+                        await AppendDebugLogAsync($"    - {Path.GetFileName(pdfFile)} ({new FileInfo(pdfFile).Length / 1024:F1} KB)");
+                    }
+                }
+
                 StatusMessage = "既存ドキュメントにファイルを追加中...";
+                
+                await AppendDebugLogAsync("[AddFilesToExistingDocument] 📞 FileAdditionService.AddMixedFilesToDocumentAsync呼び出し開始");
                 
                 // FileAdditionServiceで追加処理
                 var result = await _fileAdditionService.AddMixedFilesToDocumentAsync(_currentDocument, files);
                 
+                await AppendDebugLogAsync($"[AddFilesToExistingDocument] ✅ FileAdditionService完了:");
+                await AppendDebugLogAsync($"  - Summary: {result.Summary}");
+                await AppendDebugLogAsync($"  - AddedPagesCount: {result.AddedPagesCount}");
+                await AppendDebugLogAsync($"  - SuccessfulFiles: {result.SuccessfulFiles.Count}個");
+                await AppendDebugLogAsync($"  - FailedFiles: {result.FailedFiles.Count}個");
+                
+                if (result.FailedFiles.Any())
+                {
+                    await AppendDebugLogAsync("[AddFilesToExistingDocument] ⚠️ 失敗ファイル詳細:");
+                    foreach (var failedFile in result.FailedFiles)
+                    {
+                        await AppendDebugLogAsync($"    - {failedFile}");
+                        
+                        // 🎯 V3.0.026 Phase3: PDF失敗の特別処理
+                        if (IsPdfFile(failedFile))
+                        {
+                            await AppendDebugLogAsync($"[AddFilesToExistingDocument] 🚨 PDF追加失敗: {failedFile}");
+                            await AppendDebugLogAsync("    考えられる原因:");
+                            await AppendDebugLogAsync("    1. GhostScript未インストール");
+                            await AppendDebugLogAsync("    2. PDFファイル破損");
+                            await AppendDebugLogAsync("    3. Magick.NET設定問題");
+                        }
+                    }
+                }
+                
                 StatusMessage = $"ファイル追加完了: {result.Summary}";
+                await AppendDebugLogAsync($"[AddFilesToExistingDocument] 📊 最終結果:");
+                await AppendDebugLogAsync($"  - 更新後ドキュメントページ数: {_currentDocument.Pages?.Count ?? 0}");
 
                 // 追加完了イベント
+                await AppendDebugLogAsync("[AddFilesToExistingDocument] 📡 FilesAddedToDocumentイベント発火");
                 FilesAddedToDocument?.Invoke(this, new FilesAddedEventArgs(_currentDocument, result));
+                await AppendDebugLogAsync("[AddFilesToExistingDocument] 📡 イベント完了");
             }
             catch (Exception ex)
             {
+                await AppendDebugLogAsync($"[AddFilesToExistingDocument] 🚨 例外発生:");
+                await AppendDebugLogAsync($"  - Message: {ex.Message}");
+                await AppendDebugLogAsync($"  - Type: {ex.GetType().Name}");
+                await AppendDebugLogAsync($"  - StackTrace: {ex.StackTrace}");
+                
+                // 🎯 V3.0.026 Phase3: PDF関連例外の特別処理
+                if (ex.Message.Contains("PDF") || ex.Message.Contains("Magick") || 
+                    ex.Message.Contains("Ghostscript") || ex.GetType().Name.Contains("Magick"))
+                {
+                    await AppendDebugLogAsync("[AddFilesToExistingDocument] 🔍 PDF処理関連例外と判定");
+                    await AppendDebugLogAsync("  💡 推奨対処法:");
+                    await AppendDebugLogAsync("    1. GhostScriptをダウンロード・インストール");
+                    await AppendDebugLogAsync("    2. システム再起動");
+                    await AppendDebugLogAsync("    3. PDFファイルの整合性確認");
+                }
+                
                 throw new InvalidOperationException($"既存ドキュメントへの追加失敗: {ex.Message}", ex);
             }
         }
