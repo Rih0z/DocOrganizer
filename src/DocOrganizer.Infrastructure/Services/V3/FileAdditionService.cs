@@ -21,6 +21,7 @@ namespace DocOrganizer.Infrastructure.Services.V3
         private readonly IImageValidationService _imageValidationService;
         private readonly IImageLoaderService _imageLoaderService;
         private readonly ILogger<FileAdditionService> _logger;
+        private readonly IPdfRenderingService _pdfRenderingService;
 
         // 対応ファイル形式（OSS標準拡張子）
         private static readonly string[] SupportedImageExtensions = 
@@ -37,12 +38,14 @@ namespace DocOrganizer.Infrastructure.Services.V3
             IPdfEditorService pdfEditorService,
             IImageValidationService imageValidationService,
             IImageLoaderService imageLoaderService,
-            ILogger<FileAdditionService> logger)
+            ILogger<FileAdditionService> logger,
+            IPdfRenderingService pdfRenderingService)
         {
             _pdfEditorService = pdfEditorService;
             _imageValidationService = imageValidationService;
             _imageLoaderService = imageLoaderService;
             _logger = logger;
+            _pdfRenderingService = pdfRenderingService;
         }
 
         /// <summary>
@@ -83,6 +86,28 @@ namespace DocOrganizer.Infrastructure.Services.V3
                 {
                     // 最初のPDFを基準に他のPDFを結合
                     document = await _pdfEditorService.OpenPdfAsync(pdfFiles.First());
+                    
+                    // 🎯 修正: 最初のPDFファイルにもSourceImagePath設定を適用
+                    var firstPdfFile = pdfFiles.First();
+                    for (int pageIndex = 0; pageIndex < document.Pages.Count; pageIndex++)
+                    {
+                        var page = document.Pages[pageIndex];
+                        try
+                        {
+                            var tempImagePath = await _pdfRenderingService
+                                .ConvertPdfPageToTempImageAsync(firstPdfFile, pageIndex, dpi: 150);
+                            page.SourceImagePath = tempImagePath;
+                            
+                            await AppendDebugLogAsync(
+                                $"[PDF_SOURCING_FIRST] {Path.GetFileName(firstPdfFile)} Page{pageIndex+1} SourceImagePath設定: {tempImagePath}");
+                        }
+                        catch (Exception ex)
+                        {
+                            await AppendDebugLogAsync(
+                                $"[PDF_SOURCING_FIRST] {Path.GetFileName(firstPdfFile)} Page{pageIndex+1} 変換エラー: {ex.Message}");
+                        }
+                    }
+                    
                     result.AddedPagesCount += document.Pages.Count;
                     result.SuccessfulFiles.Add(pdfFiles.First());
 
@@ -251,8 +276,28 @@ namespace DocOrganizer.Infrastructure.Services.V3
                             // 指定位置に挿入または末尾追加
                             var targetPosition = insertPosition == -1 ? document.Pages.Count : insertPosition + addedPagesCount;
                             
-                            foreach (var page in loadedPdfDocument.Pages)
+                            // 🔧 PDF用SourceImagePath設定対応
+                            for (int pageIndex = 0; pageIndex < loadedPdfDocument.Pages.Count; pageIndex++)
                             {
+                                var page = loadedPdfDocument.Pages[pageIndex];
+                                
+                                // 🎯 核心修正: PDF用一時画像生成・SourceImagePath設定
+                                try 
+                                {
+                                    var tempImagePath = await _pdfRenderingService
+                                        .ConvertPdfPageToTempImageAsync(pdfFile, pageIndex, dpi: 150);
+                                    page.SourceImagePath = tempImagePath;
+                                    
+                                    await AppendDebugLogAsync(
+                                        $"[PDF_SOURCING] {Path.GetFileName(pdfFile)} Page{pageIndex+1} SourceImagePath設定: {tempImagePath}");
+                                }
+                                catch (Exception ex)
+                                {
+                                    await AppendDebugLogAsync(
+                                        $"[PDF_SOURCING] {Path.GetFileName(pdfFile)} Page{pageIndex+1} 変換エラー: {ex.Message}");
+                                    // エラー時は空のまま（既存エラーハンドリング活用）
+                                }
+                                
                                 // ページを適切な位置に挿入
                                 if (targetPosition >= document.Pages.Count)
                                 {
@@ -261,11 +306,11 @@ namespace DocOrganizer.Infrastructure.Services.V3
                                 else
                                 {
                                     // OSS標準: AddPage後に位置調整（PdfDocumentにInsertメソッドがないため）
-                                document.AddPage(page);
-                                if (targetPosition < document.Pages.Count - 1)
-                                {
-                                    document.MovePage(document.Pages.Count - 1, targetPosition);
-                                }
+                                    document.AddPage(page);
+                                    if (targetPosition < document.Pages.Count - 1)
+                                    {
+                                        document.MovePage(document.Pages.Count - 1, targetPosition);
+                                    }
                                 }
                                 
                                 addedPagesCount++;
@@ -506,5 +551,23 @@ namespace DocOrganizer.Infrastructure.Services.V3
         public event EventHandler<FileAdditionProgressEventArgs>? ProgressUpdated;
         public event EventHandler<FileAdditionCompletedEventArgs>? AdditionCompleted;
         public event EventHandler<FileAdditionErrorEventArgs>? ErrorOccurred;
+
+        /// <summary>
+        /// 統一デバッグログ出力（DEBUG_LOG.txt）
+        /// </summary>
+        private async Task AppendDebugLogAsync(string message)
+        {
+            try
+            {
+                var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [FileAdditionService] {message}";
+                var logPath = @"C:\Users\217216X721451\github\DocOrganizer\release\DEBUG_LOG.txt";
+                await System.IO.File.AppendAllTextAsync(logPath, logMessage + Environment.NewLine);
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] {logMessage}");
+            }
+            catch 
+            { 
+                // ログ出力エラーは無視（アプリケーション動作に影響させない）
+            }
+        }
     }
 }

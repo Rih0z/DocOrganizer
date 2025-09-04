@@ -12,7 +12,7 @@ ai_coding_principles:
   repository_info:
     github_url: "https://github.com/Rih0z/DocOrganizer"
     latest_exe_path: "C:\\Users\\217216X721451\\github\\DocOrganizer\\release\\DocOrganizer.exe"
-    version: "3.0.030"
+    version: "3.0.031"
     features:
       - "PDF編集機能（CubePDF Utility互換）"
       - "画像→PDF変換（HEIC/JPG/PNG/JPEG対応）"
@@ -38,19 +38,25 @@ ai_coding_principles:
     drag_drop_implementation_report: "docs/V3_Drag_Drop_Complete_Implementation_Report_20250822.md"
     heic_pdf_bug_fix_report: "docs/HEIC_PDF_Export_Bug_Fix_Complete_Report_20250821.md"
     ui_zoom_bug_fix_report: "docs/UI_Zoom_Feature_Bug_Fix_Complete_Report_20250821.md"
-    last_updated: "2025-08-22"
-    coverage: "V3.0.025ドラッグ&ドロップ並び替え機能完全実装、V3完全アーキテクチャ解説、HEIC完全対応、プロバイダーパターン実装詳細、各種バグ修正完了報告"
+    pdf_thumbnail_bug_fix_report: "docs/BugFix_PDF_Thumbnail_Display_Report_20250904.md"
+    last_updated: "2025-09-04"
+    coverage: "V3.0.031 PDFサムネイル表示バグ修正（PdfiumネイティブDLL配置）、V3.0.025ドラッグ&ドロップ並び替え機能完全実装、V3完全アーキテクチャ解説、HEIC完全対応、プロバイダーパターン実装詳細、各種バグ修正完了報告"
     
   version_management:
     description: "ビルド時自動バージョン管理システム"
     last_updated: "2025-08-20"
     mandatory: "ビルドの度に最後の桁を自動インクリメント"
     
-    current_version: "3.0.030"
+    current_version: "3.0.031"
     version_format: "メジャー.マイナー.ビルド番号"
     increment_rule: "ビルドの度に最後の桁（ビルド番号）を1つずつ上げる"
     
     version_history:
+      "3.0.031":
+        date: "2025-09-03"
+        changes: "PDF表示バグ完全修正・クラス名統一によるDI解決完了"
+        build_reason: "V3.0.030でPDF右左サムネイル表示失敗問題の根本修正・バージョン管理問題解決"
+        technical_detail: "A)DI問題修正: PdfiumSharpRenderingService.cs削除・既存PdfiumViewerRenderingService.cs使用によりクラス名重複解決、B)バージョン管理: MainWindow.xaml Title属性・CLAUDE.md version情報統一更新、C)効果: PDF左右サムネイル・プレビュー表示完全復活、D)品質保証: クリーンビルドによる最新コード確実反映"
       "3.0.030":
         date: "2025-09-03"
         changes: "PDF処理エンジン変更完了 - Magick.NET→PdfiumViewer切り替えによるGhostScript依存排除"

@@ -48,4 +48,26 @@
     </None>
   </ItemGroup> -->
 
+  <!-- Pdfiumネイティブ DLL自動コピー設定 (UI プロジェクト用) -->
+  <Target Name="CopyPdfiumNativeToUI" AfterTargets="Build">
+    <ItemGroup>
+      <PdfiumFiles Include="$(NuGetPackageRoot)pdfiumviewer.native.x86_64.v8-xfa\2018.4.8.256\Build\x64\pdfium.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(PdfiumFiles)" 
+          DestinationFolder="$(OutputPath)" 
+          SkipUnchangedFiles="true" />
+    <Message Text="Pdfium native DLL copied to UI output: $(OutputPath)" Importance="high" />
+  </Target>
+
+  <!-- 発行時にも確実にコピー (UI プロジェクト用) -->
+  <Target Name="CopyPdfiumOnPublishUI" BeforeTargets="GenerateSingleFileBundle">
+    <ItemGroup>
+      <PdfiumNative Include="$(NuGetPackageRoot)pdfiumviewer.native.x86_64.v8-xfa\2018.4.8.256\Build\x64\pdfium.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(PdfiumNative)" 
+          DestinationFolder="$(PublishDir)"
+          SkipUnchangedFiles="false" />
+    <Message Text="Pdfium native DLL copied to publish directory: $(PublishDir)" Importance="high" />
+  </Target>
+
 </Project>
