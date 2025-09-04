@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using DocOrganizer.Core.Models;
+using DocOrganizer.Core.Logging;
 using DocOrganizer.Application.Interfaces;
 using DocOrganizer.Application.Interfaces.V3;
 using Microsoft.Extensions.Logging;
@@ -553,21 +554,11 @@ namespace DocOrganizer.Infrastructure.Services.V3
         public event EventHandler<FileAdditionErrorEventArgs>? ErrorOccurred;
 
         /// <summary>
-        /// 統一デバッグログ出力（DEBUG_LOG.txt）
+        /// 統一デバッグログ出力（新DebugLogger使用）
         /// </summary>
         private async Task AppendDebugLogAsync(string message)
         {
-            try
-            {
-                var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [FileAdditionService] {message}";
-                var logPath = @"C:\Users\217216X721451\github\DocOrganizer\release\DEBUG_LOG.txt";
-                await System.IO.File.AppendAllTextAsync(logPath, logMessage + Environment.NewLine);
-                System.Diagnostics.Debug.WriteLine($"[DEBUG] {logMessage}");
-            }
-            catch 
-            { 
-                // ログ出力エラーは無視（アプリケーション動作に影響させない）
-            }
+            await DebugLogger.LogAsync(message, "FileAdditionService");
         }
     }
 }
