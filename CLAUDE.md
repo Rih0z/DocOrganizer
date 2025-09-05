@@ -3,9 +3,9 @@
 ```yaml
 ai_coding_principles:
   version: "3.0"
-  last_updated: "2025-09-04"
+  last_updated: "2025-09-05"
   project: "DocOrganizer - CubePDF Utility互換 汎用PDF編集ツール"
-  current_version: "3.0.031"
+  current_version: "3.0.032"
 ```
 
 ## ⚠️ 必須宣言事項

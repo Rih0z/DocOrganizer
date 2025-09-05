@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:behaviors="clr-namespace:DocOrganizer.UI.Behaviors"
         mc:Ignorable="d"
-        Title="DocOrganizer 3.0.031" 
+        Title="DocOrganizer 3.0.032" 
         Height="700" Width="1000"
         WindowStartupLocation="CenterScreen"
         Background="#F0F0F0"
@@ -76,12 +76,16 @@
             <MenuItem Header="ページ(_P)">
                 <MenuItem Header="左回転(_L)" Command="{Binding PageOperation.RotateLeftCommand}">
                     <MenuItem.Icon>
-                        <TextBlock Text="↺" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Viewbox Width="32" Height="32">
+                            <TextBlock Text="↺" FontSize="30"/>
+                        </Viewbox>
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="右回転(_R)" Command="{Binding PageOperation.RotateRightCommand}">
                     <MenuItem.Icon>
-                        <TextBlock Text="↻" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Viewbox Width="32" Height="32">
+                            <TextBlock Text="↻" FontSize="30"/>
+                        </Viewbox>
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
@@ -93,7 +97,9 @@
                 <Separator/>
                 <MenuItem Header="ページ削除(_D)" Command="{Binding PageOperation.DeleteSelectedPagesCommand}">
                     <MenuItem.Icon>
-                        <TextBlock Text="🗑️" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Viewbox Width="32" Height="32">
+                            <TextBlock Text="🗑️" FontSize="30"/>
+                        </Viewbox>
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="ページ移動(_M)">
@@ -125,7 +131,9 @@
                 <Separator/>
                 <MenuItem Header="削除(_D)" Command="{Binding PageOperation.DeleteSelectedPagesCommand}" InputGestureText="Delete">
                     <MenuItem.Icon>
-                        <TextBlock Text="🗑" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Viewbox Width="32" Height="32">
+                            <TextBlock Text="🗑" FontSize="30"/>
+                        </Viewbox>
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>

@@ -111,7 +111,6 @@ namespace DocOrganizer.UI.ViewModels.V3
 
             var selectedPages = Pages.Where(p => p.IsSelected).OrderByDescending(p => p.PageNumber).ToList();
 
-            if (_dialogService.ShowConfirmation($"{selectedPages.Count} ページを削除しますか？"))
             {
                 try
                 {
