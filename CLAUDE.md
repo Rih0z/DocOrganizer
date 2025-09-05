@@ -75,16 +75,25 @@ git pull origin main
 ```
 
 ### 2. Windowsビルド
+
+#### デフォルト: release-debugビルド（デバッグログ有効）
 ```bash
 cd C:\Users\217216X721451\github\DocOrganizer
 dotnet clean
 dotnet restore
 dotnet build --configuration Release
+dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o release-debug
+```
+
+#### リリース版ビルド（ユーザーから明示的指示がある場合のみ）
+```bash
+# ログ無効版
 dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o release
 ```
 
 ### 3. 成功確認
-- release\DocOrganizer.exe の生成確認
+- release-debug\DocOrganizer.exe の生成確認（デフォルト）
+- release\DocOrganizer.exe の生成確認（リリース版指示時）
 - エクスプローラーから起動テスト
 
 ---
@@ -94,7 +103,8 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 ### 現在の情報
 - **バージョン**: V3.0.031
 - **GitHub**: https://github.com/Rih0z/DocOrganizer
-- **EXE**: `C:\Users\217216X721451\github\DocOrganizer\release\DocOrganizer.exe`
+- **デフォルトEXE**: `C:\Users\217216X721451\github\DocOrganizer\release-debug\DocOrganizer.exe`
+- **リリースEXE**: `C:\Users\217216X721451\github\DocOrganizer\release\DocOrganizer.exe`（明示的指示時）
 
 ### デバッグ設定
 ```powershell
@@ -123,6 +133,7 @@ release\run-production.bat  # 本番モード
 - [画像表示システム](docs/V3_ARCHITECTURE_IMAGE_DISPLAY.md)
 
 ### 最新実装
+- [UIボタン・アイコンサイズ拡大](docs/UI_Button_Icon_Size_Enhancement_Report_20250905.md)
 - [PDFサムネイル表示バグ修正](docs/BugFix_PDF_Thumbnail_Display_Report_20250904.md)
 - [統一ログ管理システム](docs/Debug_Logging_System_Complete_Report_20250904.md)
 - [ドラッグ&ドロップ実装](docs/V3_Drag_Drop_Complete_Implementation_Report_20250822.md)
