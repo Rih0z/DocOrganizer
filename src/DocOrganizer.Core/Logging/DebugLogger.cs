@@ -1,108 +1,226 @@
 using System;
 using System.IO;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace DocOrganizer.Core.Logging
 {
     /// <summary>
-    /// 統一デバッグログヘルパー - Quick Win実装
-    /// 環境変数でデバッグモードとログパスを制御
+    /// 統一デバッグログ管理クラス
+    /// 環境変数による制御を優先、なければコンパイル時デフォルト
     /// </summary>
     public static class DebugLogger
     {
-        // 環境変数でデバッグモード制御
-        private static readonly bool IsDebugEnabled = 
-            Environment.GetEnvironmentVariable("DOCORGANIZER_DEBUG") == "true";
+        private static bool? _isEnabled = null;
+        private static string _logPath = null;
         
-        // 環境変数でログパス制御（デフォルトは隠しフォルダ）
-        private static readonly string LogPath = 
-            Environment.GetEnvironmentVariable("DOCORGANIZER_LOG_PATH") ?? 
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".logs", "debug.log");
-        
-        private static readonly object _lock = new object();
-        
-        static DebugLogger()
+        /// <summary>
+        /// ログ出力パス
+        /// </summary>
+        public static string LogPath
         {
-            try
+            get
             {
-                // ログディレクトリ作成
-                var dir = Path.GetDirectoryName(LogPath);
-                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                if (_logPath == null)
                 {
-                    Directory.CreateDirectory(dir);
+                    _logPath = GetLogPath();
                     
-                    // Windowsの場合、隠しフォルダ属性設定
-                    if (Environment.OSVersion.Platform == PlatformID.Win32NT && dir.Contains(".logs"))
+                    // ディレクトリが存在しない場合は作成
+                    var dir = Path.GetDirectoryName(_logPath);
+                    if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
                     {
-                        var dirInfo = new DirectoryInfo(dir);
-                        dirInfo.Attributes |= FileAttributes.Hidden;
+                        try
+                        {
+                            Directory.CreateDirectory(dir);
+                        }
+                        catch { }
                     }
                 }
-            }
-            catch
-            {
-                // 初期化エラーは無視（ログ出力に影響しないように）
+                return _logPath;
             }
         }
         
         /// <summary>
-        /// 非同期ログ出力
+        /// デバッグログ有効フラグ
+        /// </summary>
+        public static bool IsDebugEnabled
+        {
+            get
+            {
+                if (!_isEnabled.HasValue)
+                {
+                    _isEnabled = GetIsDebugEnabled();
+                }
+                return _isEnabled.Value;
+            }
+        }
+
+        /// <summary>
+        /// ログ有効状態を取得（環境変数優先、なければコンパイル時デフォルト）
+        /// </summary>
+        private static bool GetIsDebugEnabled()
+        {
+            // 環境変数から読み込み（最優先）
+            var envValue = Environment.GetEnvironmentVariable("DOCORGANIZER_DEBUG");
+            if (!string.IsNullOrEmpty(envValue))
+            {
+                return envValue.ToLower() == "true";
+            }
+
+            // コンパイル時デフォルト値
+            // - ログなし版（release）: false
+            // - ログあり版（release-debug）: true
+            #if ENABLE_LOGGING
+            return true;  // ログあり版のデフォルト
+            #else
+            return false; // ログなし版のデフォルト
+            #endif
+        }
+        
+        /// <summary>
+        /// ログ出力パスを取得（環境変数優先、なければデフォルト）
+        /// </summary>
+        private static string GetLogPath()
+        {
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            
+            // 環境変数から読み込み（最優先）
+            var envPath = Environment.GetEnvironmentVariable("DOCORGANIZER_LOG_PATH");
+            if (!string.IsNullOrEmpty(envPath))
+            {
+                // 絶対パスまたは相対パスとして処理
+                if (Path.IsPathRooted(envPath))
+                {
+                    return envPath;
+                }
+                return Path.Combine(baseDir, envPath);
+            }
+            
+            // デフォルトパス
+            var defaultLogDir = ".logs";
+            var defaultLogFile = "debug.log";
+            return Path.Combine(baseDir, defaultLogDir, defaultLogFile);
+        }
+
+        /// <summary>
+        /// 非同期でログを出力
         /// </summary>
         /// <param name="message">ログメッセージ</param>
-        /// <param name="category">カテゴリ（呼び出し元クラス名など）</param>
-        public static async Task LogAsync(string message, string category = null)
+        /// <param name="category">ログカテゴリ（省略可）</param>
+        /// <param name="sourceFile">呼び出し元ファイル名（自動取得）</param>
+        /// <param name="lineNumber">呼び出し元行番号（自動取得）</param>
+        public static async Task LogAsync(string message, string category = null,
+            [System.Runtime.CompilerServices.CallerFilePath] string sourceFile = null,
+            [System.Runtime.CompilerServices.CallerLineNumber] int lineNumber = 0)
         {
-            // デバッグモードOFFの場合は何もしない
-            if (!IsDebugEnabled) return;
+            if (!IsDebugEnabled || string.IsNullOrEmpty(LogPath)) return;
             
             try
             {
-                var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [{category ?? "General"}] {message}";
+                var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                var fileName = Path.GetFileName(sourceFile ?? "Unknown");
+                var categoryStr = string.IsNullOrEmpty(category) ? "" : $"[{category}] ";
                 
-                // ファイル出力（非同期）
+                var logMessage = $"[{timestamp}] {categoryStr}{message} ({fileName}:{lineNumber})";
+                
                 await File.AppendAllTextAsync(LogPath, logMessage + Environment.NewLine);
                 
                 // コンソール出力（開発時）
-                System.Diagnostics.Debug.WriteLine(logMessage);
+                #if DEBUG
+                System.Diagnostics.Debug.WriteLine($"📝 {logMessage}");
+                #endif
             }
             catch
             {
-                // ログ出力エラーは握りつぶす（アプリケーションの動作を妨げない）
+                // ログ出力エラーは無視
             }
         }
         
         /// <summary>
-        /// 同期ログ出力（後方互換性のため）
+        /// 同期ログ出力（互換性のため）
         /// </summary>
-        public static void Log(string message, string category = null)
+        public static void Log(string message, string category = null,
+            [System.Runtime.CompilerServices.CallerFilePath] string sourceFile = null,
+            [System.Runtime.CompilerServices.CallerLineNumber] int lineNumber = 0)
         {
-            // デバッグモードOFFの場合は何もしない
-            if (!IsDebugEnabled) return;
+            if (!IsDebugEnabled || string.IsNullOrEmpty(LogPath)) return;
             
-            Task.Run(async () => await LogAsync(message, category));
+            try
+            {
+                var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                var fileName = Path.GetFileName(sourceFile ?? "Unknown");
+                var categoryStr = string.IsNullOrEmpty(category) ? "" : $"[{category}] ";
+                
+                var logMessage = $"[{timestamp}] {categoryStr}{message} ({fileName}:{lineNumber})";
+                
+                File.AppendAllText(LogPath, logMessage + Environment.NewLine);
+                
+                // コンソール出力（開発時）
+                #if DEBUG
+                System.Diagnostics.Debug.WriteLine($"📝 {logMessage}");
+                #endif
+            }
+            catch
+            {
+                // ログ出力エラーは無視
+            }
         }
         
         /// <summary>
-        /// 現在の設定状態を取得
+        /// 起動時ログを記録
         /// </summary>
-        /// <returns>デバッグ有効フラグとログパス</returns>
-        public static (bool IsEnabled, string Path) GetConfiguration()
+        public static void LogStartup(string message)
         {
-            return (IsDebugEnabled, LogPath);
+            // ログが無効な場合は何もしない
+            if (!IsDebugEnabled) return;
+            
+            try
+            {
+                var startupLogPath = Path.Combine(
+                    Path.GetDirectoryName(LogPath) ?? ".logs",
+                    "startup.log"
+                );
+                
+                var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                var logMessage = $"[{timestamp}] {message}";
+                
+                File.AppendAllText(startupLogPath, logMessage + Environment.NewLine);
+            }
+            catch { }
         }
         
         /// <summary>
-        /// 設定情報をログに出力（起動時確認用）
+        /// エラーログを記録
         /// </summary>
-        public static async Task LogConfigurationAsync()
+        public static void LogError(string message, Exception ex = null)
         {
-            if (!IsDebugEnabled) return;
-            
-            await LogAsync("=== Debug Logger Configuration ===", "Config");
-            await LogAsync($"Debug Mode: {IsDebugEnabled}", "Config");
-            await LogAsync($"Log Path: {LogPath}", "Config");
-            await LogAsync($"Log Directory Exists: {Directory.Exists(Path.GetDirectoryName(LogPath))}", "Config");
-            await LogAsync("===================================", "Config");
+            try
+            {
+                var errorLogPath = Path.Combine(
+                    Path.GetDirectoryName(LogPath) ?? ".logs",
+                    "error.log"
+                );
+                
+                var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                var errorMessage = $"[{timestamp}] ERROR: {message}";
+                
+                if (ex != null)
+                {
+                    errorMessage += $"\n    Exception: {ex.GetType().Name}: {ex.Message}\n    StackTrace: {ex.StackTrace}";
+                }
+                
+                File.AppendAllText(errorLogPath, errorMessage + Environment.NewLine);
+            }
+            catch { }
+        }
+        
+        /// <summary>
+        /// ログ設定をリセット（主にテスト用）
+        /// </summary>
+        public static void Reset()
+        {
+            _isEnabled = null;
+            _logPath = null;
         }
     }
 }

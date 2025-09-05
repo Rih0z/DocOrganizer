@@ -35,11 +35,8 @@ namespace DocOrganizer.UI.Behaviors
                 var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 var logEntry = $"[{timestamp}] [V3DragDrop] {message}{Environment.NewLine}";
                 
-                // 🎯 第16条準拠: release/DEBUG_LOG.txt に統一
-                var exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                var logFilePath = System.IO.Path.Combine(exeDirectory, "DEBUG_LOG.txt");
-                
-                await File.AppendAllTextAsync(logFilePath, logEntry);
+                // 🎯 第16条準拠: 統一DebugLogger使用
+                await DocOrganizer.Core.Logging.DebugLogger.LogAsync(message, "V3DragDrop");
             }
             catch
             {

@@ -362,10 +362,7 @@ public class PdfExportService : IPdfExportService
     {
         try
         {
-            var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}";
-            var logPath = @"C:\Users\217216X721451\github\DocOrganizer\release\DEBUG_LOG.txt";
-            await System.IO.File.AppendAllTextAsync(logPath, logMessage + Environment.NewLine);
-            System.Diagnostics.Debug.WriteLine($"[PDF_EXPORT_DEBUG] {message}");
+            await DocOrganizer.Core.Logging.DebugLogger.LogAsync(message, "PDF_EXPORT_DEBUG");
         }
         catch
         {

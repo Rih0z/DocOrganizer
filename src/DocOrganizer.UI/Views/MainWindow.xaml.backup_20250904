@@ -45,17 +45,17 @@
             <MenuItem Header="ファイル(_F)">
                 <MenuItem Header="新規作成(_N)" Command="{Binding DocumentManagement.NewCommand}" InputGestureText="Ctrl+N">
                     <MenuItem.Icon>
-                        <TextBlock Text="📄" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="📄" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="PDF・画像ファイルを開く(_O)..." Command="{Binding DocumentManagement.OpenCommand}" InputGestureText="Ctrl+O">
                     <MenuItem.Icon>
-                        <TextBlock Text="📂" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="📂" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="保存(_S)" Command="{Binding DocumentManagement.SaveCommand}" InputGestureText="Ctrl+S">
                     <MenuItem.Icon>
-                        <TextBlock Text="💾" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="💾" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="名前を付けて保存(_A)..." Command="{Binding DocumentManagement.SaveAsCommand}"/>
@@ -76,35 +76,35 @@
             <MenuItem Header="ページ(_P)">
                 <MenuItem Header="左回転(_L)" Command="{Binding PageOperation.RotateLeftCommand}">
                     <MenuItem.Icon>
-                        <TextBlock Text="↺" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="↺" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="右回転(_R)" Command="{Binding PageOperation.RotateRightCommand}">
                     <MenuItem.Icon>
-                        <TextBlock Text="↻" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="↻" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
                 <MenuItem Header="全ページ自動回転(_A)" Command="{Binding PageOperation.AutoCorrectAllPagesOrientationCommand}">
                     <MenuItem.Icon>
-                        <TextBlock Text="📖" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="📖" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
                 <MenuItem Header="ページ削除(_D)" Command="{Binding PageOperation.DeleteSelectedPagesCommand}">
                     <MenuItem.Icon>
-                        <TextBlock Text="🗑️" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="🗑️" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="ページ移動(_M)">
                     <MenuItem Header="上に移動(_U)" Command="{Binding PageOperation.MovePageUpCommand}">
                         <MenuItem.Icon>
-                            <TextBlock Text="⬆️" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Text="⬆️" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </MenuItem.Icon>
                     </MenuItem>
                     <MenuItem Header="下に移動(_D)" Command="{Binding PageOperation.MovePageDownCommand}">
                         <MenuItem.Icon>
-                            <TextBlock Text="⬇️" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Text="⬇️" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </MenuItem.Icon>
                     </MenuItem>
                 </MenuItem>
@@ -114,29 +114,29 @@
             <MenuItem Header="PDF編集(_P)" Visibility="{Binding DocumentManagement.IsPdfDocument, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <MenuItem Header="PDF分割(_S)..." Command="{Binding DocumentManagement.SplitPdfCommand}" IsEnabled="{Binding DocumentManagement.CanSplitPdf}">
                     <MenuItem.Icon>
-                        <TextBlock Text="📄➗" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="📄➗" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="PDF結合(_M)..." Command="{Binding DocumentManagement.MergePdfCommand}" IsEnabled="{Binding DocumentManagement.CanMergePdf}">
                     <MenuItem.Icon>
-                        <TextBlock Text="📄➕" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="📄➕" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
                 <MenuItem Header="削除(_D)" Command="{Binding PageOperation.DeleteSelectedPagesCommand}" InputGestureText="Delete">
                     <MenuItem.Icon>
-                        <TextBlock Text="🗑" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="🗑" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
                 <MenuItem Header="上に移動(_U)" Command="{Binding PageOperation.MovePageUpCommand}">
                     <MenuItem.Icon>
-                        <TextBlock Text="▲" Style="{StaticResource MenuIconStyle}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="▲" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="下に移動(_N)" Command="{Binding PageOperation.MovePageDownCommand}">
                     <MenuItem.Icon>
-                        <TextBlock Text="▼" Style="{StaticResource MenuIconStyle}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="▼" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
             </MenuItem>
@@ -144,12 +144,12 @@
             <MenuItem Header="文書(_D)">
                 <MenuItem Header="結合(_M)..." Command="{Binding MergeCommand}">
                     <MenuItem.Icon>
-                        <TextBlock Text="📋" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="📋" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="分割(_S)..." Command="{Binding SplitCommand}">
                     <MenuItem.Icon>
-                        <TextBlock Text="✂" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="✂" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
@@ -173,7 +173,7 @@
                 <Separator/>
                 <MenuItem Header="アップデートの確認(_U)..." Command="{Binding CheckForUpdatesCommand}">
                     <MenuItem.Icon>
-                        <TextBlock Text="🔄" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="🔄" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
@@ -183,52 +183,52 @@
 
         <!-- ツールバー -->
         <ToolBarTray Grid.Row="1" Background="White">
-            <ToolBar x:Name="MainToolBar" Style="{StaticResource MainToolBarStyle}">
+            <ToolBar x:Name="MainToolBar" Background="Transparent">
                 <!-- ファイル操作ボタンは削除済み -->
                 
                 <!-- ページ操作 -->
-                <Button Command="{Binding PageOperation.RotateLeftCommand}" ToolTip="左回転" Style="{StaticResource ToolBarButtonStyle}"
+                <Button Command="{Binding PageOperation.RotateLeftCommand}" ToolTip="左回転" Padding="4"
                         IsEnabled="{Binding PageOperation.HasSelectedPages}">
-                    <TextBlock Text="↺" Style="{StaticResource ToolBarButtonIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Text="↺" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
-                <Button Command="{Binding PageOperation.RotateRightCommand}" ToolTip="右回転" Style="{StaticResource ToolBarButtonStyle}"
+                <Button Command="{Binding PageOperation.RotateRightCommand}" ToolTip="右回転" Padding="4"
                         IsEnabled="{Binding PageOperation.HasSelectedPages}">
-                    <TextBlock Text="↻" Style="{StaticResource ToolBarButtonIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Text="↻" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
-                <Button Command="{Binding PageOperation.DeleteSelectedPagesCommand}" ToolTip="削除 (Delete)" Style="{StaticResource ToolBarButtonStyle}"
+                <Button Command="{Binding PageOperation.DeleteSelectedPagesCommand}" ToolTip="削除 (Delete)" Padding="4"
                         IsEnabled="{Binding PageOperation.HasSelectedPages}">
-                    <TextBlock Text="🗑" Style="{StaticResource ToolBarButtonIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Text="🗑" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
                 
                 <Separator/>
                 
                 <!-- ページ移動 -->
-                <Button Command="{Binding PageOperation.MovePageUpCommand}" ToolTip="上に移動" Style="{StaticResource ToolBarButtonStyle}"
+                <Button Command="{Binding PageOperation.MovePageUpCommand}" ToolTip="上に移動" Padding="4"
                         IsEnabled="{Binding PageOperation.CanMoveUp}">
-                    <TextBlock Text="▲" Style="{StaticResource ToolBarButtonIconStyle}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Text="▲" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
-                <Button Command="{Binding PageOperation.MovePageDownCommand}" ToolTip="下に移動" Style="{StaticResource ToolBarButtonStyle}"
+                <Button Command="{Binding PageOperation.MovePageDownCommand}" ToolTip="下に移動" Padding="4"
                         IsEnabled="{Binding PageOperation.CanMoveDown}">
-                    <TextBlock Text="▼" Style="{StaticResource ToolBarButtonIconStyle}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Text="▼" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
                 <Separator/>
                 
                 <!-- 📖 全ページ自動回転ボタン -->
-                <Button Command="{Binding PageOperation.AutoCorrectAllPagesOrientationCommand}" ToolTip="全ページの文字向きを自動補正" Style="{StaticResource ToolBarWideButtonStyle}"
+                <Button Command="{Binding PageOperation.AutoCorrectAllPagesOrientationCommand}" ToolTip="全ページの文字向きを自動補正" Padding="6,4"
                         IsEnabled="{Binding DocumentManagement.HasDocument}" Background="#E3F2FD" BorderBrush="#1976D2">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="📖" Style="{StaticResource ToolBarButtonIconStyle}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <TextBlock Text="自動回転" Style="{StaticResource ToolBarButtonIconStyle}" VerticalAlignment="Center" FontWeight="Bold" Foreground="#1976D2"/>
+                        <TextBlock Text="📖" FontSize="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="自動回転" FontSize="11" VerticalAlignment="Center" FontWeight="Bold" Foreground="#1976D2"/>
                     </StackPanel>
                 </Button>
                 <Separator/>
                 
                 <!-- 表示 -->
-                <Button Command="{Binding ZoomInCommand}" ToolTip="拡大" Style="{StaticResource ToolBarButtonStyle}">
-                    <TextBlock Text="🔍+" Style="{StaticResource ToolBarButtonIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Button Command="{Binding ZoomInCommand}" ToolTip="拡大" Padding="4">
+                    <TextBlock Text="🔍+" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
-                <Button Command="{Binding ZoomOutCommand}" ToolTip="縮小" Style="{StaticResource ToolBarButtonStyle}">
-                    <TextBlock Text="🔍-" Style="{StaticResource ToolBarButtonIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Button Command="{Binding ZoomOutCommand}" ToolTip="縮小" Padding="4">
+                    <TextBlock Text="🔍-" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
                 <ComboBox Width="80" 
                           Text="{Binding PreviewManagement.ZoomLevel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -245,12 +245,12 @@
                 <Separator/>
                 
                 <!-- 🎯 V3.0新機能: PDF出力 -->
-                <Button Command="{Binding ExportPdfCommand}" ToolTip="PDFとして保存" Padding="24,18" Margin="4,0" MinWidth="180" MinHeight="72"
+                <Button Command="{Binding ExportPdfCommand}" ToolTip="PDFとして保存" Padding="8,6"
                         IsEnabled="{Binding CanExportPdf}"
                         Background="#E8F5E8" BorderBrush="#4CAF50" BorderThickness="2">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="📄" Style="{StaticResource ToolBarButtonIconStyle}" VerticalAlignment="Center" Margin="0,0,18,0"/>
-                        <TextBlock Text="PDF出力" Style="{StaticResource ToolBarButtonIconStyle}" VerticalAlignment="Center" FontWeight="Bold" Foreground="#2E7D32"/>
+                        <TextBlock Text="📄" FontSize="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBlock Text="PDF出力" FontSize="12" VerticalAlignment="Center" FontWeight="Bold" Foreground="#2E7D32"/>
                     </StackPanel>
                 </Button>
                 
@@ -269,20 +269,20 @@
                      Visibility="{Binding DocumentManagement.IsPdfDocument, Converter={StaticResource BooleanToVisibilityConverter}}">
                 
                 <!-- PDF分割ボタン -->
-                <Button Command="{Binding DocumentManagement.SplitPdfCommand}" ToolTip="PDF分割" Style="{StaticResource ToolBarWideButtonStyle}"
+                <Button Command="{Binding DocumentManagement.SplitPdfCommand}" ToolTip="PDF分割" Padding="6,4"
                         IsEnabled="{Binding DocumentManagement.CanSplitPdf}" Background="#FFF3E0" BorderBrush="#FF9800">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="📄➗" Style="{StaticResource ToolBarButtonIconStyle}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <TextBlock Text="分割" Style="{StaticResource ToolBarButtonIconStyle}" VerticalAlignment="Center" FontWeight="Bold" Foreground="#FF9800"/>
+                        <TextBlock Text="📄➗" FontSize="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="分割" FontSize="11" VerticalAlignment="Center" FontWeight="Bold" Foreground="#FF9800"/>
                     </StackPanel>
                 </Button>
                 
                 <!-- PDF結合ボタン -->
-                <Button Command="{Binding DocumentManagement.MergePdfCommand}" ToolTip="PDF結合" Style="{StaticResource ToolBarWideButtonStyle}"
+                <Button Command="{Binding DocumentManagement.MergePdfCommand}" ToolTip="PDF結合" Padding="6,4"
                         IsEnabled="{Binding DocumentManagement.CanMergePdf}" Background="#E8F5E8" BorderBrush="#4CAF50">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="📄➕" Style="{StaticResource ToolBarButtonIconStyle}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <TextBlock Text="結合" Style="{StaticResource ToolBarButtonIconStyle}" VerticalAlignment="Center" FontWeight="Bold" Foreground="#4CAF50"/>
+                        <TextBlock Text="📄➕" FontSize="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="結合" FontSize="11" VerticalAlignment="Center" FontWeight="Bold" Foreground="#4CAF50"/>
                     </StackPanel>
                 </Button>
                 
@@ -302,7 +302,7 @@
                 <Border Background="#F3E5F5" BorderBrush="#9C27B0" BorderThickness="1" CornerRadius="3" Padding="4,2"
                         Visibility="{Binding DocumentManagement.HasHeicFiles, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="📱" Style="{StaticResource MenuIconStyle}" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                        <TextBlock Text="📱" FontSize="12" VerticalAlignment="Center" Margin="0,0,2,0"/>
                         <TextBlock Text="HEIC対応" FontSize="10" VerticalAlignment="Center" FontWeight="Bold" Foreground="#9C27B0"/>
                     </StackPanel>
                 </Border>
@@ -311,7 +311,7 @@
                 <Border Background="#E1F5FE" BorderBrush="#03A9F4" BorderThickness="1" CornerRadius="3" Padding="4,2" Margin="4,0,0,0"
                         Visibility="{Binding DocumentManagement.HasGifFiles, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="🎞️" Style="{StaticResource MenuIconStyle}" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                        <TextBlock Text="🎞️" FontSize="12" VerticalAlignment="Center" Margin="0,0,2,0"/>
                         <TextBlock Text="GIF対応" FontSize="10" VerticalAlignment="Center" FontWeight="Bold" Foreground="#03A9F4"/>
                     </StackPanel>
                 </Border>
@@ -446,7 +446,7 @@
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                             <TextBlock Text="ここにPDFまたは画像ファイルをドロップ" 
                                        Foreground="White" 
-                                       Style="{StaticResource MenuIconStyle}" 
+                                       FontSize="20" 
                                        FontWeight="Bold"/>
                             <TextBlock Text="(PDF, HEIC, JPG, PNG, JPEG対応)" 
                                        Foreground="#CCFFFFFF" 
@@ -487,7 +487,7 @@
                                                Margin="0,4,0,0"/>
                                     <TextBlock Text="画像ファイルは自動的にPDFに変換されます" 
                                                Foreground="#1976D2" 
-                                               Style="{StaticResource MenuIconStyle}" 
+                                               FontSize="12" 
                                                HorizontalAlignment="Center" 
                                                FontStyle="Italic"
                                                Margin="0,4,0,0"/>

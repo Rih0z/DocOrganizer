@@ -139,10 +139,7 @@ public class DocumentToV3ConverterService : IDocumentToV3ConverterService
     {
         try
         {
-            var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}";
-            var logPath = @"C:\Users\217216X721451\github\DocOrganizer\release\DEBUG_LOG.txt";
-            await System.IO.File.AppendAllTextAsync(logPath, logMessage + Environment.NewLine);
-            System.Diagnostics.Debug.WriteLine($"[DOC_TO_V3_CONVERTER] {message}");
+            await DocOrganizer.Core.Logging.DebugLogger.LogAsync(message, "DOC_TO_V3_CONVERTER");
         }
         catch
         {

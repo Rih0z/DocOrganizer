@@ -285,12 +285,7 @@ namespace DocOrganizer.UI.ViewModels.V3
         {
             try
             {
-                var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}";
-                var logPath = @"C:\Users\217216X721451\github\DocOrganizer\release\DEBUG_LOG.txt";
-                System.IO.File.AppendAllText(logPath, logMessage + Environment.NewLine);
-                
-                // Console.WriteLineにも出力
-                System.Diagnostics.Debug.WriteLine($"[PREVIEW_DEBUG] {message}");
+                DocOrganizer.Core.Logging.DebugLogger.Log(message, "PREVIEW_DEBUG");
             }
             catch
             {
@@ -519,19 +514,7 @@ namespace DocOrganizer.UI.ViewModels.V3
         /// </summary>
         private async Task AppendDebugLogAsync(string message)
         {
-            try
-            {
-                var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}";
-                var logPath = @"C:\Users\217216X721451\github\DocOrganizer\release\DEBUG_LOG.txt";
-                await System.IO.File.AppendAllTextAsync(logPath, logMessage + Environment.NewLine);
-                
-                // Console.WriteLineにも出力
-                System.Diagnostics.Debug.WriteLine($"[PREVIEW_DEBUG] {message}");
-            }
-            catch
-            {
-                // ログ出力エラーは無視
-            }
+            await DocOrganizer.Core.Logging.DebugLogger.LogAsync(message, "PreviewManagement");
         }
 
         // Events for coordination

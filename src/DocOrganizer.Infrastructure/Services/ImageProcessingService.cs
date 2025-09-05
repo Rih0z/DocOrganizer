@@ -156,7 +156,7 @@ namespace DocOrganizer.Infrastructure.Services
                         
                         // 🚀 完全修正: 全EXIF処理削除 - ピクセルそのまま表示
                         // AutoOrient()も含めて全ての向き補正を削除
-                        File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [PIXEL_RAW] All EXIF processing removed - raw pixel display: {Path.GetFileName(imagePath)}\n");
+                        await DocOrganizer.Core.Logging.DebugLogger.LogAsync("[ConvertImagesToPdfAsync] Processing image without EXIF rotation");
                         
                         // 🚀 完全修正: 全回転処理削除 - ピクセルそのまま表示
                         var page = new PdfPage(pageNumber++)
@@ -170,7 +170,7 @@ namespace DocOrganizer.Infrastructure.Services
                         
                         pdfDocument.AddPage(page);
                         
-                        File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [PIXEL_RAW] Added page {pageNumber - 1} with raw pixels (no EXIF processing)\n");
+                        await DocOrganizer.Core.Logging.DebugLogger.LogAsync("[ConvertImagesToPdfAsync] Processing image without EXIF rotation");
                     }
                     catch (Exception ex)
                     {
@@ -227,15 +227,15 @@ namespace DocOrganizer.Infrastructure.Services
                 // 🚀 完全修正: 全てのEXIF処理を削除 - ピクセルそのまま表示
                 // フォトアプリと完全に同じ動作にするため、AutoOrient()も削除
                 // image.Mutate(x => x.AutoOrient()); // 完全削除
-                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [PIXEL_RAW] No EXIF processing - raw pixels display: {Path.GetFileName(imagePath)}\n");
+                await DocOrganizer.Core.Logging.DebugLogger.LogAsync("[ConvertImagesToPdfAsync] Processing image without EXIF rotation");
                 
                 // 手動回転も削除 - 完全にピクセルそのまま表示
                 // if (rotationDegrees != 0) // 完全削除
                 // {
                 //     image.Mutate(x => x.Rotate(rotationDegrees));
-                //     File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [DEBUG] Additional manual rotation {rotationDegrees}° applied: {Path.GetFileName(imagePath)}\n");
+                //     await DocOrganizer.Core.Logging.DebugLogger.LogAsync("[ConvertImagesToPdfAsync] Processing image without EXIF rotation");
                 // }
-                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [PIXEL_RAW] No manual rotation applied - pure pixel display: {Path.GetFileName(imagePath)}\n");
+                await DocOrganizer.Core.Logging.DebugLogger.LogAsync("[ConvertImagesToPdfAsync] Processing image without EXIF rotation");
                 
                 // リサイズ処理
                 image.Mutate(x => x.Resize(new ResizeOptions
@@ -251,7 +251,7 @@ namespace DocOrganizer.Infrastructure.Services
             }
             catch (Exception ex)
             {
-                File.AppendAllText("DEBUG_LOG.txt", $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [ERROR] Thumbnail generation failed: {ex.Message}\n");
+                await DocOrganizer.Core.Logging.DebugLogger.LogAsync("[ConvertImagesToPdfAsync] Processing image without EXIF rotation");
                 throw;
             }
         }

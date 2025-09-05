@@ -1,6 +1,6 @@
 # DocOrganizer
 
-[![Version](https://img.shields.io/badge/version-3.0.025-blue.svg)](https://github.com/Rih0z/DocOrganizer/releases)
+[![Version](https://img.shields.io/badge/version-3.0.031-blue.svg)](https://github.com/Rih0z/DocOrganizer/releases)
 [![.NET](https://img.shields.io/badge/.NET-6.0-purple.svg)](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -40,6 +40,23 @@
 | **🔍 UI拡大機能バグ修正** | [`docs/UI_Zoom_Feature_Bug_Fix_Complete_Report_20250821.md`](docs/UI_Zoom_Feature_Bug_Fix_Complete_Report_20250821.md) |
 | **🐛 PDFサムネイル表示バグ修正** ⭐ | [`docs/BugFix_PDF_Thumbnail_Display_Report_20250904.md`](docs/BugFix_PDF_Thumbnail_Display_Report_20250904.md) |
 | **📝 統一デバッグログ管理システム** ⭐ | [`docs/Debug_Logging_System_Complete_Report_20250904.md`](docs/Debug_Logging_System_Complete_Report_20250904.md) |
+| **⚙️ 統一設定システム** ⭐ | [`docs/Unified_Configuration_System_Complete_Report_20250904.md`](docs/Unified_Configuration_System_Complete_Report_20250904.md) |
+| **🔧 統一ログシステム実装完了** ⭐ | [`docs/Unified_Logging_System_Complete_Report_20250904.md`](docs/Unified_Logging_System_Complete_Report_20250904.md) |
+| **🔧 環境変数仕様** | [`docs/ENVIRONMENT_VARIABLES.md`](docs/ENVIRONMENT_VARIABLES.md) |
+
+## ⚙️ 設定システム
+
+### 環境変数による制御
+
+| 環境変数 | デフォルト値 | 説明 |
+|----------|-------------|------|
+| `DOCORGANIZER_DEBUG` | `true` | デバッグログ出力制御 |
+| `DOCORGANIZER_LOG_PATH` | `.logs` | ログ出力ディレクトリ |
+
+### 設定ファイル
+
+- **統一設定**: `config/AppSettings.json`
+- **詳細仕様**: [CLAUDE.md](CLAUDE.md)を参照
 
 ## 🛠️ 開発者向け
 
@@ -57,4 +74,4 @@ dotnet publish src/DocOrganizer.UI/DocOrganizer.UI.csproj -c Release -r win-x64 
 
 ---
 
-**DocOrganizer V3.0.025** - プロフェッショナルな文書整理を簡単に
+**DocOrganizer V3.0.031** - プロフェッショナルな文書整理を簡単に

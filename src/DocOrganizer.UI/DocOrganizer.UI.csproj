@@ -11,9 +11,9 @@
     <Company>DocOrganizer Project</Company>
     <Product>DocOrganizer</Product>
     <AssemblyName>DocOrganizer</AssemblyName>
-    <Version>3.0.024</Version>
-    <AssemblyVersion>3.0.024.0</AssemblyVersion>
-    <FileVersion>3.0.024.0</FileVersion>
+    <Version>3.0.031</Version>
+    <AssemblyVersion>3.0.031.0</AssemblyVersion>
+    <FileVersion>3.0.031.0</FileVersion>
     
     <!-- 単一EXEビルド設定 -->
     <PublishSingleFile>true</PublishSingleFile>
@@ -21,6 +21,8 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishReadyToRun>true</PublishReadyToRun>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <!-- OCR機能の有効/無効制御 -->
+    <EnableOCR Condition="'$(EnableOCR)' == ''">false</EnableOCR>
   </PropertyGroup>
 
   <ItemGroup>
@@ -48,7 +50,16 @@
     </None>
   </ItemGroup> -->
 
-  <!-- Pdfiumネイティブ DLL自動コピー設定 (UI プロジェクト用) -->
+  <!-- pdfium.dllを単一EXEに埋め込む設定 -->
+  <ItemGroup>
+    <!-- pdfium.dllをEmbeddedResourceとして埋め込む -->
+    <EmbeddedResource Include="$(NuGetPackageRoot)pdfiumviewer.native.x86_64.v8-xfa\2018.4.8.256\Build\x64\pdfium.dll">
+      <LogicalName>pdfium.dll</LogicalName>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <!-- ビルド時のコピー設定（開発時用） -->
   <Target Name="CopyPdfiumNativeToUI" AfterTargets="Build">
     <ItemGroup>
       <PdfiumFiles Include="$(NuGetPackageRoot)pdfiumviewer.native.x86_64.v8-xfa\2018.4.8.256\Build\x64\pdfium.dll" />
@@ -59,15 +70,28 @@
     <Message Text="Pdfium native DLL copied to UI output: $(OutputPath)" Importance="high" />
   </Target>
 
-  <!-- 発行時にも確実にコピー (UI プロジェクト用) -->
-  <Target Name="CopyPdfiumOnPublishUI" BeforeTargets="GenerateSingleFileBundle">
+  <!-- 単一EXE発行時の設定 -->
+  <Target Name="IncludePdfiumInSingleFile" BeforeTargets="GenerateSingleFileBundle">
     <ItemGroup>
-      <PdfiumNative Include="$(NuGetPackageRoot)pdfiumviewer.native.x86_64.v8-xfa\2018.4.8.256\Build\x64\pdfium.dll" />
+      <!-- pdfium.dllをコンテンツとして含める -->
+      <Content Include="$(NuGetPackageRoot)pdfiumviewer.native.x86_64.v8-xfa\2018.4.8.256\Build\x64\pdfium.dll">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        <ExcludeFromSingleFile>false</ExcludeFromSingleFile>
+      </Content>
     </ItemGroup>
-    <Copy SourceFiles="@(PdfiumNative)" 
-          DestinationFolder="$(PublishDir)"
-          SkipUnchangedFiles="false" />
-    <Message Text="Pdfium native DLL copied to publish directory: $(PublishDir)" Importance="high" />
+    <Message Text="Pdfium native DLL will be included in single file bundle" Importance="high" />
+  </Target>
+
+  <!-- OCR関連ファイルのコピー制御 -->
+  <Target Name="CleanupOCRFiles" AfterTargets="Publish" Condition="'$(EnableOCR)' != 'true'">
+    <ItemGroup>
+      <OCRFilesToDelete Include="$(PublishDir)eng.user-words" />
+      <OCRFilesToDelete Include="$(PublishDir)eng.user-patterns" />
+      <OCRFilesToDelete Include="$(PublishDir)Tesseract.Native.deployment.json" />
+      <OCRFilesToDelete Include="$(PublishDir)*.traineddata" />
+    </ItemGroup>
+    <Delete Files="@(OCRFilesToDelete)" ContinueOnError="true" />
+    <Message Text="OCR files removed (OCR disabled)" Importance="high" Condition="'$(EnableOCR)' != 'true'" />
   </Target>
 
 </Project>

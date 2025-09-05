@@ -81,7 +81,7 @@ namespace DocOrganizer.Infrastructure.Services.V3
                               $"Time={elapsedMs}ms, Memory={memoryDeltaMb}MB" +
                               (error != null ? $", Error={error}" : "") + Environment.NewLine;
                 
-                await File.AppendAllTextAsync(_logFilePath, logEntry);
+                await DocOrganizer.Core.Logging.DebugLogger.LogAsync(logEntry.TrimEnd(), "PdfPerformance");
                 
                 // 成功時の詳細ログ
                 if (error == null && (operation.Contains("Thumbnail") || operation.Contains("Preview")))
@@ -92,7 +92,7 @@ namespace DocOrganizer.Infrastructure.Services.V3
                                      $"Status: {(elapsedMs < ThumbnailGenerationTimeoutMs ? "OK" : "WARNING")}" + 
                                      Environment.NewLine;
                     
-                    await File.AppendAllTextAsync(_logFilePath, detailEntry);
+                    await DocOrganizer.Core.Logging.DebugLogger.LogAsync(detailEntry.TrimEnd(), "PdfDetail");
                 }
             }
             catch (Exception ex)
