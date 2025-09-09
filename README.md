@@ -1,7 +1,7 @@
 # DocOrganizer
 
-[![Version](https://img.shields.io/badge/version-3.0.031-blue.svg)](https://github.com/Rih0z/DocOrganizer/releases)
-[![.NET](https://img.shields.io/badge/.NET-6.0-purple.svg)](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
+[![Version](https://img.shields.io/badge/version-3.0.051-blue.svg)](https://github.com/Rih0z/DocOrganizer/releases)
+[![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -24,6 +24,7 @@
 ## 📋 動作環境
 
 - **OS**: Windows 10/11 (64-bit)
+- **.NET**: .NET 8.0 ランタイム統合済み
 - **その他**: インストール不要（自己完結型EXE）
 
 ## 📚 詳細ドキュメント
@@ -74,4 +75,4 @@ dotnet publish src/DocOrganizer.UI/DocOrganizer.UI.csproj -c Release -r win-x64 
 
 ---
 
-**DocOrganizer V3.0.031** - プロフェッショナルな文書整理を簡単に
+**DocOrganizer V3.0.051** - プロフェッショナルな文書整理を簡単に
