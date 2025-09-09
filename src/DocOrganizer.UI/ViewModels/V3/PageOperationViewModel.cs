@@ -76,7 +76,6 @@ namespace DocOrganizer.UI.ViewModels.V3
         {
             if (_currentDocument == null || !Pages.Any(p => p.IsSelected))
             {
-                _dialogService.ShowInformation("ページを選択してから回転操作を行ってください");
                 return;
             }
             await RotateSelectedPagesAdvancedAsync(270); // 左回転 = 270度（反時計回り）
@@ -90,7 +89,6 @@ namespace DocOrganizer.UI.ViewModels.V3
         {
             if (_currentDocument == null || !Pages.Any(p => p.IsSelected))
             {
-                _dialogService.ShowInformation("ページを選択してから回転操作を行ってください");
                 return;
             }
             await RotateSelectedPagesAdvancedAsync(90); // 右回転 = 90度（時計回り）
@@ -104,13 +102,13 @@ namespace DocOrganizer.UI.ViewModels.V3
         {
             if (_currentDocument == null || !Pages.Any(p => p.IsSelected))
             {
-                _dialogService.ShowInformation("削除するページを選択してください");
                 return;
             }
             if (_currentDocument == null) return;
 
             var selectedPages = Pages.Where(p => p.IsSelected).OrderByDescending(p => p.PageNumber).ToList();
 
+            if (_dialogService.ShowConfirmation($"{selectedPages.Count} ページを削除しますか？"))
             {
                 try
                 {
@@ -145,36 +143,40 @@ namespace DocOrganizer.UI.ViewModels.V3
             
             if (_currentDocument == null || Pages.Count <= 1) 
             {
-                _dialogService.ShowInformation("ページ移動機能を使用するには2ページ以上が必要です");
                 return;
             }
             
+            // 最初の選択ページを取得
             var selectedPage = Pages.FirstOrDefault(p => p.IsSelected);
             if (selectedPage == null)
             {
-                _dialogService.ShowInformation("移動するページを選択してください");
                 return;
             }
 
             try
             {
                 var currentIndex = Pages.IndexOf(selectedPage);
+                await AppendDebugLogAsync($"[MovePageUp] CurrentIndex: {currentIndex}, PageCount: {Pages.Count}");
+                
                 if (currentIndex <= 0) 
                 {
-                    _dialogService.ShowInformation("このページは既に最初のページです");
+                    await AppendDebugLogAsync($"[MovePageUp] Cannot move up - already at top or not found");
                     return;
                 }
 
-                // ObservableCollectionで位置を移動
+                // Remove/Insert方式で位置を移動（Move()の代わり）
                 await AppendDebugLogAsync($"[MovePageUp] 移動前: {string.Join(",", Pages.Select(p => p.PageNumber))}");
-                Pages.Move(currentIndex, currentIndex - 1);
+                
+                // UIコレクションを更新（PDFドキュメントの更新は不要）
+                // Remove/Insertパターンで実装
+                var pageToMove = Pages[currentIndex];
+                Pages.RemoveAt(currentIndex);
+                Pages.Insert(currentIndex - 1, pageToMove);
+                
+                // 選択状態を復元
+                pageToMove.IsSelected = true;
+                
                 await AppendDebugLogAsync($"[MovePageUp] 移動後: {string.Join(",", Pages.Select(p => p.PageNumber))}");
-
-                // PDFドキュメント側も同じ順序に更新
-                if (currentIndex < _currentDocument.Pages.Count)
-                {
-                    _currentDocument.MovePage(currentIndex, currentIndex - 1);
-                }
 
                 // ページ番号を再設定
                 UpdatePageNumbers();
@@ -184,11 +186,15 @@ namespace DocOrganizer.UI.ViewModels.V3
 
                 StatusMessage = $"ページ {selectedPage.PageNumber} を上に移動しました";
                 
+                // Force UI collection refresh
+                OnPropertyChanged(nameof(Pages));
+                
                 // イベント通知
                 PagesChanged?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
+                await AppendDebugLogAsync($"[MovePageUp Error] {ex.Message}");
                 _dialogService.ShowError($"移動エラー: {ex.Message}");
             }
         }
@@ -203,36 +209,40 @@ namespace DocOrganizer.UI.ViewModels.V3
             
             if (_currentDocument == null || Pages.Count <= 1)
             {
-                _dialogService.ShowInformation("ページ移動機能を使用するには2ページ以上が必要です");
                 return;
             }
             
+            // 最初の選択ページを取得
             var selectedPage = Pages.FirstOrDefault(p => p.IsSelected);
             if (selectedPage == null)
             {
-                _dialogService.ShowInformation("移動するページを選択してください");
                 return;
             }
 
             try
             {
                 var currentIndex = Pages.IndexOf(selectedPage);
+                await AppendDebugLogAsync($"[MovePageDown] CurrentIndex: {currentIndex}, PageCount: {Pages.Count}");
+                
                 if (currentIndex >= Pages.Count - 1) 
                 {
-                    _dialogService.ShowInformation("このページは既に最後のページです");
+                    await AppendDebugLogAsync($"[MovePageDown] Cannot move down - already at bottom or not found");
                     return;
                 }
 
-                // ObservableCollectionで位置を移動
+                // Remove/Insert方式で位置を移動（Move()の代わり）
                 await AppendDebugLogAsync($"[MovePageDown] 移動前: {string.Join(",", Pages.Select(p => p.PageNumber))}");
-                Pages.Move(currentIndex, currentIndex + 1);
+                
+                // UIコレクションを更新（PDFドキュメントの更新は不要）
+                // Remove/Insertパターンで実装
+                var pageToMove = Pages[currentIndex];
+                Pages.RemoveAt(currentIndex);
+                Pages.Insert(currentIndex + 1, pageToMove);
+                
+                // 選択状態を復元
+                pageToMove.IsSelected = true;
+                
                 await AppendDebugLogAsync($"[MovePageDown] 移動後: {string.Join(",", Pages.Select(p => p.PageNumber))}");
-
-                // PDFドキュメント側も同じ順序に更新
-                if (currentIndex + 1 < _currentDocument.Pages.Count)
-                {
-                    _currentDocument.MovePage(currentIndex, currentIndex + 1);
-                }
 
                 // ページ番号を再設定
                 UpdatePageNumbers();
@@ -242,11 +252,15 @@ namespace DocOrganizer.UI.ViewModels.V3
 
                 StatusMessage = $"ページ {selectedPage.PageNumber} を下に移動しました";
                 
+                // Force UI collection refresh
+                OnPropertyChanged(nameof(Pages));
+                
                 // イベント通知
                 PagesChanged?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
+                await AppendDebugLogAsync($"[MovePageDown Error] {ex.Message}");
                 _dialogService.ShowError($"移動エラー: {ex.Message}");
             }
         }
@@ -574,8 +588,15 @@ namespace DocOrganizer.UI.ViewModels.V3
         {
             for (int i = 0; i < Pages.Count; i++)
             {
+                // Update the ViewModel page number (PdfPage.PageNumber is read-only)
                 Pages[i].UpdatePageNumber(i + 1);
+                
+                // Force property change notification for UI refresh
+                // Note: PropertyChanged will be triggered by UpdatePageNumber method
             }
+            
+            // Force UI refresh by notifying collection change
+            OnPropertyChanged(nameof(Pages));
         }
 
         private void UpdateSelectionState()
@@ -592,25 +613,32 @@ namespace DocOrganizer.UI.ViewModels.V3
                 if (selectedPage != null)
                 {
                     var selectedIndex = Pages.IndexOf(selectedPage);
+                    var oldCanMoveUp = CanMoveUp;
+                    var oldCanMoveDown = CanMoveDown;
+                    
                     CanMoveUp = selectedIndex > 0;
                     CanMoveDown = selectedIndex < Pages.Count - 1;
                     
-                    System.Diagnostics.Debug.WriteLine($"[UpdateSelectionState] SelectedIndex: {selectedIndex}, CanMoveUp: {CanMoveUp}, CanMoveDown: {CanMoveDown}, PagesCount: {Pages.Count}");
+                    System.Diagnostics.Debug.WriteLine($"[UpdateSelectionState] SelectedIndex: {selectedIndex}, CanMoveUp: {oldCanMoveUp} -> {CanMoveUp}, CanMoveDown: {oldCanMoveDown} -> {CanMoveDown}, PagesCount: {Pages.Count}");
                 }
             }
             else
             {
+                var oldCanMoveUp = CanMoveUp;
+                var oldCanMoveDown = CanMoveDown;
                 CanMoveUp = false;
                 CanMoveDown = false;
-                System.Diagnostics.Debug.WriteLine($"[UpdateSelectionState] Multiple or no selection - CanMoveUp: false, CanMoveDown: false");
+                System.Diagnostics.Debug.WriteLine($"[UpdateSelectionState] Multiple or no selection - CanMoveUp: {oldCanMoveUp} -> false, CanMoveDown: {oldCanMoveDown} -> false");
             }
 
+            // Force command state refresh
+            MovePageUpCommand?.NotifyCanExecuteChanged();
+            MovePageDownCommand?.NotifyCanExecuteChanged();
+            
             // プロパティ変更通知でコマンドの状態も更新される
             OnPropertyChanged(nameof(CanMoveUp));
             OnPropertyChanged(nameof(CanMoveDown));
             OnPropertyChanged(nameof(HasSelectedPages));
-            
-            
         }
 
         // Public methods for external coordination

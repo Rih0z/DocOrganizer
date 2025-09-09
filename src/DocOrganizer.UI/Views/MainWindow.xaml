@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:behaviors="clr-namespace:DocOrganizer.UI.Behaviors"
         mc:Ignorable="d"
-        Title="DocOrganizer 3.0.032" 
+        Title="DocOrganizer 3.0.044" 
         Height="700" Width="1000"
         WindowStartupLocation="CenterScreen"
         Background="#F0F0F0"
@@ -22,6 +22,7 @@
         <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding DocumentManagement.UndoCommand}"/>
         <KeyBinding Key="Y" Modifiers="Ctrl" Command="{Binding DocumentManagement.RedoCommand}"/>
         <KeyBinding Key="Delete" Command="{Binding PageOperation.DeleteSelectedPagesCommand}"/>
+        <KeyBinding Key="W" Modifiers="Ctrl" Command="{Binding DocumentManagement.CloseCommand}"/>
         <KeyBinding Key="F1" Command="{Binding ShowHelpCommand}"/>
         <KeyBinding Key="OemPlus" Modifiers="Ctrl" Command="{Binding ZoomInCommand}"/>
         <KeyBinding Key="OemMinus" Modifiers="Ctrl" Command="{Binding ZoomOutCommand}"/>
