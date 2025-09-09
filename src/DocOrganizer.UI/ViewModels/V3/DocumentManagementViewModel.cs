@@ -7,6 +7,7 @@ using Microsoft.Win32;
 using DocOrganizer.Application.Interfaces;
 using DocOrganizer.Application.Interfaces.V3;
 using DocOrganizer.Core.Models;
+using DocOrganizer.Core.Services;
 using System.Linq;
 
 namespace DocOrganizer.UI.ViewModels.V3
@@ -24,6 +25,7 @@ namespace DocOrganizer.UI.ViewModels.V3
         private readonly IFileAdditionService _fileAdditionService;
         private readonly IPdfExportService _pdfExportService;                    // ✅ 追加
         private readonly IDocumentToV3ConverterService _v3ConverterService;      // ✅ 追加
+        private readonly IUndoRedoService _undoRedoService;                     // ✅ Phase 2: Undo/Redo統合
 
         [ObservableProperty]
         private string statusMessage = "準備完了";
@@ -58,13 +60,15 @@ namespace DocOrganizer.UI.ViewModels.V3
         IDialogService dialogService,
         IFileAdditionService fileAdditionService,
         IPdfExportService pdfExportService,
-        IDocumentToV3ConverterService v3ConverterService)
+        IDocumentToV3ConverterService v3ConverterService,
+        IUndoRedoService undoRedoService)
     {
         _pdfEditorService = pdfEditorService;
         _dialogService = dialogService;
         _fileAdditionService = fileAdditionService;
         _pdfExportService = pdfExportService;        // ✅ 追加
         _v3ConverterService = v3ConverterService;    // ✅ 追加
+        _undoRedoService = undoRedoService;          // ✅ Phase 2: Undo/Redo統合
     }
 
         /// <summary>
@@ -362,6 +366,34 @@ namespace DocOrganizer.UI.ViewModels.V3
                 UpdateDocumentState();
             }
         }
+
+        /// <summary>
+        /// Phase 2: Undo/Redo統合 - 元に戻す操作
+        /// </summary>
+        [RelayCommand(CanExecute = nameof(CanUndo))]
+        private void Undo()
+        {
+            _undoRedoService.Undo();
+        }
+
+        /// <summary>
+        /// Phase 2: Undo/Redo統合 - やり直し操作
+        /// </summary>
+        [RelayCommand(CanExecute = nameof(CanRedo))]
+        private void Redo()
+        {
+            _undoRedoService.Redo();
+        }
+
+        /// <summary>
+        /// Phase 2: Undo/Redo統合 - Undo操作が可能かどうか
+        /// </summary>
+        public bool CanUndo => _undoRedoService.CanUndo;
+
+        /// <summary>
+        /// Phase 2: Undo/Redo統合 - Redo操作が可能かどうか
+        /// </summary>
+        public bool CanRedo => _undoRedoService.CanRedo;
 
         // Private helper methods
         private async Task OpenFileAsync(string filePath)

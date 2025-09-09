@@ -20,6 +20,7 @@ namespace DocOrganizer.UI.ViewModels.V3
     {
         private readonly IPdfEditorService _pdfEditorService;
         private readonly IDialogService _dialogService;
+        private bool _isMovingPage = false;  // 再入防止フラグ
 
         [ObservableProperty]
         private ObservableCollection<V3PageViewModel> pages = new();
@@ -58,7 +59,7 @@ namespace DocOrganizer.UI.ViewModels.V3
             HasSelectedPages = false;
             
             // Pagesコレクションの変更を監視
-            Pages.CollectionChanged += (s, e) => UpdateSelectionState();
+            Pages.CollectionChanged += OnPagesCollectionChanged;
             
             // デバッグ: コマンドが生成されているか確認
             System.Diagnostics.Debug.WriteLine($"[PageOperationViewModel] Constructor - MovePageUpCommand: {MovePageUpCommand != null}");
@@ -66,6 +67,18 @@ namespace DocOrganizer.UI.ViewModels.V3
             System.Diagnostics.Debug.WriteLine($"[PageOperationViewModel] Constructor - RotateLeftCommand: {RotateLeftCommand != null}");
             System.Diagnostics.Debug.WriteLine($"[PageOperationViewModel] Constructor - RotateRightCommand: {RotateRightCommand != null}");
             System.Diagnostics.Debug.WriteLine($"[PageOperationViewModel] Constructor - DeleteSelectedPagesCommand: {DeleteSelectedPagesCommand != null}");
+        }
+
+        private void OnPagesCollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            // Move操作中はイベント処理をスキップ
+            if (_isMovingPage)
+            {
+                System.Diagnostics.Debug.WriteLine("[OnPagesCollectionChanged] Skipped - Move operation in progress");
+                return;
+            }
+            
+            UpdateSelectionState();
         }
 
         /// <summary>
@@ -141,6 +154,13 @@ namespace DocOrganizer.UI.ViewModels.V3
         {
             System.Diagnostics.Debug.WriteLine("[MovePageUpAsync] メソッドが呼び出されました！");
             
+            // 再入防止チェック
+            if (_isMovingPage)
+            {
+                await AppendDebugLogAsync("[MovePageUp] 再入防止: 既に移動処理中");
+                return;
+            }
+            
             if (_currentDocument == null || Pages.Count <= 1) 
             {
                 return;
@@ -153,10 +173,11 @@ namespace DocOrganizer.UI.ViewModels.V3
                 return;
             }
 
+            _isMovingPage = true;  // フラグセット（CollectionChangedイベントを無効化）
             try
             {
                 var currentIndex = Pages.IndexOf(selectedPage);
-                await AppendDebugLogAsync($"[MovePageUp] CurrentIndex: {currentIndex}, PageCount: {Pages.Count}");
+                await AppendDebugLogAsync($"[MovePageUp] START - Index: {currentIndex}, Count: {Pages.Count}");
                 
                 if (currentIndex <= 0) 
                 {
@@ -164,24 +185,23 @@ namespace DocOrganizer.UI.ViewModels.V3
                     return;
                 }
 
-                // Remove/Insert方式で位置を移動（Move()の代わり）
+                // V3.0.031の実装に完全復元
                 await AppendDebugLogAsync($"[MovePageUp] 移動前: {string.Join(",", Pages.Select(p => p.PageNumber))}");
                 
-                // UIコレクションを更新（PDFドキュメントの更新は不要）
-                // Remove/Insertパターンで実装
-                var pageToMove = Pages[currentIndex];
-                Pages.RemoveAt(currentIndex);
-                Pages.Insert(currentIndex - 1, pageToMove);
-                
-                // 選択状態を復元
-                pageToMove.IsSelected = true;
-                
+                // ObservableCollectionで位置を移動
+                Pages.Move(currentIndex, currentIndex - 1);
                 await AppendDebugLogAsync($"[MovePageUp] 移動後: {string.Join(",", Pages.Select(p => p.PageNumber))}");
+
+                // PDFドキュメント側も同じ順序に更新
+                if (_currentDocument != null && currentIndex < _currentDocument.Pages.Count)
+                {
+                    _currentDocument.MovePage(currentIndex, currentIndex - 1);
+                }
 
                 // ページ番号を再設定
                 UpdatePageNumbers();
 
-                // UI状態を更新
+                // CollectionChangedイベントがスキップされたため、手動で状態を更新
                 UpdateSelectionState();
 
                 StatusMessage = $"ページ {selectedPage.PageNumber} を上に移動しました";
@@ -197,6 +217,11 @@ namespace DocOrganizer.UI.ViewModels.V3
                 await AppendDebugLogAsync($"[MovePageUp Error] {ex.Message}");
                 _dialogService.ShowError($"移動エラー: {ex.Message}");
             }
+            finally
+            {
+                _isMovingPage = false;  // フラグリセット（CollectionChangedイベントを再有効化）
+                await AppendDebugLogAsync("[MovePageUp] END - フラグリセット");
+            }
         }
 
         /// <summary>
@@ -207,7 +232,14 @@ namespace DocOrganizer.UI.ViewModels.V3
         {
             System.Diagnostics.Debug.WriteLine("[MovePageDownAsync] メソッドが呼び出されました！");
             
-            if (_currentDocument == null || Pages.Count <= 1)
+            // 再入防止チェック
+            if (_isMovingPage)
+            {
+                await AppendDebugLogAsync("[MovePageDown] 再入防止: 既に移動処理中");
+                return;
+            }
+            
+            if (_currentDocument == null || Pages.Count <= 1) 
             {
                 return;
             }
@@ -219,35 +251,35 @@ namespace DocOrganizer.UI.ViewModels.V3
                 return;
             }
 
+            _isMovingPage = true;  // フラグセット（CollectionChangedイベントを無効化）
             try
             {
                 var currentIndex = Pages.IndexOf(selectedPage);
-                await AppendDebugLogAsync($"[MovePageDown] CurrentIndex: {currentIndex}, PageCount: {Pages.Count}");
+                await AppendDebugLogAsync($"[MovePageDown] START - Index: {currentIndex}, Count: {Pages.Count}");
                 
-                if (currentIndex >= Pages.Count - 1) 
+                if (currentIndex >= Pages.Count - 1 || currentIndex < 0) 
                 {
                     await AppendDebugLogAsync($"[MovePageDown] Cannot move down - already at bottom or not found");
                     return;
                 }
 
-                // Remove/Insert方式で位置を移動（Move()の代わり）
+                // V3.0.031の実装に完全復元
                 await AppendDebugLogAsync($"[MovePageDown] 移動前: {string.Join(",", Pages.Select(p => p.PageNumber))}");
                 
-                // UIコレクションを更新（PDFドキュメントの更新は不要）
-                // Remove/Insertパターンで実装
-                var pageToMove = Pages[currentIndex];
-                Pages.RemoveAt(currentIndex);
-                Pages.Insert(currentIndex + 1, pageToMove);
-                
-                // 選択状態を復元
-                pageToMove.IsSelected = true;
-                
+                // ObservableCollectionで位置を移動
+                Pages.Move(currentIndex, currentIndex + 1);
                 await AppendDebugLogAsync($"[MovePageDown] 移動後: {string.Join(",", Pages.Select(p => p.PageNumber))}");
+
+                // PDFドキュメント側も同じ順序に更新
+                if (_currentDocument != null && currentIndex < _currentDocument.Pages.Count)
+                {
+                    _currentDocument.MovePage(currentIndex, currentIndex + 1);
+                }
 
                 // ページ番号を再設定
                 UpdatePageNumbers();
 
-                // UI状態を更新
+                // CollectionChangedイベントがスキップされたため、手動で状態を更新
                 UpdateSelectionState();
 
                 StatusMessage = $"ページ {selectedPage.PageNumber} を下に移動しました";
@@ -262,6 +294,11 @@ namespace DocOrganizer.UI.ViewModels.V3
             {
                 await AppendDebugLogAsync($"[MovePageDown Error] {ex.Message}");
                 _dialogService.ShowError($"移動エラー: {ex.Message}");
+            }
+            finally
+            {
+                _isMovingPage = false;  // フラグリセット（CollectionChangedイベントを再有効化）
+                await AppendDebugLogAsync("[MovePageDown] END - フラグリセット");
             }
         }
 
@@ -586,17 +623,20 @@ namespace DocOrganizer.UI.ViewModels.V3
 
         private void UpdatePageNumbers()
         {
-            for (int i = 0; i < Pages.Count; i++)
+            // V3.0.048: インデクサアクセスを避けてforeachを使用
+            int pageNumber = 1;
+            foreach (var page in Pages)
             {
-                // Update the ViewModel page number (PdfPage.PageNumber is read-only)
-                Pages[i].UpdatePageNumber(i + 1);
-                
-                // Force property change notification for UI refresh
-                // Note: PropertyChanged will be triggered by UpdatePageNumber method
+                // ページ番号が変更された場合のみ更新
+                if (page.PageNumber != pageNumber)
+                {
+                    page.UpdatePageNumber(pageNumber);
+                }
+                pageNumber++;
             }
             
-            // Force UI refresh by notifying collection change
-            OnPropertyChanged(nameof(Pages));
+            // V3.0.048: CollectionChangedの連鎖を防ぐため、個別のPropertyChangedは発火させない
+            // OnPropertyChanged(nameof(Pages)); // 削除
         }
 
         private void UpdateSelectionState()

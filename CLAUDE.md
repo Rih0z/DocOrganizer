@@ -5,7 +5,7 @@ ai_coding_principles:
   version: "3.0"
   last_updated: "2025-09-09"
   project: "DocOrganizer - CubePDF Utility互換 汎用PDF編集ツール"
-  current_version: "3.0.044"
+  current_version: "3.0.050"
 ```
 
 ## ⚠️ 必須宣言事項
@@ -101,7 +101,7 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 ## ⚡ クイックリファレンス
 
 ### 現在の情報
-- **バージョン**: V3.0.043
+- **バージョン**: V3.0.050
 - **GitHub**: https://github.com/Rih0z/DocOrganizer
 - **デフォルトEXE**: `C:\Users\217216X721451\github\DocOrganizer\release-debug\DocOrganizer.exe`
 - **リリースEXE**: `C:\Users\217216X721451\github\DocOrganizer\release\DocOrganizer.exe`（明示的指示時）
@@ -133,6 +133,7 @@ release\run-production.bat  # 本番モード
 - [画像表示システム](docs/V3_ARCHITECTURE_IMAGE_DISPLAY.md)
 
 ### 最新実装
+- [ページ移動機能バグ修正](docs/Page_Movement_Bug_Fix_Complete_Report_20250909.md)
 - [UIボタン・アイコンサイズ拡大](docs/UI_Button_Icon_Size_Enhancement_Report_20250905.md)
 - [PDFサムネイル表示バグ修正](docs/BugFix_PDF_Thumbnail_Display_Report_20250904.md)
 - [統一ログ管理システム](docs/Debug_Logging_System_Complete_Report_20250904.md)
@@ -154,10 +155,11 @@ release\run-production.bat  # 本番モード
 
 | バージョン | 日付 | 主な変更 |
 |-----------|------|----------|
+| V3.0.050 | 2025-09-09 | ページ移動2段階ジャンプ完全修正・単一EXE起動問題解決 |
+| V3.0.044 | 2025-09-09 | ページ移動機能修正・V3.0.031コード復元 |
 | V3.0.033 | 2025-09-05 | Undo/Redo機能・バッチ操作・ショートカット統合完了 |
 | V3.0.031 | 2025-09-03 | PDF表示バグ完全修正 |
 | V3.0.030 | 2025-09-03 | PdfiumViewerエンジン採用 |
-| V3.0.028 | 2025-09-03 | GhostScript依存排除 |
 
 [完全な履歴はdocs/rule/version_management.mdを参照]
 - ステップ5: バグ修正・機能追加 実行・進捗管理プロンプト

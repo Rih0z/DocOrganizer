@@ -194,6 +194,12 @@ namespace DocOrganizer.Core.Logging
         /// </summary>
         public static void LogError(string message, Exception ex = null)
         {
+            // エラーログも IsDebugEnabled のチェックを追加
+            if (!IsDebugEnabled)
+            {
+                return;
+            }
+            
             try
             {
                 var errorLogPath = Path.Combine(

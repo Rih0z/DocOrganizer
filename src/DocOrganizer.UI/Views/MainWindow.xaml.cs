@@ -90,47 +90,8 @@ namespace DocOrganizer.UI.Views
                             System.Diagnostics.Debug.WriteLine($"  [詳細] IsEnabled={button.IsEnabled}");
                             
                             // ViewModelから直接コマンドを取得して確認
-                            if (V3ViewModel?.PageOperation != null)
-                            {
-                                var moveUpCmd = V3ViewModel.PageOperation.MovePageUpCommand;
-                                var moveDownCmd = V3ViewModel.PageOperation.MovePageDownCommand;
-                                System.Diagnostics.Debug.WriteLine($"  [ViewModel] MovePageUpCommand={moveUpCmd != null}");
-                                System.Diagnostics.Debug.WriteLine($"  [ViewModel] MovePageDownCommand={moveDownCmd != null}");
-                                
-                                // 手動でクリックイベントを追加（テスト用）
-                                if (button.ToolTip?.ToString() == "上に移動")
-                                {
-                                    button.Click += (s, args) =>
-                                    {
-                                        System.Diagnostics.Debug.WriteLine("[手動Click] 上移動ボタンがクリックされました");
-                                        if (moveUpCmd != null && moveUpCmd.CanExecute(null))
-                                        {
-                                            System.Diagnostics.Debug.WriteLine("[手動Click] MovePageUpCommand実行");
-                                            moveUpCmd.Execute(null);
-                                        }
-                                        else
-                                        {
-                                            System.Diagnostics.Debug.WriteLine("[手動Click] MovePageUpCommand実行不可");
-                                        }
-                                    };
-                                }
-                                else if (button.ToolTip?.ToString() == "下に移動")
-                                {
-                                    button.Click += (s, args) =>
-                                    {
-                                        System.Diagnostics.Debug.WriteLine("[手動Click] 下移動ボタンがクリックされました");
-                                        if (moveDownCmd != null && moveDownCmd.CanExecute(null))
-                                        {
-                                            System.Diagnostics.Debug.WriteLine("[手動Click] MovePageDownCommand実行");
-                                            moveDownCmd.Execute(null);
-                                        }
-                                        else
-                                        {
-                                            System.Diagnostics.Debug.WriteLine("[手動Click] MovePageDownCommand実行不可");
-                                        }
-                                    };
-                                }
-                            }
+                            // V3.0.050: 手動Clickハンドラーを削除（二重実行の原因）
+                            // CommandバインディングがXAMLで設定されているため、手動ハンドラーは不要
                         }
                         buttonIndex++;
                     }

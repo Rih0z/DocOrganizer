@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using DocOrganizer.Application.Interfaces;
 using DocOrganizer.Application.Interfaces.V3;
 using DocOrganizer.Core.Models;
+using DocOrganizer.Core.Services;
 using DocOrganizer.UI.ViewModels.V3;
 using DocOrganizer.UI.ViewModels;
 using FluentAssertions;
