@@ -66,31 +66,45 @@ namespace DocOrganizer.UI.Services
 
         public DialogResult ShowMessage(string message, string title, MessageBoxButtons buttons = MessageBoxButtons.OK, MessageBoxIcon icon = MessageBoxIcon.Information)
         {
-            var wpfButtons = ConvertToWpfButtons(buttons);
-            var wpfIcon = ConvertToWpfIcon(icon);
-            var result = System.Windows.MessageBox.Show(message, title, wpfButtons, wpfIcon);
-            return ConvertFromWpfResult(result);
+            // メッセージボックスを表示しない（デフォルト値を返す）
+            System.Diagnostics.Debug.WriteLine($"[Message] {title}: {message}");
+            
+            // ボタンに応じたデフォルト値を返す
+            switch (buttons)
+            {
+                case MessageBoxButtons.YesNo:
+                case MessageBoxButtons.YesNoCancel:
+                    return DialogResult.Yes;  // 常に"はい"を選択
+                case MessageBoxButtons.OKCancel:
+                    return DialogResult.OK;
+                default:
+                    return DialogResult.OK;
+            }
         }
 
         public void ShowError(string message, string title = "エラー")
         {
-            System.Windows.MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Error);
+            // エラーメッセージを表示しない（ログのみ）
+            System.Diagnostics.Debug.WriteLine($"[Error] {title}: {message}");
         }
 
         public void ShowWarning(string message, string title = "警告")
         {
-            System.Windows.MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Warning);
+            // 警告メッセージを表示しない（ログのみ）
+            System.Diagnostics.Debug.WriteLine($"[Warning] {title}: {message}");
         }
 
         public void ShowInformation(string message, string title = "情報")
         {
-            System.Windows.MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Information);
+            // 情報メッセージを表示しない（ログのみ）
+            System.Diagnostics.Debug.WriteLine($"[Info] {title}: {message}");
         }
 
         public bool ShowConfirmation(string message, string title = "確認")
         {
-            var result = System.Windows.MessageBox.Show(message, title, MessageBoxButton.YesNo, MessageBoxImage.Question);
-            return result == MessageBoxResult.Yes;
+            // 確認ダイアログを表示しない（常にtrueを返す）
+            System.Diagnostics.Debug.WriteLine($"[Confirmation] {title}: {message}");
+            return true;  // 常に"はい"を選択
         }
 
         public string? ShowInputDialog(string message, string title = "入力", string? defaultValue = null)

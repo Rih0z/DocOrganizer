@@ -121,28 +121,27 @@ namespace DocOrganizer.UI.ViewModels.V3
 
             var selectedPages = Pages.Where(p => p.IsSelected).OrderByDescending(p => p.PageNumber).ToList();
 
-            if (_dialogService.ShowConfirmation($"{selectedPages.Count} ページを削除しますか？"))
+            // 確認ダイアログなしで直接削除
+            try
             {
-                try
+                foreach (var pageVm in selectedPages)
                 {
-                    foreach (var pageVm in selectedPages)
-                    {
-                        _pdfEditorService.RemovePage(_currentDocument, pageVm.PageNumber);
-                        Pages.Remove(pageVm);
-                    }
-
-                    // ページ番号を再設定
-                    UpdatePageNumbers();
-
-                    StatusMessage = $"{selectedPages.Count} ページを削除しました";
-                    
-                    // イベント通知
-                    PagesChanged?.Invoke(this, EventArgs.Empty);
+                    _pdfEditorService.RemovePage(_currentDocument, pageVm.PageNumber);
+                    Pages.Remove(pageVm);
                 }
-                catch (Exception ex)
-                {
-                    _dialogService.ShowError($"削除エラー: {ex.Message}");
-                }
+
+                // ページ番号を再設定
+                UpdatePageNumbers();
+
+                StatusMessage = $"{selectedPages.Count} ページを削除しました";
+                
+                // イベント通知
+                PagesChanged?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                // エラーメッセージは表示しない（ログのみ）
+                await AppendDebugLogAsync($"[RemovePageAsync] Error: {ex.Message}");
             }
         }
 
@@ -214,8 +213,8 @@ namespace DocOrganizer.UI.ViewModels.V3
             }
             catch (Exception ex)
             {
+                // エラーメッセージは表示しない（ログのみ）
                 await AppendDebugLogAsync($"[MovePageUp Error] {ex.Message}");
-                _dialogService.ShowError($"移動エラー: {ex.Message}");
             }
             finally
             {
@@ -292,8 +291,8 @@ namespace DocOrganizer.UI.ViewModels.V3
             }
             catch (Exception ex)
             {
+                // エラーメッセージは表示しない（ログのみ）
                 await AppendDebugLogAsync($"[MovePageDown Error] {ex.Message}");
-                _dialogService.ShowError($"移動エラー: {ex.Message}");
             }
             finally
             {
@@ -352,7 +351,8 @@ namespace DocOrganizer.UI.ViewModels.V3
             }
             catch (Exception ex)
             {
-                _dialogService.ShowError($"並び替えエラー: {ex.Message}");
+                // エラーメッセージは表示しない（ログのみ）
+                await AppendDebugLogAsync($"[SortPages Error] {ex.Message}");
             }
         }
 
@@ -416,7 +416,8 @@ namespace DocOrganizer.UI.ViewModels.V3
             catch (Exception ex)
             {
                 await AppendDebugLogAsync($"[ReorderPagesAsync] 例外発生: {ex.Message}");
-                _dialogService.ShowError($"並び替えエラー: {ex.Message}");
+                // エラーメッセージは表示しない（ログのみ）
+                await AppendDebugLogAsync($"[SortPages Error] {ex.Message}");
             }
         }
 
@@ -457,7 +458,8 @@ namespace DocOrganizer.UI.ViewModels.V3
             }
             catch (Exception ex)
             {
-                _dialogService.ShowError($"回転エラー: {ex.Message}");
+                // エラーメッセージは表示しない（ログのみ）
+                await AppendDebugLogAsync($"[RotatePage Error] {ex.Message}");
             }
         }
 
@@ -494,7 +496,8 @@ namespace DocOrganizer.UI.ViewModels.V3
             }
             catch (Exception ex)
             {
-                _dialogService.ShowError($"回転エラー: {ex.Message}");
+                // エラーメッセージは表示しない（ログのみ）
+                await AppendDebugLogAsync($"[RotatePage Error] {ex.Message}");
             }
         }
 
