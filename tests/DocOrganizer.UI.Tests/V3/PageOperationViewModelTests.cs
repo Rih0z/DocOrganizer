@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.Input;
 using DocOrganizer.Application.Interfaces;
 using DocOrganizer.Application.Interfaces.V3;
 using DocOrganizer.Core.Models;
@@ -18,6 +19,7 @@ namespace DocOrganizer.UI.Tests.V3
     {
         private readonly Mock<IPdfEditorService> _mockPdfEditorService;
         private readonly Mock<IDialogService> _mockDialogService;
+        private readonly Mock<IUndoRedoService> _mockUndoRedoService;
         private readonly Mock<IThumbnailGeneratorService> _mockThumbnailService;
         private readonly Mock<ITextOrientationService> _mockTextOrientationService;
         private readonly PageOperationViewModel _viewModel;
@@ -26,9 +28,14 @@ namespace DocOrganizer.UI.Tests.V3
         {
             _mockPdfEditorService = new Mock<IPdfEditorService>();
             _mockDialogService = new Mock<IDialogService>();
+            _mockUndoRedoService = new Mock<IUndoRedoService>();
             _mockThumbnailService = new Mock<IThumbnailGeneratorService>();
             _mockTextOrientationService = new Mock<ITextOrientationService>();
-            _viewModel = new PageOperationViewModel(_mockPdfEditorService.Object, _mockDialogService.Object);
+            _viewModel = new PageOperationViewModel(
+                _mockPdfEditorService.Object, 
+                _mockDialogService.Object,
+                _mockUndoRedoService.Object,
+                _mockThumbnailService.Object);
         }
 
         [Fact]
@@ -57,7 +64,7 @@ namespace DocOrganizer.UI.Tests.V3
             _viewModel.Pages.Add(page3);
 
             // Act
-            await _viewModel.MovePageUpCommand.ExecuteAsync(null);
+            await ((IAsyncRelayCommand)_viewModel.MovePageUpCommand).ExecuteAsync(null);
 
             // Assert
             _viewModel.Pages[0].Should().Be(page2); // page2が最初に移動
@@ -95,7 +102,7 @@ namespace DocOrganizer.UI.Tests.V3
             _viewModel.Pages.Add(page3);
 
             // Act
-            await _viewModel.MovePageDownCommand.ExecuteAsync(null);
+            await ((IAsyncRelayCommand)_viewModel.MovePageDownCommand).ExecuteAsync(null);
 
             // Assert
             _viewModel.Pages[0].Should().Be(page2); // page2が最初に
@@ -128,7 +135,7 @@ namespace DocOrganizer.UI.Tests.V3
             _viewModel.Pages.Add(page2);
 
             // Act
-            await _viewModel.MovePageUpCommand.ExecuteAsync(null);
+            await ((IAsyncRelayCommand)_viewModel.MovePageUpCommand).ExecuteAsync(null);
 
             // Assert
             _mockDialogService.Verify(x => x.ShowInformation(It.IsAny<string>(), It.IsAny<string>()), Times.Once);
@@ -155,7 +162,7 @@ namespace DocOrganizer.UI.Tests.V3
             _viewModel.Pages.Add(page2);
 
             // Act
-            await _viewModel.MovePageUpCommand.ExecuteAsync(null);
+            await ((IAsyncRelayCommand)_viewModel.MovePageUpCommand).ExecuteAsync(null);
 
             // Assert
             _mockDialogService.Verify(x => x.ShowInformation(It.IsAny<string>(), It.IsAny<string>()), Times.Once);
@@ -182,7 +189,7 @@ namespace DocOrganizer.UI.Tests.V3
             _viewModel.Pages.Add(page2);
 
             // Act
-            await _viewModel.MovePageDownCommand.ExecuteAsync(null);
+            await ((IAsyncRelayCommand)_viewModel.MovePageDownCommand).ExecuteAsync(null);
 
             // Assert
             _mockDialogService.Verify(x => x.ShowInformation(It.IsAny<string>(), It.IsAny<string>()), Times.Once);
@@ -216,7 +223,7 @@ namespace DocOrganizer.UI.Tests.V3
             _mockDialogService.Setup(x => x.ShowConfirmation(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
 
             // Act
-            await _viewModel.DeleteSelectedPagesCommand.ExecuteAsync(null);
+            await ((IAsyncRelayCommand)_viewModel.DeleteSelectedPagesCommand).ExecuteAsync(null);
 
             // Assert
             _viewModel.Pages.Count.Should().Be(1);
@@ -242,7 +249,7 @@ namespace DocOrganizer.UI.Tests.V3
             _viewModel.Pages.Add(pageVm);
 
             // Act
-            await _viewModel.RotateLeftCommand.ExecuteAsync(null);
+            await ((IAsyncRelayCommand)_viewModel.RotateLeftCommand).ExecuteAsync(null);
 
             // Assert
             // 実装では直接PdfPageのRotationプロパティを更新している
@@ -268,7 +275,7 @@ namespace DocOrganizer.UI.Tests.V3
             _viewModel.Pages.Add(pageVm);
 
             // Act
-            await _viewModel.RotateRightCommand.ExecuteAsync(null);
+            await ((IAsyncRelayCommand)_viewModel.RotateRightCommand).ExecuteAsync(null);
 
             // Assert
             // 実装では直接PdfPageのRotationプロパティを更新している

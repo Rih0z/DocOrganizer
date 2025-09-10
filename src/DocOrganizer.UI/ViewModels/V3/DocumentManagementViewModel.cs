@@ -69,6 +69,21 @@ namespace DocOrganizer.UI.ViewModels.V3
         _pdfExportService = pdfExportService;        // ✅ 追加
         _v3ConverterService = v3ConverterService;    // ✅ 追加
         _undoRedoService = undoRedoService;          // ✅ Phase 2: Undo/Redo統合
+        
+        // PropertyChanged通知の設定 - UI更新のため
+        _undoRedoService.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(IUndoRedoService.CanUndo))
+            {
+                OnPropertyChanged(nameof(CanUndo));
+                UndoCommand?.NotifyCanExecuteChanged();
+            }
+            if (e.PropertyName == nameof(IUndoRedoService.CanRedo))
+            {
+                OnPropertyChanged(nameof(CanRedo));
+                RedoCommand?.NotifyCanExecuteChanged();
+            }
+        };
     }
 
         /// <summary>

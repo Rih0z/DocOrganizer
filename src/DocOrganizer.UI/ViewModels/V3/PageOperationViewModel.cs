@@ -7,8 +7,11 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DocOrganizer.Application.Interfaces;
+using DocOrganizer.Application.Interfaces.V3;
 using DocOrganizer.Core.Models;
 using DocOrganizer.Core.Logging;
+using DocOrganizer.Core.Services;
+using DocOrganizer.Core.Commands;
 
 namespace DocOrganizer.UI.ViewModels.V3
 {
@@ -21,6 +24,8 @@ namespace DocOrganizer.UI.ViewModels.V3
     {
         private readonly IPdfEditorService _pdfEditorService;
         private readonly IDialogService _dialogService;
+        private readonly IUndoRedoService _undoRedoService;
+        private readonly IThumbnailGeneratorService _thumbnailService;
         private bool _isMovingPage = false;  // 再入防止フラグ
 
         [ObservableProperty]
@@ -143,10 +148,14 @@ Ctrl+W: 閉じる
 
         public PageOperationViewModel(
             IPdfEditorService pdfEditorService,
-            IDialogService dialogService)
+            IDialogService dialogService,
+            IUndoRedoService undoRedoService,
+            IThumbnailGeneratorService thumbnailService)
         {
             _pdfEditorService = pdfEditorService;
             _dialogService = dialogService;
+            _undoRedoService = undoRedoService;
+            _thumbnailService = thumbnailService;
             
             // コマンドを明示的に初期化
             SelectAllCommand = new RelayCommand(SelectAll);
@@ -213,7 +222,22 @@ Ctrl+W: 閉じる
             {
                 return;
             }
-            await RotateSelectedPagesAdvancedAsync(270); // 左回転 = 270度（反時計回り）
+            
+            var selectedPages = Pages.Where(p => p.IsSelected)
+                .Select(vm => vm.Page)
+                .ToList();
+            
+            var command = new RotatePagesCommand(
+                selectedPages,
+                270, // 左回転 = 270度（反時計回り）
+                () => {
+                    RefreshPageList();
+                    PagesChanged?.Invoke(this, EventArgs.Empty);
+                }
+            );
+            
+            _undoRedoService.Execute(command);
+            StatusMessage = "選択したページを左回転しました";
         }
 
         /// <summary>
@@ -225,7 +249,22 @@ Ctrl+W: 閉じる
             {
                 return;
             }
-            await RotateSelectedPagesAdvancedAsync(90); // 右回転 = 90度（時計回り）
+            
+            var selectedPages = Pages.Where(p => p.IsSelected)
+                .Select(vm => vm.Page)
+                .ToList();
+            
+            var command = new RotatePagesCommand(
+                selectedPages,
+                90, // 右回転 = 90度（時計回り）
+                () => {
+                    RefreshPageList();
+                    PagesChanged?.Invoke(this, EventArgs.Empty);
+                }
+            );
+            
+            _undoRedoService.Execute(command);
+            StatusMessage = "選択したページを右回転しました";
         }
 
         /// <summary>
@@ -239,24 +278,28 @@ Ctrl+W: 閉じる
             }
             if (_currentDocument == null) return;
 
-            var selectedPages = Pages.Where(p => p.IsSelected).OrderByDescending(p => p.PageNumber).ToList();
+            var selectedPages = Pages.Where(p => p.IsSelected)
+                .Select(vm => vm.Page)  // PdfPageオブジェクト取得
+                .ToList();
 
-            // 確認ダイアログなしで直接削除
+            // DeletePagesCommandを作成して実行
+            var command = new DeletePagesCommand(
+                _currentDocument,
+                selectedPages,
+                () => {
+                    // UIの更新
+                    RefreshPageList();
+                    PagesChanged?.Invoke(this, EventArgs.Empty);
+                }
+            );
+            
             try
             {
-                foreach (var pageVm in selectedPages)
-                {
-                    _pdfEditorService.RemovePage(_currentDocument, pageVm.PageNumber);
-                    Pages.Remove(pageVm);
-                }
-
-                // ページ番号を再設定
-                UpdatePageNumbers();
-
-                StatusMessage = $"{selectedPages.Count} ページを削除しました";
+                _undoRedoService.Execute(command);
                 
-                // イベント通知
-                PagesChanged?.Invoke(this, EventArgs.Empty);
+                // UIの更新
+                UpdatePageNumbers();
+                StatusMessage = $"{selectedPages.Count} ページを削除しました";
             }
             catch (Exception ex)
             {
@@ -272,13 +315,6 @@ Ctrl+W: 閉じる
         {
             System.Diagnostics.Debug.WriteLine("[MovePageUpAsync] メソッドが呼び出されました！");
             
-            // 再入防止チェック
-            if (_isMovingPage)
-            {
-                await AppendDebugLogAsync("[MovePageUp] 再入防止: 既に移動処理中");
-                return;
-            }
-            
             if (_currentDocument == null || Pages.Count <= 1) 
             {
                 return;
@@ -291,55 +327,34 @@ Ctrl+W: 閉じる
                 return;
             }
 
-            _isMovingPage = true;  // フラグセット（CollectionChangedイベントを無効化）
-            try
+            var currentIndex = Pages.IndexOf(selectedPage);
+            
+            if (currentIndex <= 0) 
             {
-                var currentIndex = Pages.IndexOf(selectedPage);
-                await AppendDebugLogAsync($"[MovePageUp] START - Index: {currentIndex}, Count: {Pages.Count}");
-                
-                if (currentIndex <= 0) 
-                {
-                    await AppendDebugLogAsync($"[MovePageUp] Cannot move up - already at top or not found");
-                    return;
+                await AppendDebugLogAsync($"[MovePageUp] Cannot move up - already at top or not found");
+                return;
+            }
+
+            // MovePagesCommandを作成して実行
+            var command = new MovePagesCommand(
+                _currentDocument,
+                selectedPage.Page,
+                currentIndex - 1,
+                () => {
+                    RefreshPageList();
+                    PagesChanged?.Invoke(this, EventArgs.Empty);
                 }
-
-                // V3.0.031の実装に完全復元
-                await AppendDebugLogAsync($"[MovePageUp] 移動前: {string.Join(",", Pages.Select(p => p.PageNumber))}");
-                
-                // ObservableCollectionで位置を移動
-                Pages.Move(currentIndex, currentIndex - 1);
-                await AppendDebugLogAsync($"[MovePageUp] 移動後: {string.Join(",", Pages.Select(p => p.PageNumber))}");
-
-                // PDFドキュメント側も同じ順序に更新
-                if (_currentDocument != null && currentIndex < _currentDocument.Pages.Count)
-                {
-                    _currentDocument.MovePage(currentIndex, currentIndex - 1);
-                }
-
-                // ページ番号を再設定
-                UpdatePageNumbers();
-
-                // CollectionChangedイベントがスキップされたため、手動で状態を更新
-                UpdateSelectionState();
-
-                StatusMessage = $"ページ {selectedPage.PageNumber} を上に移動しました";
-                
-                // Force UI collection refresh
-                OnPropertyChanged(nameof(Pages));
-                
-                // イベント通知
-                PagesChanged?.Invoke(this, EventArgs.Empty);
-            }
-            catch (Exception ex)
+            );
+            
+            _undoRedoService.Execute(command);
+            StatusMessage = $"ページ {selectedPage.PageNumber} を上に移動しました";
+            
+            // 選択状態を復元
+            if (currentIndex - 1 < Pages.Count)
             {
-                // エラーメッセージは表示しない（ログのみ）
-                await AppendDebugLogAsync($"[MovePageUp Error] {ex.Message}");
+                Pages[currentIndex - 1].IsSelected = true;
             }
-            finally
-            {
-                _isMovingPage = false;  // フラグリセット（CollectionChangedイベントを再有効化）
-                await AppendDebugLogAsync("[MovePageUp] END - フラグリセット");
-            }
+            UpdateSelectionState();
         }
 
         /// <summary>
@@ -349,13 +364,6 @@ Ctrl+W: 閉じる
         {
             System.Diagnostics.Debug.WriteLine("[MovePageDownAsync] メソッドが呼び出されました！");
             
-            // 再入防止チェック
-            if (_isMovingPage)
-            {
-                await AppendDebugLogAsync("[MovePageDown] 再入防止: 既に移動処理中");
-                return;
-            }
-            
             if (_currentDocument == null || Pages.Count <= 1) 
             {
                 return;
@@ -368,55 +376,34 @@ Ctrl+W: 閉じる
                 return;
             }
 
-            _isMovingPage = true;  // フラグセット（CollectionChangedイベントを無効化）
-            try
+            var currentIndex = Pages.IndexOf(selectedPage);
+            
+            if (currentIndex >= Pages.Count - 1 || currentIndex < 0) 
             {
-                var currentIndex = Pages.IndexOf(selectedPage);
-                await AppendDebugLogAsync($"[MovePageDown] START - Index: {currentIndex}, Count: {Pages.Count}");
-                
-                if (currentIndex >= Pages.Count - 1 || currentIndex < 0) 
-                {
-                    await AppendDebugLogAsync($"[MovePageDown] Cannot move down - already at bottom or not found");
-                    return;
+                await AppendDebugLogAsync($"[MovePageDown] Cannot move down - already at bottom or not found");
+                return;
+            }
+
+            // MovePagesCommandを作成して実行
+            var command = new MovePagesCommand(
+                _currentDocument,
+                selectedPage.Page,
+                currentIndex + 1,
+                () => {
+                    RefreshPageList();
+                    PagesChanged?.Invoke(this, EventArgs.Empty);
                 }
-
-                // V3.0.031の実装に完全復元
-                await AppendDebugLogAsync($"[MovePageDown] 移動前: {string.Join(",", Pages.Select(p => p.PageNumber))}");
-                
-                // ObservableCollectionで位置を移動
-                Pages.Move(currentIndex, currentIndex + 1);
-                await AppendDebugLogAsync($"[MovePageDown] 移動後: {string.Join(",", Pages.Select(p => p.PageNumber))}");
-
-                // PDFドキュメント側も同じ順序に更新
-                if (_currentDocument != null && currentIndex < _currentDocument.Pages.Count)
-                {
-                    _currentDocument.MovePage(currentIndex, currentIndex + 1);
-                }
-
-                // ページ番号を再設定
-                UpdatePageNumbers();
-
-                // CollectionChangedイベントがスキップされたため、手動で状態を更新
-                UpdateSelectionState();
-
-                StatusMessage = $"ページ {selectedPage.PageNumber} を下に移動しました";
-                
-                // Force UI collection refresh
-                OnPropertyChanged(nameof(Pages));
-                
-                // イベント通知
-                PagesChanged?.Invoke(this, EventArgs.Empty);
-            }
-            catch (Exception ex)
+            );
+            
+            _undoRedoService.Execute(command);
+            StatusMessage = $"ページ {selectedPage.PageNumber} を下に移動しました";
+            
+            // 選択状態を復元
+            if (currentIndex + 1 < Pages.Count)
             {
-                // エラーメッセージは表示しない（ログのみ）
-                await AppendDebugLogAsync($"[MovePageDown Error] {ex.Message}");
+                Pages[currentIndex + 1].IsSelected = true;
             }
-            finally
-            {
-                _isMovingPage = false;  // フラグリセット（CollectionChangedイベントを再有効化）
-                await AppendDebugLogAsync("[MovePageDown] END - フラグリセット");
-            }
+            UpdateSelectionState();
         }
 
         /// <summary>
@@ -810,6 +797,28 @@ Ctrl+W: 閉じる
         public void SetCurrentDocument(PdfDocument? document)
         {
             _currentDocument = document;
+            UpdateSelectionState();
+        }
+        
+        /// <summary>
+        /// ドキュメントからページリストを再読み込み（Undo/Redo後に使用）
+        /// </summary>
+        private void RefreshPageList()
+        {
+            if (_currentDocument == null)
+            {
+                Pages.Clear();
+                return;
+            }
+            
+            Pages.Clear();
+            foreach (var page in _currentDocument.Pages)
+            {
+                var pageVm = new V3PageViewModel(page, _thumbnailService);
+                Pages.Add(pageVm);
+            }
+            
+            UpdatePageNumbers();
             UpdateSelectionState();
         }
 

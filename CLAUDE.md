@@ -5,7 +5,7 @@ ai_coding_principles:
   version: "3.0"
   last_updated: "2025-09-10"
   project: "DocOrganizer - CubePDF Utility互換 汎用PDF編集ツール"
-  current_version: "3.0.065"
+  current_version: "3.0.068"
 ```
 
 ## ⚠️ 必須宣言事項
@@ -101,7 +101,7 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 ## ⚡ クイックリファレンス
 
 ### 現在の情報
-- **バージョン**: V3.0.065
+- **バージョン**: V3.0.068
 - **GitHub**: https://github.com/Rih0z/DocOrganizer
 - **デフォルトEXE**: `C:\Users\217216X721451\github\DocOrganizer\release-debug\DocOrganizer.exe`
 - **リリースEXE**: `C:\Users\217216X721451\github\DocOrganizer\release\DocOrganizer.exe`（明示的指示時）
