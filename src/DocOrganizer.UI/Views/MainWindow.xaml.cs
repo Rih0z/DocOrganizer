@@ -7,6 +7,7 @@ using System.Windows.Input;
 using Microsoft.Extensions.Logging;
 using DocOrganizer.UI.ViewModels;
 using DocOrganizer.UI.ViewModels.V3;
+using DocOrganizer.Core.Logging;
 
 namespace DocOrganizer.UI.Views
 {
@@ -31,6 +32,37 @@ namespace DocOrganizer.UI.Views
             
             this.Loaded += MainWindow_Loaded;
             
+            // 🚨 緊急F1パッチ - 確実にF1キーを動作させる
+            System.Diagnostics.Debug.WriteLine("[F1_DEBUG] KeyDownイベントハンドラー登録開始");
+            this.KeyDown += (s, e) =>
+            {
+                System.Diagnostics.Debug.WriteLine($"[F1_DEBUG] KeyDown発火: Key={e.Key}");
+                if (e.Key == Key.F1)
+                {
+                    System.Diagnostics.Debug.WriteLine("[F1_EMERGENCY] ★★★ F1キー検出 ★★★");
+                    DebugLogger.Log("[F1_EMERGENCY] F1キー検出 - 緊急パッチ実行");
+                    
+                    var vm = DataContext as MainCompositeViewModel;
+                    if (vm?.PageOperation?.ShowHelpCommand != null)
+                    {
+                        vm.PageOperation.ShowHelpCommand.Execute(null);
+                        System.Diagnostics.Debug.WriteLine("[F1_EMERGENCY] ShowHelpCommand実行完了");
+                        DebugLogger.Log("[F1_EMERGENCY] ShowHelpCommand実行完了");
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("[F1_EMERGENCY] ShowHelpCommand取得失敗");
+                        DebugLogger.Log("[F1_EMERGENCY] ShowHelpCommand取得失敗");
+                    }
+                    e.Handled = true;
+                }
+            };
+            System.Diagnostics.Debug.WriteLine("[F1_DEBUG] KeyDownイベントハンドラー登録完了");
+            
+            // キーボードショートカット対応 - 明示的にイベント登録
+            this.PreviewKeyDown += Window_PreviewKeyDown;
+            System.Diagnostics.Debug.WriteLine("[MainWindow] PreviewKeyDown event handler registered in constructor");
+            
             // ウィンドウ終了時のクリーンアップ
             this.Closing += MainWindow_Closing;
         }
@@ -43,10 +75,91 @@ namespace DocOrganizer.UI.Views
         
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine($"[MainWindow] DataContext type: {DataContext?.GetType().Name}");
-
+            System.Diagnostics.Debug.WriteLine("=== F1キーバインディング完全デバッグ開始 ===");
+            
+            // DataContext存在確認
+            if (DataContext == null)
+            {
+                System.Diagnostics.Debug.WriteLine("[CRITICAL] DataContext is NULL!");
+                return;
+            }
+            
+            if (!(DataContext is MainCompositeViewModel vm))
+            {
+                System.Diagnostics.Debug.WriteLine($"[CRITICAL] DataContext型が不正: {DataContext.GetType().Name}");
+                return;
+            }
+            
+            System.Diagnostics.Debug.WriteLine($"[F1_FIX] DataContext確認OK: {vm.GetType().Name}");
+            
+            if (vm.PageOperation == null)
+            {
+                System.Diagnostics.Debug.WriteLine("[CRITICAL] PageOperation is NULL!");
+                return;
+            }
+            
+            System.Diagnostics.Debug.WriteLine($"[F1_FIX] PageOperation確認OK: {vm.PageOperation.GetType().Name}");
+            
+            if (vm.PageOperation.ShowHelpCommand == null)
+            {
+                System.Diagnostics.Debug.WriteLine("[CRITICAL] ShowHelpCommand is NULL!");
+                return;
+            }
+            
+            System.Diagnostics.Debug.WriteLine($"[F1_FIX] ShowHelpCommand確認OK: {vm.PageOperation.ShowHelpCommand}");
+            
+            // 全てのF1関連バインディングを完全クリア
+            var allF1Bindings = this.InputBindings
+                .OfType<KeyBinding>()
+                .Where(kb => kb.Key == Key.F1)
+                .ToList();
+            
+            foreach (var binding in allF1Bindings)
+            {
+                this.InputBindings.Remove(binding);
+                System.Diagnostics.Debug.WriteLine("[F1_FIX] 既存F1バインディング削除");
+            }
+            
+            // 確実なF1動的バインディング追加
+            var f1Binding = new KeyBinding
+            {
+                Key = Key.F1,
+                Modifiers = ModifierKeys.None,
+                Command = vm.PageOperation.ShowHelpCommand
+            };
+            
+            this.InputBindings.Add(f1Binding);
+            System.Diagnostics.Debug.WriteLine($"[F1_FIX] F1バインディング追加完了 - Command: {f1Binding.Command}");
+            
+            // Ctrl+A も同様に動的バインディング
+            var ctrlABinding = new KeyBinding
+            {
+                Key = Key.A,
+                Modifiers = ModifierKeys.Control,
+                Command = vm.PageOperation.SelectAllCommand
+            };
+            this.InputBindings.Add(ctrlABinding);
+            System.Diagnostics.Debug.WriteLine("[F1_FIX] Ctrl+A バインディング追加完了");
+            
+            // PreviewKeyDownからF1処理を除去
+            this.PreviewKeyDown -= Window_PreviewKeyDown;
+            this.PreviewKeyDown += (s, evt) =>
+            {
+                if (evt.Key == Key.F1)
+                {
+                    System.Diagnostics.Debug.WriteLine("[F1_FIX] PreviewKeyDownでF1検出 - InputBindingに委譲");
+                    return; // InputBindingに処理を委譲
+                }
+                Window_PreviewKeyDown(s, evt); // その他のキー処理
+            };
+            
+            System.Diagnostics.Debug.WriteLine("=== F1キーバインディング完全デバッグ終了 ===");
+            
             // Force command refresh
             CommandManager.InvalidateRequerySuggested();
+            
+            // デバッグ: コマンドバインディング確認
+            DebugDataContext();
             
             // Add fallback click handler for Open button
             if (this.FindName("OpenButton") is Button openButton)
@@ -510,6 +623,60 @@ namespace DocOrganizer.UI.Views
             }
         }
 
+        #endregion
+
+        #region Event Handlers
+        
+        // PreviewKeyDownイベントハンドラー（ショートカットキー対応）
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Window_PreviewKeyDown] ★★★ EVENT FIRED ★★★ Key pressed: {e.Key}, Modifiers: {Keyboard.Modifiers}");
+            
+            if (V3ViewModel == null)
+            {
+                System.Diagnostics.Debug.WriteLine("[Window_PreviewKeyDown] V3ViewModel is null!");
+                return;
+            }
+            
+            // F1キーの処理はInputBindingに任せる（二重実装を避けるため削除）
+            // InputBinding: <KeyBinding Key="F1" Command="{Binding PageOperation.ShowHelpCommand}"/>
+            
+            // Ctrl+A - 全選択
+            if (e.Key == Key.A && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                System.Diagnostics.Debug.WriteLine("[MainWindow] Ctrl+A pressed");
+                System.Diagnostics.Debug.WriteLine($"[MainWindow] PageOperation is null: {V3ViewModel.PageOperation == null}");
+                
+                if (V3ViewModel.PageOperation != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[MainWindow] SelectAllCommand is null: {V3ViewModel.PageOperation.SelectAllCommand == null}");
+                }
+                
+                if (V3ViewModel.PageOperation?.SelectAllCommand?.CanExecute(null) == true)
+                {
+                    System.Diagnostics.Debug.WriteLine("[MainWindow] Executing SelectAllCommand");
+                    V3ViewModel.PageOperation.SelectAllCommand.Execute(null);
+                    e.Handled = true;
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("[MainWindow] SelectAllCommand cannot execute or is null");
+                }
+            }
+        }
+        
+        // デバッグ: DataContextとコマンドの確認
+        private void DebugDataContext()
+        {
+            System.Diagnostics.Debug.WriteLine($"[DebugDataContext] DataContext: {DataContext?.GetType().Name}");
+            if (DataContext is MainCompositeViewModel vm)
+            {
+                System.Diagnostics.Debug.WriteLine($"[DebugDataContext] PageOperation: {vm.PageOperation}");
+                System.Diagnostics.Debug.WriteLine($"[DebugDataContext] SelectAllCommand: {vm.PageOperation?.SelectAllCommand}");
+                System.Diagnostics.Debug.WriteLine($"[DebugDataContext] ShowHelpCommand: {vm.ShowHelpCommand}");
+            }
+        }
+        
         #endregion
 
         #region Helper Methods

@@ -5,13 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:behaviors="clr-namespace:DocOrganizer.UI.Behaviors"
         mc:Ignorable="d"
-        Title="DocOrganizer 3.0.050" 
+        Title="DocOrganizer 3.0.063" 
         Height="700" Width="1000"
         WindowStartupLocation="CenterScreen"
         Background="#F0F0F0"
         AllowDrop="True"
         behaviors:V3AdvancedDragDropBehavior.IsDropTarget="True"
-        behaviors:V3AdvancedDragDropBehavior.DropHandler="{Binding DragDropHandler}">
+        behaviors:V3AdvancedDragDropBehavior.DropHandler="{Binding DragDropHandler}"
+        PreviewKeyDown="Window_PreviewKeyDown">
     
     <!-- キーボードショートカット -->
     <Window.InputBindings>
@@ -23,7 +24,11 @@
         <KeyBinding Key="Y" Modifiers="Ctrl" Command="{Binding DocumentManagement.RedoCommand}"/>
         <KeyBinding Key="Delete" Command="{Binding PageOperation.DeleteSelectedPagesCommand}"/>
         <KeyBinding Key="W" Modifiers="Ctrl" Command="{Binding DocumentManagement.CloseCommand}"/>
-        <KeyBinding Key="F1" Command="{Binding ShowHelpCommand}"/>
+        <KeyBinding Key="F1" Command="{Binding PageOperation.ShowHelpCommand}"/>
+        <!-- F1キーの代替ショートカット（Windowsシステムによる横取り対策） -->
+        <KeyBinding Key="H" Modifiers="Ctrl" Command="{Binding PageOperation.ShowHelpCommand}"/>
+        <KeyBinding Key="F1" Modifiers="Alt" Command="{Binding PageOperation.ShowHelpCommand}"/>
+        <KeyBinding Key="F1" Modifiers="Shift" Command="{Binding PageOperation.ShowHelpCommand}"/>
         <KeyBinding Key="OemPlus" Modifiers="Ctrl" Command="{Binding ZoomInCommand}"/>
         <KeyBinding Key="OemMinus" Modifiers="Ctrl" Command="{Binding ZoomOutCommand}"/>
     </Window.InputBindings>
@@ -178,7 +183,7 @@
             </MenuItem>
             
             <MenuItem Header="ヘルプ(_H)">
-                <MenuItem Header="ヘルプの表示(_H)" Command="{Binding ShowHelpCommand}" InputGestureText="F1"/>
+                <MenuItem Header="ヘルプの表示(_H)" Command="{Binding PageOperation.ShowHelpCommand}" InputGestureText="Ctrl+H (F1)"/>
                 <Separator/>
                 <MenuItem Header="アップデートの確認(_U)..." Command="{Binding CheckForUpdatesCommand}">
                     <MenuItem.Icon>

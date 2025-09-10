@@ -66,45 +66,77 @@ namespace DocOrganizer.UI.Services
 
         public DialogResult ShowMessage(string message, string title, MessageBoxButtons buttons = MessageBoxButtons.OK, MessageBoxIcon icon = MessageBoxIcon.Information)
         {
-            // メッセージボックスを表示しない（デフォルト値を返す）
+            // ログ出力
             System.Diagnostics.Debug.WriteLine($"[Message] {title}: {message}");
             
-            // ボタンに応じたデフォルト値を返す
-            switch (buttons)
+            // WPFのMessageBoxButton列挙型に変換
+            MessageBoxButton wpfButtons = buttons switch
             {
-                case MessageBoxButtons.YesNo:
-                case MessageBoxButtons.YesNoCancel:
-                    return DialogResult.Yes;  // 常に"はい"を選択
-                case MessageBoxButtons.OKCancel:
-                    return DialogResult.OK;
-                default:
-                    return DialogResult.OK;
-            }
+                MessageBoxButtons.OKCancel => MessageBoxButton.OKCancel,
+                MessageBoxButtons.YesNo => MessageBoxButton.YesNo,
+                MessageBoxButtons.YesNoCancel => MessageBoxButton.YesNoCancel,
+                _ => MessageBoxButton.OK
+            };
+            
+            // WPFのMessageBoxImage列挙型に変換
+            MessageBoxImage wpfIcon = icon switch
+            {
+                MessageBoxIcon.Error => MessageBoxImage.Error,
+                MessageBoxIcon.Warning => MessageBoxImage.Warning,
+                MessageBoxIcon.Question => MessageBoxImage.Question,
+                MessageBoxIcon.Information => MessageBoxImage.Information,
+                _ => MessageBoxImage.None
+            };
+            
+            // 実際にメッセージボックスを表示
+            var result = MessageBox.Show(message, title, wpfButtons, wpfIcon);
+            
+            // DialogResultに変換して返す
+            return result switch
+            {
+                MessageBoxResult.OK => DialogResult.OK,
+                MessageBoxResult.Cancel => DialogResult.Cancel,
+                MessageBoxResult.Yes => DialogResult.Yes,
+                MessageBoxResult.No => DialogResult.No,
+                _ => DialogResult.None
+            };
         }
 
         public void ShowError(string message, string title = "エラー")
         {
-            // エラーメッセージを表示しない（ログのみ）
+            // ログ出力
             System.Diagnostics.Debug.WriteLine($"[Error] {title}: {message}");
+            
+            // 実際にメッセージボックスを表示
+            MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         public void ShowWarning(string message, string title = "警告")
         {
-            // 警告メッセージを表示しない（ログのみ）
+            // ログ出力
             System.Diagnostics.Debug.WriteLine($"[Warning] {title}: {message}");
+            
+            // 実際にメッセージボックスを表示
+            MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Warning);
         }
 
         public void ShowInformation(string message, string title = "情報")
         {
-            // 情報メッセージを表示しない（ログのみ）
+            // ログ出力
             System.Diagnostics.Debug.WriteLine($"[Info] {title}: {message}");
+            
+            // 実際にメッセージボックスを表示
+            MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         public bool ShowConfirmation(string message, string title = "確認")
         {
-            // 確認ダイアログを表示しない（常にtrueを返す）
+            // ログ出力
             System.Diagnostics.Debug.WriteLine($"[Confirmation] {title}: {message}");
-            return true;  // 常に"はい"を選択
+            
+            // 実際に確認ダイアログを表示
+            var result = MessageBox.Show(message, title, MessageBoxButton.YesNo, MessageBoxImage.Question);
+            return result == MessageBoxResult.Yes;
         }
 
         public string? ShowInputDialog(string message, string title = "入力", string? defaultValue = null)

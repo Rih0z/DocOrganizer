@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DocOrganizer.Application.Interfaces;
 using DocOrganizer.Core.Models;
+using DocOrganizer.Core.Logging;
 
 namespace DocOrganizer.UI.ViewModels.V3
 {
@@ -39,11 +40,62 @@ namespace DocOrganizer.UI.ViewModels.V3
 
         private PdfDocument? _currentDocument;
 
+        // コマンドプロパティ（明示的定義）
+        public IRelayCommand SelectAllCommand { get; private set; }
+        public IRelayCommand ShowHelpCommand { get; private set; }
+
         // 自動回転コマンド（未実装）
         [RelayCommand]
         private void AutoCorrectAllPagesOrientation()
         {
             _dialogService.ShowInformation("自動回転機能は現在実装中です。次のバージョンで利用可能になります。");
+        }
+
+        // 全選択コマンド (Ctrl+A)
+        private void SelectAll()
+        {
+            if (Pages == null || Pages.Count == 0) return;
+
+            foreach (var page in Pages)
+            {
+                page.IsSelected = true;
+            }
+
+            UpdateSelectionState();
+            StatusMessage = $"全てのページ ({Pages.Count}ページ) を選択しました";
+        }
+
+        // ヘルプ表示コマンド (F1)
+        private void ShowHelp()
+        {
+            // デバッグ用ログ
+            System.Diagnostics.Debug.WriteLine("[ShowHelp] ヘルプ表示メソッド実行開始");
+            DebugLogger.Log("[ShowHelp] ヘルプ表示メソッド実行開始");
+            
+            var helpMessage = @"DocOrganizer - ショートカットキー一覧
+
+【基本操作】
+Ctrl+A: 全ページを選択
+Delete: 選択したページを削除
+F1 / Ctrl+H / Alt+F1 / Shift+F1: このヘルプを表示
+
+【ページ移動】
+↑/↓: 選択したページを上下に移動
+
+【回転】
+Ctrl+R: 選択したページを右回転
+Ctrl+L: 選択したページを左回転
+
+【その他】
+ドラッグ&ドロップでページの並び替えが可能です。
+
+※F1キーが動作しない場合はCtrl+Hをお使いください。";
+
+            _dialogService.ShowInformation(helpMessage, "ヘルプ");
+            
+            // デバッグ用ログ
+            System.Diagnostics.Debug.WriteLine("[ShowHelp] ヘルプダイアログ表示完了");
+            DebugLogger.Log("[ShowHelp] ヘルプダイアログ表示完了");
         }
 
         public PageOperationViewModel(
@@ -52,6 +104,10 @@ namespace DocOrganizer.UI.ViewModels.V3
         {
             _pdfEditorService = pdfEditorService;
             _dialogService = dialogService;
+            
+            // コマンドを明示的に初期化
+            SelectAllCommand = new RelayCommand(SelectAll);
+            ShowHelpCommand = new RelayCommand(ShowHelp);
             
             // 初期状態を設定
             CanMoveUp = false;
@@ -67,6 +123,8 @@ namespace DocOrganizer.UI.ViewModels.V3
             System.Diagnostics.Debug.WriteLine($"[PageOperationViewModel] Constructor - RotateLeftCommand: {RotateLeftCommand != null}");
             System.Diagnostics.Debug.WriteLine($"[PageOperationViewModel] Constructor - RotateRightCommand: {RotateRightCommand != null}");
             System.Diagnostics.Debug.WriteLine($"[PageOperationViewModel] Constructor - DeleteSelectedPagesCommand: {DeleteSelectedPagesCommand != null}");
+            System.Diagnostics.Debug.WriteLine($"[PageOperationViewModel] Constructor - SelectAllCommand: {SelectAllCommand != null}");
+            System.Diagnostics.Debug.WriteLine($"[PageOperationViewModel] Constructor - ShowHelpCommand: {ShowHelpCommand != null}");
         }
 
         private void OnPagesCollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)

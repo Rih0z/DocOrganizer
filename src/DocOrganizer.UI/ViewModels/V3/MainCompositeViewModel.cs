@@ -32,6 +32,7 @@ namespace DocOrganizer.UI.ViewModels.V3
         // コマンドプロキシ
         public IRelayCommand? ZoomInCommand => PreviewManagement?.ZoomInCommand;
         public IRelayCommand? ZoomOutCommand => PreviewManagement?.ZoomOutCommand;
+        public IRelayCommand? ShowHelpCommand => PageOperation?.ShowHelpCommand;
         
         // 🔧 明示的コマンド実装 - RelayCommand自動生成に依存しない
         public ICommand ExportPdfCommand { get; private set; }
