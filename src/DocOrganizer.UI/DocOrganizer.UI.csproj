@@ -21,6 +21,9 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishReadyToRun>true</PublishReadyToRun>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <!-- ネイティブDLLも単一ファイルに含める -->
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <!-- OCR機能の有効/無効制御 -->
     <EnableOCR Condition="'$(EnableOCR)' == ''">false</EnableOCR>
   </PropertyGroup>
