@@ -6,6 +6,12 @@ DocOrganizer V3.0.068 - 単一実行ファイル版
 - pdfium.dll (15MB) - PDF描画エンジン
 - config\AppSettings.json - 設定ファイル
 
+【デバッグ用ファイル（開発者向け）】
+- DocOrganizer.pdb - デバッグシンボル
+- eng.user-words - OCRユーザー辞書
+- eng.user-patterns - OCRパターン定義
+- Tesseract.Native.deployment.json - OCR設定
+
 【起動方法】
 エクスプローラーからDocOrganizer.exeをダブルクリックして起動
 
