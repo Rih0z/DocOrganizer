@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:behaviors="clr-namespace:DocOrganizer.UI.Behaviors"
         mc:Ignorable="d"
-        Title="DocOrganizer 3.0.063" 
+        Title="DocOrganizer 3.0.065" 
         Height="700" Width="1000"
         WindowStartupLocation="CenterScreen"
         Background="#F0F0F0"
@@ -14,23 +14,75 @@
         behaviors:V3AdvancedDragDropBehavior.DropHandler="{Binding DragDropHandler}"
         PreviewKeyDown="Window_PreviewKeyDown">
     
-    <!-- キーボードショートカット -->
+    <!-- キーボードショートカット完全実装 V3.0.065 -->
     <Window.InputBindings>
+        <!-- ファイル操作 -->
         <KeyBinding Key="N" Modifiers="Ctrl" Command="{Binding DocumentManagement.NewCommand}"/>
         <KeyBinding Key="O" Modifiers="Ctrl" Command="{Binding DocumentManagement.OpenCommand}"/>
         <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding DocumentManagement.SaveCommand}"/>
-        <KeyBinding Key="A" Modifiers="Ctrl" Command="{Binding PageOperation.SelectAllCommand}"/>
+        <KeyBinding Key="S" Modifiers="Ctrl+Shift" Command="{Binding DocumentManagement.SaveAsCommand}"/>
+        <KeyBinding Key="W" Modifiers="Ctrl" Command="{Binding DocumentManagement.CloseCommand}"/>
+        <KeyBinding Key="Q" Modifiers="Ctrl" Command="{Binding DocumentManagement.ExitCommand}"/>
+        <KeyBinding Key="F4" Modifiers="Alt" Command="{Binding DocumentManagement.ExitCommand}"/>
+        
+        <!-- 編集操作 -->
         <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding DocumentManagement.UndoCommand}"/>
         <KeyBinding Key="Y" Modifiers="Ctrl" Command="{Binding DocumentManagement.RedoCommand}"/>
+        <KeyBinding Key="A" Modifiers="Ctrl" Command="{Binding PageOperation.SelectAllCommand}"/>
+        <KeyBinding Key="D" Modifiers="Ctrl+Shift" Command="{Binding PageOperation.DeselectAllCommand}"/>
         <KeyBinding Key="Delete" Command="{Binding PageOperation.DeleteSelectedPagesCommand}"/>
-        <KeyBinding Key="W" Modifiers="Ctrl" Command="{Binding DocumentManagement.CloseCommand}"/>
+        <KeyBinding Key="D" Modifiers="Ctrl" Command="{Binding PageOperation.DeleteSelectedPagesCommand}"/>
+        
+        <!-- ページ操作 -->
+        <KeyBinding Key="Left" Modifiers="Ctrl+Shift" Command="{Binding PageOperation.RotateLeftCommand}"/>
+        <KeyBinding Key="L" Modifiers="Ctrl+Alt" Command="{Binding PageOperation.RotateLeftCommand}"/>
+        <KeyBinding Key="Right" Modifiers="Ctrl+Shift" Command="{Binding PageOperation.RotateRightCommand}"/>
+        <KeyBinding Key="R" Modifiers="Ctrl+Alt" Command="{Binding PageOperation.RotateRightCommand}"/>
+        <KeyBinding Key="Up" Modifiers="Ctrl+Shift" Command="{Binding PageOperation.MovePageUpCommand}"/>
+        <KeyBinding Key="U" Modifiers="Alt" Command="{Binding PageOperation.MovePageUpCommand}"/>
+        <KeyBinding Key="Down" Modifiers="Ctrl+Shift" Command="{Binding PageOperation.MovePageDownCommand}"/>
+        <KeyBinding Key="D" Modifiers="Alt" Command="{Binding PageOperation.MovePageDownCommand}"/>
+        <KeyBinding Key="G" Modifiers="Ctrl" Command="{Binding PageOperation.GoToPageCommand}"/>
+        <KeyBinding Key="PageUp" Command="{Binding PageOperation.PreviousPageCommand}"/>
+        <KeyBinding Key="PageDown" Command="{Binding PageOperation.NextPageCommand}"/>
+        <KeyBinding Key="Home" Command="{Binding PageOperation.FirstPageCommand}"/>
+        <KeyBinding Key="End" Command="{Binding PageOperation.LastPageCommand}"/>
+        
+        <!-- PDF編集操作 -->
+        <KeyBinding Key="M" Modifiers="Ctrl+Shift" Command="{Binding DocumentManagement.MergePdfCommand}"/>
+        <KeyBinding Key="P" Modifiers="Ctrl+Shift" Command="{Binding DocumentManagement.SplitPdfCommand}"/>
+        
+        <!-- ファイル追加操作 -->
+        <KeyBinding Key="I" Modifiers="Ctrl" Command="{Binding DocumentManagement.AddImageCommand}"/>
+        <KeyBinding Key="F" Modifiers="Ctrl+Shift" Command="{Binding DocumentManagement.AddFilesCommand}"/>
+        
+        <!-- 表示操作 -->
+        <KeyBinding Key="OemPlus" Modifiers="Ctrl" Command="{Binding PreviewManagement.ZoomInCommand}"/>
+        <KeyBinding Key="Add" Modifiers="Ctrl" Command="{Binding PreviewManagement.ZoomInCommand}"/>
+        <KeyBinding Key="OemMinus" Modifiers="Ctrl" Command="{Binding PreviewManagement.ZoomOutCommand}"/>
+        <KeyBinding Key="Subtract" Modifiers="Ctrl" Command="{Binding PreviewManagement.ZoomOutCommand}"/>
+        <KeyBinding Key="D0" Modifiers="Ctrl" Command="{Binding PreviewManagement.FitToWindowCommand}"/>
+        <KeyBinding Key="NumPad0" Modifiers="Ctrl" Command="{Binding PreviewManagement.FitToWindowCommand}"/>
+        <KeyBinding Key="F" Modifiers="Ctrl+Shift" Command="{Binding PreviewManagement.FullScreenCommand}"/>
+        <KeyBinding Key="F11" Command="{Binding PreviewManagement.FullScreenCommand}"/>
+        
+        <!-- ヘルプ操作 -->
         <KeyBinding Key="F1" Command="{Binding PageOperation.ShowHelpCommand}"/>
         <!-- F1キーの代替ショートカット（Windowsシステムによる横取り対策） -->
         <KeyBinding Key="H" Modifiers="Ctrl" Command="{Binding PageOperation.ShowHelpCommand}"/>
         <KeyBinding Key="F1" Modifiers="Alt" Command="{Binding PageOperation.ShowHelpCommand}"/>
         <KeyBinding Key="F1" Modifiers="Shift" Command="{Binding PageOperation.ShowHelpCommand}"/>
-        <KeyBinding Key="OemPlus" Modifiers="Ctrl" Command="{Binding ZoomInCommand}"/>
-        <KeyBinding Key="OemMinus" Modifiers="Ctrl" Command="{Binding ZoomOutCommand}"/>
+        <KeyBinding Key="OemQuestion" Modifiers="Ctrl+Shift" Command="{Binding PageOperation.ShowHelpCommand}"/>
+        
+        <!-- その他の操作 -->
+        <KeyBinding Key="F5" Command="{Binding RefreshCommand}"/>
+        <KeyBinding Key="R" Modifiers="Ctrl" Command="{Binding RefreshCommand}"/>
+        <KeyBinding Key="P" Modifiers="Ctrl" Command="{Binding PrintCommand}"/>
+        <KeyBinding Key="E" Modifiers="Ctrl" Command="{Binding ExportCommand}"/>
+        <KeyBinding Key="F" Modifiers="Ctrl" Command="{Binding FindCommand}"/>
+        <KeyBinding Key="F3" Command="{Binding FindNextCommand}"/>
+        <KeyBinding Key="F3" Modifiers="Shift" Command="{Binding FindPreviousCommand}"/>
+        <KeyBinding Key="Escape" Command="{Binding CancelCommand}"/>
     </Window.InputBindings>
 
     <!-- Window Resources -->
@@ -64,11 +116,11 @@
                         <TextBlock Text="💾" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="名前を付けて保存(_A)..." Command="{Binding DocumentManagement.SaveAsCommand}"/>
+                <MenuItem Header="名前を付けて保存(_A)..." Command="{Binding DocumentManagement.SaveAsCommand}" InputGestureText="Ctrl+Shift+S"/>
                 <Separator/>
-                <MenuItem Header="閉じる(_C)" Command="{Binding DocumentManagement.CloseCommand}"/>
+                <MenuItem Header="閉じる(_C)" Command="{Binding DocumentManagement.CloseCommand}" InputGestureText="Ctrl+W"/>
                 <Separator/>
-                <MenuItem Header="終了(_X)" Command="{Binding DocumentManagement.ExitCommand}" InputGestureText="Alt+F4"/>
+                <MenuItem Header="終了(_X)" Command="{Binding DocumentManagement.ExitCommand}" InputGestureText="Ctrl+Q / Alt+F4"/>
             </MenuItem>
             
             <MenuItem Header="編集(_E)">
@@ -76,18 +128,18 @@
                 <MenuItem Header="やり直し(_R)" Command="{Binding RedoCommand}" InputGestureText="Ctrl+Y"/>
                 <Separator/>
                 <MenuItem Header="すべて選択(_A)" Command="{Binding SelectAllCommand}" InputGestureText="Ctrl+A"/>
-                <MenuItem Header="選択解除(_D)" Command="{Binding DeselectAllCommand}"/>
+                <MenuItem Header="選択解除(_D)" Command="{Binding DeselectAllCommand}" InputGestureText="Ctrl+Shift+D"/>
             </MenuItem>
             
             <MenuItem Header="ページ(_P)">
-                <MenuItem Header="左回転(_L)" Command="{Binding PageOperation.RotateLeftCommand}">
+                <MenuItem Header="左回転(_L)" Command="{Binding PageOperation.RotateLeftCommand}" InputGestureText="Ctrl+Shift+←">
                     <MenuItem.Icon>
                         <Viewbox Width="32" Height="32">
                             <TextBlock Text="↺" FontSize="30"/>
                         </Viewbox>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="右回転(_R)" Command="{Binding PageOperation.RotateRightCommand}">
+                <MenuItem Header="右回転(_R)" Command="{Binding PageOperation.RotateRightCommand}" InputGestureText="Ctrl+Shift+→">
                     <MenuItem.Icon>
                         <Viewbox Width="32" Height="32">
                             <TextBlock Text="↻" FontSize="30"/>
@@ -101,7 +153,7 @@
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
-                <MenuItem Header="ページ削除(_D)" Command="{Binding PageOperation.DeleteSelectedPagesCommand}">
+                <MenuItem Header="ページ削除(_D)" Command="{Binding PageOperation.DeleteSelectedPagesCommand}" InputGestureText="Delete / Ctrl+D">
                     <MenuItem.Icon>
                         <Viewbox Width="32" Height="32">
                             <TextBlock Text="🗑️" FontSize="30"/>
@@ -109,12 +161,12 @@
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="ページ移動(_M)">
-                    <MenuItem Header="上に移動(_U)" Command="{Binding PageOperation.MovePageUpCommand}">
+                    <MenuItem Header="上に移動(_U)" Command="{Binding PageOperation.MovePageUpCommand}" InputGestureText="Ctrl+Shift+↑">
                         <MenuItem.Icon>
                             <TextBlock Text="⬆️" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="下に移動(_D)" Command="{Binding PageOperation.MovePageDownCommand}">
+                    <MenuItem Header="下に移動(_D)" Command="{Binding PageOperation.MovePageDownCommand}" InputGestureText="Ctrl+Shift+↓">
                         <MenuItem.Icon>
                             <TextBlock Text="⬇️" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </MenuItem.Icon>
@@ -124,12 +176,12 @@
 
             <!-- 🆕 PDF編集メニュー -->
             <MenuItem Header="PDF編集(_P)" Visibility="{Binding DocumentManagement.IsPdfDocument, Converter={StaticResource BooleanToVisibilityConverter}}">
-                <MenuItem Header="PDF分割(_S)..." Command="{Binding DocumentManagement.SplitPdfCommand}" IsEnabled="{Binding DocumentManagement.CanSplitPdf}">
+                <MenuItem Header="PDF分割(_S)..." Command="{Binding DocumentManagement.SplitPdfCommand}" IsEnabled="{Binding DocumentManagement.CanSplitPdf}" InputGestureText="Ctrl+Shift+P">
                     <MenuItem.Icon>
                         <TextBlock Text="📄➗" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="PDF結合(_M)..." Command="{Binding DocumentManagement.MergePdfCommand}" IsEnabled="{Binding DocumentManagement.CanMergePdf}">
+                <MenuItem Header="PDF結合(_M)..." Command="{Binding DocumentManagement.MergePdfCommand}" IsEnabled="{Binding DocumentManagement.CanMergePdf}" InputGestureText="Ctrl+Shift+M">
                     <MenuItem.Icon>
                         <TextBlock Text="📄➕" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
@@ -143,12 +195,12 @@
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
-                <MenuItem Header="上に移動(_U)" Command="{Binding PageOperation.MovePageUpCommand}">
+                <MenuItem Header="上に移動(_U)" Command="{Binding PageOperation.MovePageUpCommand}" InputGestureText="Alt+U">
                     <MenuItem.Icon>
                         <TextBlock Text="▲" Style="{StaticResource MenuIconStyle}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="下に移動(_N)" Command="{Binding PageOperation.MovePageDownCommand}">
+                <MenuItem Header="下に移動(_N)" Command="{Binding PageOperation.MovePageDownCommand}" InputGestureText="Alt+D">
                     <MenuItem.Icon>
                         <TextBlock Text="▼" Style="{StaticResource MenuIconStyle}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </MenuItem.Icon>
@@ -173,7 +225,7 @@
             <MenuItem Header="表示(_V)">
                 <MenuItem Header="拡大(_I)" Command="{Binding ZoomInCommand}" InputGestureText="Ctrl++"/>
                 <MenuItem Header="縮小(_O)" Command="{Binding ZoomOutCommand}" InputGestureText="Ctrl+-"/>
-                <MenuItem Header="全体表示(_F)" Command="{Binding FitToWindowCommand}"/>
+                <MenuItem Header="全体表示(_F)" Command="{Binding FitToWindowCommand}" InputGestureText="Ctrl+0"/>
                 <Separator/>
                 <MenuItem Header="サムネイルサイズ(_T)">
                     <MenuItem Header="小" Command="{Binding ThumbnailSmallCommand}" IsCheckable="True"/>
@@ -192,6 +244,30 @@
                 </MenuItem>
                 <Separator/>
                 <MenuItem Header="バージョン情報(_A)..." Command="{Binding AboutCommand}"/>
+            </MenuItem>
+            
+            <!-- デバッグ用テストメニュー（リリース時は削除） -->
+            <MenuItem Header="テスト(_T)">
+                <MenuItem Header="エラーダイアログテスト" Command="{Binding PageOperation.TestErrorDialogCommand}">
+                    <MenuItem.Icon>
+                        <TextBlock Text="❌" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="警告ダイアログテスト" Command="{Binding PageOperation.TestWarningDialogCommand}">
+                    <MenuItem.Icon>
+                        <TextBlock Text="⚠️" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="確認ダイアログテスト" Command="{Binding PageOperation.TestConfirmationDialogCommand}">
+                    <MenuItem.Icon>
+                        <TextBlock Text="❓" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="入力ダイアログテスト" Command="{Binding PageOperation.TestInputDialogCommand}">
+                    <MenuItem.Icon>
+                        <TextBlock Text="📝" Style="{StaticResource MenuIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </MenuItem.Icon>
+                </MenuItem>
             </MenuItem>
         </Menu>
 
@@ -351,9 +427,48 @@
 
                     <!-- サムネイルヘッダー -->
                     <Border Grid.Row="0" Background="#E0E0E0" BorderBrush="#CCCCCC" BorderThickness="0,0,0,1">
-                        <Grid Height="24">
-                            <TextBlock Text="ページ" VerticalAlignment="Center" Margin="8,0" FontWeight="Bold"/>
-                            <TextBlock Text="{Binding DocumentManagement.PageCountText}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8,0"/>
+                        <Grid Height="32">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <TextBlock Grid.Column="0" Text="ページ" VerticalAlignment="Center" Margin="8,0" FontWeight="Bold"/>
+                            
+                            <!-- 選択状態表示 -->
+                            <Border Grid.Column="1" Margin="4,2" Padding="4,2" CornerRadius="3" HorizontalAlignment="Center"
+                                    Visibility="{Binding PageOperation.HasSelectedPages, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background" Value="#E3F2FD"/>
+                                        <Setter Property="BorderBrush" Value="#2196F3"/>
+                                        <Setter Property="BorderThickness" Value="1"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding PageOperation.IsAllPagesSelected}" Value="True">
+                                                <Setter Property="Background" Value="#0078D4"/>
+                                                <Setter Property="BorderBrush" Value="#0066B8"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock FontSize="11" FontWeight="Bold">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="#0078D4"/>
+                                            <Setter Property="Text" Value="{Binding PageOperation.SelectedPagesCount, StringFormat='{}{0}ページ選択'}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding PageOperation.IsAllPagesSelected}" Value="True">
+                                                    <Setter Property="Foreground" Value="White"/>
+                                                    <Setter Property="Text" Value="全選択中"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Border>
+                            
+                            <TextBlock Grid.Column="2" Text="{Binding DocumentManagement.PageCountText}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8,0"/>
                         </Grid>
                     </Border>
 
@@ -367,7 +482,6 @@
                              SelectionMode="Extended"
                              AllowDrop="True"
                              SelectionChanged="PageListBox_SelectionChanged"
-                             IsSynchronizedWithCurrentItem="True"
                              behaviors:V3AdvancedDragDropBehavior.IsDragSource="True"
                              behaviors:V3AdvancedDragDropBehavior.IsDropTarget="True"
                              behaviors:V3AdvancedDragDropBehavior.DragHandler="{Binding DragDropHandler}"
@@ -378,7 +492,7 @@
                                 <Setter Property="Padding" Value="4"/>
                                 <Setter Property="Margin" Value="4,2"/>
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+                                <!-- IsSelectedバインディングを削除: WPF標準の複数選択を有効化 -->
                                 <Setter Property="Cursor" Value="Hand"/> <!-- 🎯 V3.0.024: ドラッグ可能カーソル表示 -->
                                 <Style.Triggers>
                                     <Trigger Property="IsSelected" Value="True">
@@ -391,7 +505,20 @@
                         
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Border BorderBrush="#CCCCCC" BorderThickness="1" Background="White">
+                                <Border Background="White">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="BorderBrush" Value="#CCCCCC"/>
+                                            <Setter Property="BorderThickness" Value="1"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
+                                                    <Setter Property="BorderBrush" Value="#0078D4"/>
+                                                    <Setter Property="BorderThickness" Value="3"/>
+                                                    <Setter Property="Background" Value="#CCE4F7"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
                                     <Grid>
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
@@ -399,19 +526,72 @@
                                         </Grid.RowDefinitions>
 
                                         <!-- ページ番号 -->
-                                        <Border Grid.Row="0" Background="#F0F0F0" BorderBrush="#CCCCCC" BorderThickness="0,0,0,1">
+                                        <Border Grid.Row="0" BorderBrush="#CCCCCC" BorderThickness="0,0,0,1">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="#F0F0F0"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
+                                                            <Setter Property="Background" Value="#3399FF"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
                                             <TextBlock Text="{Binding PageNumber, StringFormat='{}{0}'}" 
                                                        HorizontalAlignment="Center" 
                                                        Margin="4,2"
-                                                       FontSize="11"/>
+                                                       FontSize="11">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="Black"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
+                                                                <Setter Property="Foreground" Value="White"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
                                         </Border>
 
                                         <!-- サムネイル画像 -->
-                                        <Border Grid.Row="1" Background="White" Margin="4">
-                                            <Image Source="{Binding ThumbnailImage}" 
-                                                   Stretch="Uniform"
-                                                   RenderOptions.BitmapScalingMode="HighQuality"/>
-                                        </Border>
+                                        <Grid Grid.Row="1">
+                                            <Border Background="White" Margin="4">
+                                                <Image Source="{Binding ThumbnailImage}" 
+                                                       Stretch="Uniform"
+                                                       RenderOptions.BitmapScalingMode="HighQuality">
+                                                    <Image.Style>
+                                                        <Style TargetType="Image">
+                                                            <Setter Property="Opacity" Value="1.0"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
+                                                                    <Setter Property="Opacity" Value="0.85"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Image.Style>
+                                                </Image>
+                                            </Border>
+                                            <!-- 選択時のオーバーレイ -->
+                                            <Border Margin="4">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="Transparent"/>
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
+                                                                <Setter Property="Background">
+                                                                    <Setter.Value>
+                                                                        <SolidColorBrush Color="#0078D4" Opacity="0.15"/>
+                                                                    </Setter.Value>
+                                                                </Setter>
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                            </Border>
+                                        </Grid>
                                     </Grid>
                                 </Border>
                             </DataTemplate>

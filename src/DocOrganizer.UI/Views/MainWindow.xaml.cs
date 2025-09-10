@@ -568,8 +568,29 @@ namespace DocOrganizer.UI.Views
                 
                 if (sender is ListBox listBox)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[PageListBox_SelectionChanged] ListBox found, SelectedItem: {listBox.SelectedItem?.GetType().Name}");
+                    System.Diagnostics.Debug.WriteLine($"[PageListBox_SelectionChanged] ListBox found, SelectedItems.Count: {listBox.SelectedItems.Count}");
                     
+                    // 🔧 複数選択対応: ListBoxの選択状態をViewModelに同期
+                    if (V3ViewModel?.PageOperation?.Pages != null)
+                    {
+                        // 全ページの選択状態を更新
+                        foreach (V3PageViewModel page in V3ViewModel.PageOperation.Pages)
+                        {
+                            bool shouldBeSelected = listBox.SelectedItems.Contains(page);
+                            if (page.IsSelected != shouldBeSelected)
+                            {
+                                page.IsSelected = shouldBeSelected;
+                                System.Diagnostics.Debug.WriteLine($"[複数選択] Page {page.PageNumber}: IsSelected = {shouldBeSelected}");
+                            }
+                        }
+                        
+                        // 選択状態の更新を通知
+                        V3ViewModel.PageOperation.NotifyPageSelectionChanged();
+                        
+                        System.Diagnostics.Debug.WriteLine($"[複数選択] 選択ページ数: {listBox.SelectedItems.Count}");
+                    }
+                    
+                    // 単一選択時のプレビュー更新（最初の選択ページ）
                     if (listBox.SelectedItem is V3PageViewModel selectedPage && V3ViewModel != null)
                     {
                         _logger?.LogInformation($"Selected page: {selectedPage.PageNumber}");
@@ -680,6 +701,25 @@ namespace DocOrganizer.UI.Views
         #endregion
 
         #region Helper Methods
+        
+        // ViewModelの選択状態をListBoxに反映するヘルパーメソッド
+        public void SyncSelectionFromViewModel()
+        {
+            if (PageListBox != null && V3ViewModel?.PageOperation?.Pages != null)
+            {
+                PageListBox.SelectionChanged -= PageListBox_SelectionChanged; // 一時的にイベントを無効化
+                
+                PageListBox.SelectedItems.Clear();
+                foreach (var page in V3ViewModel.PageOperation.Pages.Where(p => p.IsSelected))
+                {
+                    PageListBox.SelectedItems.Add(page);
+                }
+                
+                PageListBox.SelectionChanged += PageListBox_SelectionChanged; // イベントを再有効化
+                
+                System.Diagnostics.Debug.WriteLine($"[SyncSelectionFromViewModel] ListBox選択同期完了: {PageListBox.SelectedItems.Count}ページ");
+            }
+        }
 
         private static T FindAncestor<T>(DependencyObject current) where T : DependencyObject
         {

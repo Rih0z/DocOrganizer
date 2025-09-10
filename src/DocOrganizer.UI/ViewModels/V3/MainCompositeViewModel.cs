@@ -495,6 +495,25 @@ namespace DocOrganizer.UI.ViewModels.V3
                 // 🔧 修正: キャッシュをクリアして新しい参照を取得
                 _pagesCache = null;
                 
+                // 🔧 バグ修正: 全ページ削除時の処理
+                if (sender == PageOperation && PageOperation.Pages != null)
+                {
+                    if (PageOperation.Pages.Count == 0)
+                    {
+                        // 全ページ削除時はプレビューもクリア
+                        await AppendDebugLogAsync("[OnPagesChanged] 全ページ削除検出 - プレビューをクリア");
+                        SelectedPage = null;
+                        PreviewManagement?.ClearPreview();
+                        
+                        // PDF出力ボタンの無効化
+                        OnPropertyChanged(nameof(CanExportPdf));
+                        (ExportPdfCommand as AsyncRelayCommand)?.NotifyCanExecuteChanged();
+                        
+                        await AppendDebugLogAsync("[OnPagesChanged] 全ページ削除処理完了");
+                        return;
+                    }
+                }
+                
                 // 🔧 V3修正: DragDropHandlerのCurrentDocumentを同期
                 // 編集操作（移動、削除、回転）後もCurrentDocumentが同じであることを保証
                 if (CurrentDocument != null)

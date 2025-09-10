@@ -30,6 +30,12 @@ namespace DocOrganizer.UI.ViewModels.V3
         private bool hasSelectedPages;
 
         [ObservableProperty]
+        private bool isAllPagesSelected;
+
+        [ObservableProperty]
+        private int selectedPagesCount;
+
+        [ObservableProperty]
         private bool canMoveUp;
 
         [ObservableProperty]
@@ -43,9 +49,28 @@ namespace DocOrganizer.UI.ViewModels.V3
         // コマンドプロパティ（明示的定義）
         public IRelayCommand SelectAllCommand { get; private set; }
         public IRelayCommand ShowHelpCommand { get; private set; }
+        public IRelayCommand RotateLeftCommand { get; private set; }
+        public IRelayCommand RotateRightCommand { get; private set; }
+        public IRelayCommand DeleteSelectedPagesCommand { get; private set; }
+        public IRelayCommand MovePageUpCommand { get; private set; }
+        public IRelayCommand MovePageDownCommand { get; private set; }
+        public IRelayCommand AutoCorrectAllPagesOrientationCommand { get; private set; }
+        
+        // 新規追加コマンド
+        public IRelayCommand DeselectAllCommand { get; private set; }
+        public IRelayCommand GoToPageCommand { get; private set; }
+        public IRelayCommand PreviousPageCommand { get; private set; }
+        public IRelayCommand NextPageCommand { get; private set; }
+        public IRelayCommand FirstPageCommand { get; private set; }
+        public IRelayCommand LastPageCommand { get; private set; }
+        
+        // テスト用コマンド（デバッグ用）
+        public IRelayCommand TestErrorDialogCommand { get; private set; }
+        public IRelayCommand TestWarningDialogCommand { get; private set; }
+        public IRelayCommand TestConfirmationDialogCommand { get; private set; }
+        public IRelayCommand TestInputDialogCommand { get; private set; }
 
         // 自動回転コマンド（未実装）
-        [RelayCommand]
         private void AutoCorrectAllPagesOrientation()
         {
             _dialogService.ShowInformation("自動回転機能は現在実装中です。次のバージョンで利用可能になります。");
@@ -56,6 +81,8 @@ namespace DocOrganizer.UI.ViewModels.V3
         {
             if (Pages == null || Pages.Count == 0) return;
 
+            System.Diagnostics.Debug.WriteLine($"[SelectAll] 全選択開始: {Pages.Count}ページ");
+
             foreach (var page in Pages)
             {
                 page.IsSelected = true;
@@ -63,6 +90,11 @@ namespace DocOrganizer.UI.ViewModels.V3
 
             UpdateSelectionState();
             StatusMessage = $"全てのページ ({Pages.Count}ページ) を選択しました";
+            
+            // 選択状態変更を通知
+            NotifyPageSelectionChanged();
+            
+            // ポップアップは表示しない（ステータスメッセージのみ）
         }
 
         // ヘルプ表示コマンド (F1)
@@ -76,20 +108,31 @@ namespace DocOrganizer.UI.ViewModels.V3
 
 【基本操作】
 Ctrl+A: 全ページを選択
+Ctrl+Shift+D: 選択解除
 Delete: 選択したページを削除
-F1 / Ctrl+H / Alt+F1 / Shift+F1: このヘルプを表示
+Ctrl+H: このヘルプを表示
 
-【ページ移動】
-↑/↓: 選択したページを上下に移動
+【ページ操作】
+Ctrl+Shift+↑/↓: 選択ページを上下に移動
+PageUp/PageDown: 前後のページへ移動
+Home/End: 最初/最後のページへ
+Ctrl+G: ページジャンプ
 
 【回転】
-Ctrl+R: 選択したページを右回転
-Ctrl+L: 選択したページを左回転
+Ctrl+Shift+→: 右回転（時計回り）
+Ctrl+Shift+←: 左回転（反時計回り）
+
+【ファイル操作】
+Ctrl+N: 新規作成
+Ctrl+O: ファイルを開く
+Ctrl+S: 保存
+Ctrl+Shift+S: 名前を付けて保存
+Ctrl+W: 閉じる
 
 【その他】
 ドラッグ&ドロップでページの並び替えが可能です。
 
-※F1キーが動作しない場合はCtrl+Hをお使いください。";
+※Ctrl+Z（元に戻す）は現在実装中です。";
 
             _dialogService.ShowInformation(helpMessage, "ヘルプ");
             
@@ -108,6 +151,28 @@ Ctrl+L: 選択したページを左回転
             // コマンドを明示的に初期化
             SelectAllCommand = new RelayCommand(SelectAll);
             ShowHelpCommand = new RelayCommand(ShowHelp);
+            
+            // ページ操作コマンド（非同期）
+            RotateLeftCommand = new AsyncRelayCommand(RotateLeftAsync);
+            RotateRightCommand = new AsyncRelayCommand(RotateRightAsync);
+            DeleteSelectedPagesCommand = new AsyncRelayCommand(DeleteSelectedPagesAsync);
+            MovePageUpCommand = new AsyncRelayCommand(MovePageUpAsync);
+            MovePageDownCommand = new AsyncRelayCommand(MovePageDownAsync);
+            AutoCorrectAllPagesOrientationCommand = new RelayCommand(AutoCorrectAllPagesOrientation);
+            
+            // 新規追加コマンド
+            DeselectAllCommand = new RelayCommand(DeselectAll);
+            GoToPageCommand = new RelayCommand(GoToPage);
+            PreviousPageCommand = new RelayCommand(PreviousPage);
+            NextPageCommand = new RelayCommand(NextPage);
+            FirstPageCommand = new RelayCommand(FirstPage);
+            LastPageCommand = new RelayCommand(LastPage);
+            
+            // テスト用コマンド（デバッグ用）
+            TestErrorDialogCommand = new RelayCommand(TestErrorDialog);
+            TestWarningDialogCommand = new RelayCommand(TestWarningDialog);
+            TestConfirmationDialogCommand = new RelayCommand(TestConfirmationDialog);
+            TestInputDialogCommand = new RelayCommand(TestInputDialog);
             
             // 初期状態を設定
             CanMoveUp = false;
@@ -142,7 +207,6 @@ Ctrl+L: 選択したページを左回転
         /// <summary>
         /// 左回転（反時計回り90度）
         /// </summary>
-        [RelayCommand]
         private async Task RotateLeftAsync()
         {
             if (_currentDocument == null || !Pages.Any(p => p.IsSelected))
@@ -155,7 +219,6 @@ Ctrl+L: 選択したページを左回転
         /// <summary>
         /// 右回転（時計回り90度）
         /// </summary>
-        [RelayCommand]
         private async Task RotateRightAsync()
         {
             if (_currentDocument == null || !Pages.Any(p => p.IsSelected))
@@ -168,7 +231,6 @@ Ctrl+L: 選択したページを左回転
         /// <summary>
         /// 選択ページ削除
         /// </summary>
-        [RelayCommand]
         private async Task DeleteSelectedPagesAsync()
         {
             if (_currentDocument == null || !Pages.Any(p => p.IsSelected))
@@ -206,7 +268,6 @@ Ctrl+L: 選択したページを左回転
         /// <summary>
         /// ページを上に移動
         /// </summary>
-        [RelayCommand]
         private async Task MovePageUpAsync()
         {
             System.Diagnostics.Debug.WriteLine("[MovePageUpAsync] メソッドが呼び出されました！");
@@ -284,7 +345,6 @@ Ctrl+L: 選択したページを左回転
         /// <summary>
         /// ページを下に移動
         /// </summary>
-        [RelayCommand]
         private async Task MovePageDownAsync()
         {
             System.Diagnostics.Debug.WriteLine("[MovePageDownAsync] メソッドが呼び出されました！");
@@ -704,8 +764,10 @@ Ctrl+L: 選択したページを左回転
         {
             var selectedCount = Pages.Count(p => p.IsSelected);
             HasSelectedPages = selectedCount > 0;
+            SelectedPagesCount = selectedCount;
+            IsAllPagesSelected = Pages.Count > 0 && selectedCount == Pages.Count;
             
-            System.Diagnostics.Debug.WriteLine($"[UpdateSelectionState] SelectedCount: {selectedCount}, HasSelectedPages: {HasSelectedPages}");
+            System.Diagnostics.Debug.WriteLine($"[UpdateSelectionState] SelectedCount: {selectedCount}, HasSelectedPages: {HasSelectedPages}, IsAllPagesSelected: {IsAllPagesSelected}");
 
             // 移動可能性を判定
             if (selectedCount == 1)
@@ -740,6 +802,8 @@ Ctrl+L: 選択したページを左回転
             OnPropertyChanged(nameof(CanMoveUp));
             OnPropertyChanged(nameof(CanMoveDown));
             OnPropertyChanged(nameof(HasSelectedPages));
+            OnPropertyChanged(nameof(SelectedPagesCount));
+            OnPropertyChanged(nameof(IsAllPagesSelected));
         }
 
         // Public methods for external coordination
@@ -757,6 +821,152 @@ Ctrl+L: 選択したページを左回転
 
         // Events for coordination with other ViewModels
         public event EventHandler? PagesChanged;
+        
+        // テスト用メソッド（デバッグ用）
+        private void TestErrorDialog()
+        {
+            _dialogService.ShowError("これはエラーダイアログのテストです。\nエラーアイコンが表示されることを確認してください。", "エラーテスト");
+        }
+        
+        private void TestWarningDialog()
+        {
+            _dialogService.ShowWarning("これは警告ダイアログのテストです。\n警告アイコンが表示されることを確認してください。", "警告テスト");
+        }
+        
+        private void TestConfirmationDialog()
+        {
+            var result = _dialogService.ShowConfirmation("これは確認ダイアログのテストです。\nYes/Noボタンが表示されることを確認してください。", "確認テスト");
+            _dialogService.ShowInformation($"選択結果: {(result ? "Yes" : "No")}", "結果");
+        }
+        
+        private void TestInputDialog()
+        {
+            var input = _dialogService.ShowInputDialog("これは入力ダイアログのテストです。\nテキストを入力してください。", "入力テスト", "デフォルト値");
+            if (input != null)
+            {
+                _dialogService.ShowInformation($"入力された値: {input}", "結果");
+            }
+            else
+            {
+                _dialogService.ShowInformation("キャンセルされました", "結果");
+            }
+        }
+        
+        // 新規追加メソッド
+        private void DeselectAll()
+        {
+            if (Pages == null || Pages.Count == 0) return;
+
+            System.Diagnostics.Debug.WriteLine("[DeselectAll] 選択解除開始");
+
+            foreach (var page in Pages)
+            {
+                page.IsSelected = false;
+            }
+
+            UpdateSelectionState();
+            StatusMessage = "全ての選択を解除しました";
+            
+            // 選択状態変更を通知
+            NotifyPageSelectionChanged();
+            
+            // ポップアップは表示しない（ステータスメッセージのみ）
+        }
+        
+        private void GoToPage()
+        {
+            if (Pages == null || Pages.Count == 0) return;
+            
+            var input = _dialogService.ShowInputDialog(
+                $"ページ番号を入力してください (1-{Pages.Count}):", 
+                "ページへ移動", 
+                "1");
+                
+            if (int.TryParse(input, out int pageNumber))
+            {
+                if (pageNumber >= 1 && pageNumber <= Pages.Count)
+                {
+                    // 全ての選択を解除
+                    foreach (var page in Pages)
+                    {
+                        page.IsSelected = false;
+                    }
+                    
+                    // 指定ページを選択
+                    Pages[pageNumber - 1].IsSelected = true;
+                    UpdateSelectionState();
+                    StatusMessage = $"ページ {pageNumber} に移動しました";
+                }
+                else
+                {
+                    _dialogService.ShowError($"無効なページ番号です。1-{Pages.Count}の範囲で入力してください。");
+                }
+            }
+        }
+        
+        private void PreviousPage()
+        {
+            if (Pages == null || Pages.Count == 0) return;
+            
+            var selectedPage = Pages.FirstOrDefault(p => p.IsSelected);
+            if (selectedPage != null)
+            {
+                var currentIndex = Pages.IndexOf(selectedPage);
+                if (currentIndex > 0)
+                {
+                    selectedPage.IsSelected = false;
+                    Pages[currentIndex - 1].IsSelected = true;
+                    UpdateSelectionState();
+                    StatusMessage = $"ページ {currentIndex} に移動しました";
+                }
+            }
+        }
+        
+        private void NextPage()
+        {
+            if (Pages == null || Pages.Count == 0) return;
+            
+            var selectedPage = Pages.FirstOrDefault(p => p.IsSelected);
+            if (selectedPage != null)
+            {
+                var currentIndex = Pages.IndexOf(selectedPage);
+                if (currentIndex < Pages.Count - 1)
+                {
+                    selectedPage.IsSelected = false;
+                    Pages[currentIndex + 1].IsSelected = true;
+                    UpdateSelectionState();
+                    StatusMessage = $"ページ {currentIndex + 2} に移動しました";
+                }
+            }
+        }
+        
+        private void FirstPage()
+        {
+            if (Pages == null || Pages.Count == 0) return;
+            
+            foreach (var page in Pages)
+            {
+                page.IsSelected = false;
+            }
+            
+            Pages[0].IsSelected = true;
+            UpdateSelectionState();
+            StatusMessage = "最初のページに移動しました";
+        }
+        
+        private void LastPage()
+        {
+            if (Pages == null || Pages.Count == 0) return;
+            
+            foreach (var page in Pages)
+            {
+                page.IsSelected = false;
+            }
+            
+            Pages[Pages.Count - 1].IsSelected = true;
+            UpdateSelectionState();
+            StatusMessage = "最後のページに移動しました";
+        }
         
         /// <summary>
         /// 🚨 緊急デバッグ: ファイルに詳細ログを出力（第16条準拠）
