@@ -71,12 +71,10 @@ namespace DocOrganizer.UI.ViewModels.V3
         _v3ConverterService = v3ConverterService;    // ✅ 追加
         _undoRedoService = undoRedoService;          // ✅ Phase 2: Undo/Redo統合
         
-        // PropertyChanged通知の設定 - UI更新のため
-        // V3.0.083: 修正 - コマンド初期化後に通知するように変更
+        // V3.0.086: 修正 - コマンド初期化後に通知するように変更
         _undoRedoService.PropertyChanged += OnUndoRedoServicePropertyChanged;
         
         // 初期化完了後にコマンド状態を更新
-        // RelayCommandが生成された後に呼び出される
         System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
             System.Windows.Threading.DispatcherPriority.Loaded,
             new Action(() => {

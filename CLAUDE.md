@@ -101,7 +101,7 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 ## ⚡ クイックリファレンス
 
 ### 現在の情報
-- **バージョン**: V3.0.082
+- **バージョン**: V3.0.086
 - **GitHub**: https://github.com/Rih0z/DocOrganizer
 - **デフォルトEXE**: `C:\Users\217216X721451\github\DocOrganizer\release-debug\DocOrganizer.exe`
 - **リリースEXE**: `C:\Users\217216X721451\github\DocOrganizer\release\DocOrganizer.exe`（明示的指示時）

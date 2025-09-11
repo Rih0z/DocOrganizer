@@ -12,8 +12,8 @@
     <Product>DocOrganizer</Product>
     <AssemblyName>DocOrganizer</AssemblyName>
     <Version>3.0.085</Version>
-    <AssemblyVersion>3.0.085.0</AssemblyVersion>
-    <FileVersion>3.0.085.0</FileVersion>
+    <AssemblyVersion>3.0.086.0</AssemblyVersion>
+    <FileVersion>3.0.086.0</FileVersion>
     
     <!-- 単一EXEビルド設定 -->
     <PublishSingleFile>true</PublishSingleFile>
