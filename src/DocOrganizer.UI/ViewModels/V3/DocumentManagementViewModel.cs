@@ -9,6 +9,7 @@ using DocOrganizer.Application.Interfaces.V3;
 using DocOrganizer.Core.Models;
 using DocOrganizer.Core.Services;
 using System.Linq;
+using System.ComponentModel;
 
 namespace DocOrganizer.UI.ViewModels.V3
 {
@@ -71,19 +72,31 @@ namespace DocOrganizer.UI.ViewModels.V3
         _undoRedoService = undoRedoService;          // ✅ Phase 2: Undo/Redo統合
         
         // PropertyChanged通知の設定 - UI更新のため
-        _undoRedoService.PropertyChanged += (s, e) =>
-        {
-            if (e.PropertyName == nameof(IUndoRedoService.CanUndo))
-            {
-                OnPropertyChanged(nameof(CanUndo));
+        // V3.0.083: 修正 - コマンド初期化後に通知するように変更
+        _undoRedoService.PropertyChanged += OnUndoRedoServicePropertyChanged;
+        
+        // 初期化完了後にコマンド状態を更新
+        // RelayCommandが生成された後に呼び出される
+        System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
+            System.Windows.Threading.DispatcherPriority.Loaded,
+            new Action(() => {
                 UndoCommand?.NotifyCanExecuteChanged();
-            }
-            if (e.PropertyName == nameof(IUndoRedoService.CanRedo))
-            {
-                OnPropertyChanged(nameof(CanRedo));
                 RedoCommand?.NotifyCanExecuteChanged();
-            }
-        };
+            }));
+    }
+    
+    private void OnUndoRedoServicePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(IUndoRedoService.CanUndo))
+        {
+            OnPropertyChanged(nameof(CanUndo));
+            UndoCommand?.NotifyCanExecuteChanged();
+        }
+        if (e.PropertyName == nameof(IUndoRedoService.CanRedo))
+        {
+            OnPropertyChanged(nameof(CanRedo));
+            RedoCommand?.NotifyCanExecuteChanged();
+        }
     }
 
         /// <summary>

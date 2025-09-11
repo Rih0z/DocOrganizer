@@ -78,7 +78,8 @@ namespace DocOrganizer.UI.ViewModels.V3
         // 自動回転コマンド（未実装）
         private void AutoCorrectAllPagesOrientation()
         {
-            _dialogService.ShowInformation("自動回転機能は現在実装中です。次のバージョンで利用可能になります。");
+            // エラーダイアログ表示を削除 - V3.0.081
+            // _dialogService.ShowInformation("自動回転機能は現在実装中です。次のバージョンで利用可能になります。");
         }
 
         // 全選択コマンド (Ctrl+A)
@@ -109,7 +110,7 @@ namespace DocOrganizer.UI.ViewModels.V3
             System.Diagnostics.Debug.WriteLine("[ShowHelp] ヘルプ表示メソッド実行開始");
             DebugLogger.Log("[ShowHelp] ヘルプ表示メソッド実行開始");
             
-            var helpMessage = @"DocOrganizer V3.0.070 - ショートカットキー一覧
+            var helpMessage = @"DocOrganizer V3.0.082 - ショートカットキー一覧
 
 【基本操作】
 Ctrl+A: 全ページを選択
@@ -856,6 +857,9 @@ F11: フルスクリーン
                     pageVm = new V3PageViewModel(page, _thumbnailService);
                     DebugLogger.Log($"[RefreshPageList] 新規VM作成: PageId={page.Id}, Rotation={page.Rotation}");
                     
+                    // 回転状態をViewModelに同期（重要：これがないと回転後の削除→Undoでサムネイルが表示されない）
+                    pageVm.UpdateRotationSync();
+                    
                     // 最適化されたサムネイル生成（回転考慮済み）
                     var loadTask = pageVm.LoadThumbnailWithRotationAsync();
                     tasksToRun.Add(loadTask);
@@ -897,30 +901,35 @@ F11: フルスクリーン
         // テスト用メソッド（デバッグ用）
         private void TestErrorDialog()
         {
-            _dialogService.ShowError("これはエラーダイアログのテストです。\nエラーアイコンが表示されることを確認してください。", "エラーテスト");
+            // エラーダイアログ表示を削除 - V3.0.081
+            // _dialogService.ShowError("これはエラーダイアログのテストです。エラーアイコンが表示されることを確認してください。", "エラーテスト");
         }
         
         private void TestWarningDialog()
         {
-            _dialogService.ShowWarning("これは警告ダイアログのテストです。\n警告アイコンが表示されることを確認してください。", "警告テスト");
+            // エラーダイアログ表示を削除 - V3.0.081
+            // _dialogService.ShowWarning("これは警告ダイアログのテストです。警告アイコンが表示されることを確認してください。", "警告テスト");
         }
         
         private void TestConfirmationDialog()
         {
-            var result = _dialogService.ShowConfirmation("これは確認ダイアログのテストです。\nYes/Noボタンが表示されることを確認してください。", "確認テスト");
-            _dialogService.ShowInformation($"選択結果: {(result ? "Yes" : "No")}", "結果");
+            var result = _dialogService.ShowConfirmation("これは確認ダイアログのテストです。Yes/Noボタンが表示されることを確認してください。", "確認テスト");
+            // エラーダイアログ表示を削除 - V3.0.081
+            // _dialogService.ShowInformation($"選択結果: {(result ? "Yes" : "No")}", "結果");
         }
         
         private void TestInputDialog()
         {
-            var input = _dialogService.ShowInputDialog("これは入力ダイアログのテストです。\nテキストを入力してください。", "入力テスト", "デフォルト値");
+            var input = _dialogService.ShowInputDialog("これは入力ダイアログのテストです。テキストを入力してください。", "入力テスト", "デフォルト値");
             if (input != null)
             {
-                _dialogService.ShowInformation($"入力された値: {input}", "結果");
+                // エラーダイアログ表示を削除 - V3.0.081
+                // _dialogService.ShowInformation($"入力された値: {input}", "結果");
             }
             else
             {
-                _dialogService.ShowInformation("キャンセルされました", "結果");
+                // エラーダイアログ表示を削除 - V3.0.081
+                // _dialogService.ShowInformation("キャンセルされました", "結果");
             }
         }
         
@@ -971,7 +980,9 @@ F11: フルスクリーン
                 }
                 else
                 {
-                    _dialogService.ShowError($"無効なページ番号です。1-{Pages.Count}の範囲で入力してください。");
+                    // エラーダイアログ表示を削除 - V3.0.081
+                    // _dialogService.ShowError($"無効なページ番号です。1-{Pages.Count}の範囲で入力してください。");
+                    StatusMessage = $"無効なページ番号です。1-{Pages.Count}の範囲で入力してください。";
                 }
             }
         }

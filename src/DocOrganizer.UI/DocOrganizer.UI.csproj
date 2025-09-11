@@ -11,9 +11,9 @@
     <Company>DocOrganizer Project</Company>
     <Product>DocOrganizer</Product>
     <AssemblyName>DocOrganizer</AssemblyName>
-    <Version>3.0.073</Version>
-    <AssemblyVersion>3.0.073.0</AssemblyVersion>
-    <FileVersion>3.0.073.0</FileVersion>
+    <Version>3.0.085</Version>
+    <AssemblyVersion>3.0.085.0</AssemblyVersion>
+    <FileVersion>3.0.085.0</FileVersion>
     
     <!-- 単一EXEビルド設定 -->
     <PublishSingleFile>true</PublishSingleFile>
@@ -24,6 +24,11 @@
     <!-- ネイティブDLLも単一ファイルに含める -->
     <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    
+    <!-- 起動高速化設定 -->
+    <TieredCompilation>true</TieredCompilation>
+    <TieredCompilationQuickJit>true</TieredCompilationQuickJit>
+    <PublishReadyToRunShowWarnings>true</PublishReadyToRunShowWarnings>
     <!-- OCR機能の有効/無効制御 -->
     <EnableOCR Condition="'$(EnableOCR)' == ''">false</EnableOCR>
   </PropertyGroup>

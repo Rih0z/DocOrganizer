@@ -677,6 +677,10 @@ namespace DocOrganizer.UI.Views
                 {
                     System.Diagnostics.Debug.WriteLine("[MainWindow] Executing SelectAllCommand");
                     V3ViewModel.PageOperation.SelectAllCommand.Execute(null);
+                    
+                    // ViewModelの選択状態をListBoxに同期
+                    SyncSelectionFromViewModel();
+                    
                     e.Handled = true;
                 }
                 else

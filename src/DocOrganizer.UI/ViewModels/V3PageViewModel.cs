@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using DocOrganizer.Core.Models;
 using DocOrganizer.Application.Interfaces;
 using DocOrganizer.Application.Interfaces.V3;
+using SkiaSharp;
 
 namespace DocOrganizer.UI.ViewModels
 {
@@ -66,13 +67,30 @@ namespace DocOrganizer.UI.ViewModels
         {
             try
             {
+                // V3.0.083: まず既存のサムネイル画像を確認（Undo時の復元画像対応）
+                if (_page.ThumbnailImage != null)
+                {
+                    // SKBitmapをBitmapSourceに変換
+                    var bitmap = ConvertSKBitmapToBitmapSource(_page.ThumbnailImage);
+                    if (bitmap != null)
+                    {
+                        if (bitmap.CanFreeze && !bitmap.IsFrozen)
+                        {
+                            bitmap.Freeze();
+                        }
+                        ThumbnailImage = bitmap;
+                        return;
+                    }
+                }
+                
+                // 既存の画像がない場合は、SourceImagePathから生成
                 if (!string.IsNullOrEmpty(_page.SourceImagePath) && File.Exists(_page.SourceImagePath))
                 {
                     var thumbnailImageSource = await _thumbnailService.GenerateLeftPanelThumbnailAsync(_page.SourceImagePath, Rotation);
                     if (thumbnailImageSource is BitmapSource bitmapSource)
                     {
                         // 🔧 アーキテクチャレベル修正: BitmapSourceをFreezeして不変化
-                        // これによりガベージコレクションによる解放を防ぎ、画像が永続的に保持される
+                        // これによりガーベージコレクションによる解放を防ぎ、画像が永続的に保持される
                         if (bitmapSource.CanFreeze && !bitmapSource.IsFrozen)
                         {
                             bitmapSource.Freeze();
@@ -143,6 +161,62 @@ namespace DocOrganizer.UI.ViewModels
                 
                 bitmap.WritePixels(new System.Windows.Int32Rect(0, 0, width, height), pixels, stride, 0);
                 bitmap.Freeze();
+                
+                return bitmap;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// SKBitmapをBitmapSourceに変換
+        /// </summary>
+        private BitmapSource ConvertSKBitmapToBitmapSource(SKBitmap skBitmap)
+        {
+            try
+            {
+                if (skBitmap == null) return null;
+                
+                var width = skBitmap.Width;
+                var height = skBitmap.Height;
+                var dpi = 96.0;
+                
+                // SKBitmapのピクセルデータを取得
+                var pixels = skBitmap.Pixels;
+                var stride = width * 4; // BGRA32形式
+                var pixelData = new byte[height * stride];
+                
+                // SKColorからBGRA形式に変換
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    {
+                        var skColor = pixels[y * width + x];
+                        var index = (y * width + x) * 4;
+                        
+                        pixelData[index] = skColor.Blue;      // B
+                        pixelData[index + 1] = skColor.Green;  // G
+                        pixelData[index + 2] = skColor.Red;    // R
+                        pixelData[index + 3] = skColor.Alpha;  // A
+                    }
+                }
+                
+                // BitmapSourceを作成
+                var bitmap = BitmapSource.Create(
+                    width, height,
+                    dpi, dpi,
+                    System.Windows.Media.PixelFormats.Bgra32,
+                    null,
+                    pixelData,
+                    stride);
+                
+                // Freezeして不変にする
+                if (bitmap.CanFreeze && !bitmap.IsFrozen)
+                {
+                    bitmap.Freeze();
+                }
                 
                 return bitmap;
             }

@@ -79,6 +79,21 @@ namespace DocOrganizer.Core.Models
             _pages.Add(page);
             IsModified = true;
         }
+        
+        /// <summary>
+        /// 指定位置にページを挿入
+        /// </summary>
+        public void InsertPage(int index, PdfPage page)
+        {
+            if (page == null)
+                throw new ArgumentNullException(nameof(page));
+            
+            if (index < 0 || index > _pages.Count)
+                throw new ArgumentOutOfRangeException(nameof(index));
+            
+            _pages.Insert(index, page);
+            IsModified = true;
+        }
 
         /// <summary>
         /// ページを削除します

@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:behaviors="clr-namespace:DocOrganizer.UI.Behaviors"
         mc:Ignorable="d"
-        Title="DocOrganizer 3.0.073" 
+        Title="DocOrganizer 3.0.085" 
         Height="700" Width="1000"
         WindowStartupLocation="CenterScreen"
         Background="#F0F0F0"
@@ -14,7 +14,7 @@
         behaviors:V3AdvancedDragDropBehavior.DropHandler="{Binding DragDropHandler}"
         PreviewKeyDown="Window_PreviewKeyDown">
     
-    <!-- キーボードショートカット完全実装 V3.0.065 -->
+    <!-- キーボードショートカット完全実装 V3.0.080 -->
     <Window.InputBindings>
         <!-- ファイル操作 -->
         <KeyBinding Key="N" Modifiers="Ctrl" Command="{Binding DocumentManagement.NewCommand}"/>
@@ -32,6 +32,8 @@
         <KeyBinding Key="D" Modifiers="Ctrl+Shift" Command="{Binding PageOperation.DeselectAllCommand}"/>
         <KeyBinding Key="Delete" Command="{Binding PageOperation.DeleteSelectedPagesCommand}"/>
         <KeyBinding Key="D" Modifiers="Ctrl" Command="{Binding PageOperation.DeleteSelectedPagesCommand}"/>
+        <!-- Ctrl+Shift+A: 全選択解除 -->
+        <KeyBinding Key="A" Modifiers="Ctrl+Shift" Command="{Binding PageOperation.DeselectAllCommand}"/>
         
         <!-- ページ操作 (CubePDF方式) -->
         <!-- 回転: Ctrl+L/R (CubePDF互換) -->
@@ -507,24 +509,25 @@
                                                 <ContentPresenter/>
                                             </Border>
                                             <ControlTemplate.Triggers>
-                                                <!-- 選択状態の強調表示 -->
+                                                <!-- 選択状態の強調表示（より目立つ青い枠） -->
                                                 <Trigger Property="IsSelected" Value="True">
-                                                    <Setter TargetName="Border" Property="BorderBrush" Value="#0078D4"/>
-                                                    <Setter TargetName="Border" Property="BorderThickness" Value="3"/>
+                                                    <Setter TargetName="Border" Property="BorderBrush" Value="#0066CC"/>
+                                                    <Setter TargetName="Border" Property="BorderThickness" Value="4"/>
                                                     <Setter TargetName="Border" Property="Background">
                                                         <Setter.Value>
                                                             <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                                                <GradientStop Color="#E6F3FF" Offset="0"/>
-                                                                <GradientStop Color="#CCE4F7" Offset="1"/>
+                                                                <GradientStop Color="#E8F4FF" Offset="0"/>
+                                                                <GradientStop Color="#D0E8FF" Offset="1"/>
                                                             </LinearGradientBrush>
                                                         </Setter.Value>
                                                     </Setter>
-                                                    <!-- 選択時の影効果 -->
+                                                    <!-- 選択時の強い影効果 -->
                                                     <Setter TargetName="Border" Property="Effect">
                                                         <Setter.Value>
-                                                            <DropShadowEffect BlurRadius="8" 
-                                                                            ShadowDepth="2" 
-                                                                            Color="#400078D4"/>
+                                                            <DropShadowEffect BlurRadius="10" 
+                                                                            ShadowDepth="3" 
+                                                                            Color="#600066CC"
+                                                                            Opacity="0.8"/>
                                                         </Setter.Value>
                                                     </Setter>
                                                 </Trigger>
@@ -539,8 +542,8 @@
                                                         <Condition Property="IsSelected" Value="True"/>
                                                         <Condition Property="IsMouseOver" Value="True"/>
                                                     </MultiTrigger.Conditions>
-                                                    <Setter TargetName="Border" Property="BorderBrush" Value="#005A9E"/>
-                                                    <Setter TargetName="Border" Property="BorderThickness" Value="3"/>
+                                                    <Setter TargetName="Border" Property="BorderBrush" Value="#0052A3"/>
+                                                    <Setter TargetName="Border" Property="BorderThickness" Value="5"/>
                                                 </MultiTrigger>
                                             </ControlTemplate.Triggers>
                                         </ControlTemplate>
@@ -557,10 +560,19 @@
                                             <Setter Property="BorderBrush" Value="#CCCCCC"/>
                                             <Setter Property="BorderThickness" Value="1"/>
                                             <Style.Triggers>
+                                                <!-- ListBoxItemのIsSelectedプロパティでトリガー -->
                                                 <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
-                                                    <Setter Property="BorderBrush" Value="#0078D4"/>
-                                                    <Setter Property="BorderThickness" Value="3"/>
-                                                    <Setter Property="Background" Value="#CCE4F7"/>
+                                                    <Setter Property="BorderBrush" Value="#0066CC"/>
+                                                    <Setter Property="BorderThickness" Value="2"/>
+                                                    <Setter Property="Background" Value="#F0F8FF"/>
+                                                    <Setter Property="Margin" Value="2"/>
+                                                </DataTrigger>
+                                                <!-- ViewModelのIsSelectedプロパティでもトリガー（永続化） -->
+                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                    <Setter Property="BorderBrush" Value="#0066CC"/>
+                                                    <Setter Property="BorderThickness" Value="2"/>
+                                                    <Setter Property="Background" Value="#F0F8FF"/>
+                                                    <Setter Property="Margin" Value="2"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
@@ -578,7 +590,11 @@
                                                     <Setter Property="Background" Value="#F0F0F0"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
-                                                            <Setter Property="Background" Value="#3399FF"/>
+                                                            <Setter Property="Background" Value="#0066CC"/>
+                                                        </DataTrigger>
+                                                        <!-- ViewModelのIsSelectedでも背景色変更 -->
+                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                            <Setter Property="Background" Value="#0066CC"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -592,6 +608,10 @@
                                                         <Setter Property="Foreground" Value="Black"/>
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
+                                                                <Setter Property="Foreground" Value="White"/>
+                                                            </DataTrigger>
+                                                            <!-- ViewModelのIsSelectedでも文字色変更 -->
+                                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
                                                                 <Setter Property="Foreground" Value="White"/>
                                                             </DataTrigger>
                                                         </Style.Triggers>
@@ -626,6 +646,15 @@
                                                         <Setter Property="Visibility" Value="Collapsed"/>
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
+                                                                <Setter Property="Background">
+                                                                    <Setter.Value>
+                                                                        <SolidColorBrush Color="#0078D4" Opacity="0.15"/>
+                                                                    </Setter.Value>
+                                                                </Setter>
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                            <!-- ViewModelのIsSelectedでもオーバーレイ表示 -->
+                                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
                                                                 <Setter Property="Background">
                                                                     <Setter.Value>
                                                                         <SolidColorBrush Color="#0078D4" Opacity="0.15"/>

@@ -31,11 +31,15 @@ namespace DocOrganizer.UI
 
         public App()
         {
-            // pdfium.dll初期化（単一EXE対応）
-            NativeDllExtractor.InitializePdfium();
-            
-            // OCR機能初期化
-            OcrConfig.Initialize();
+            // 起動高速化: 非同期で重い初期化処理を実行
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                // pdfium.dll初期化（単一EXE対応）- バックグラウンドで実行
+                NativeDllExtractor.InitializePdfium();
+                
+                // OCR機能初期化 - バックグラウンドで実行
+                OcrConfig.Initialize();
+            });
             
             _host = Host.CreateDefaultBuilder()
                 .ConfigureServices((context, services) =>
