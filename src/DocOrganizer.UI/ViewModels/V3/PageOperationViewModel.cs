@@ -817,7 +817,7 @@ F11: フルスクリーン
         
         /// <summary>
         /// ドキュメントからページリストを再読み込み（Undo/Redo後に使用）
-        /// 既存のV3PageViewModelインスタンスを可能な限り再利用してサムネイルを保持
+        /// V3.0.073最適化: ViewModelの再利用を最大化してパフォーマンス向上
         /// </summary>
         private async void RefreshPageList()
         {
@@ -827,11 +827,14 @@ F11: フルスクリーン
                 return;
             }
             
+            DebugLogger.Log($"[RefreshPageList] 最適化版開始: 既存VM数={Pages.Count}, 新規ページ数={_currentDocument.Pages.Count}");
+            
             // 既存のPageViewModelをIDでマッピング
             var existingPageVms = Pages.ToDictionary(vm => vm.Id);
             
             // 新しいページリストを構築
             var newPages = new ObservableCollection<V3PageViewModel>();
+            var tasksToRun = new List<Task>();
             
             foreach (var page in _currentDocument.Pages)
             {
@@ -841,35 +844,32 @@ F11: フルスクリーン
                 if (existingPageVms.TryGetValue(page.Id, out var existingVm))
                 {
                     pageVm = existingVm;
-                    // 回転が変更された場合は更新
-                    if (pageVm.Rotation != page.Rotation)
-                    {
-                        pageVm.UpdateRotationSync();
-                        // 回転が変更された場合のみサムネイル再生成
-                        await pageVm.RegenerateThumbnailAfterRotationAsync();
-                    }
+                    DebugLogger.Log($"[RefreshPageList] 既存VM再利用: PageId={page.Id}, 現在Rotation={pageVm.Rotation}, 新Rotation={page.Rotation}");
+                    
+                    // UpdateFromModelAsyncで効率的に更新
+                    var updateTask = pageVm.UpdateFromModelAsync(page);
+                    tasksToRun.Add(updateTask);
                 }
                 else
                 {
                     // 新規ページの場合のみ新しいViewModelを作成
                     pageVm = new V3PageViewModel(page, _thumbnailService);
+                    DebugLogger.Log($"[RefreshPageList] 新規VM作成: PageId={page.Id}, Rotation={page.Rotation}");
                     
-                    // デバッグログ
-                    DebugLogger.Log($"[RefreshPageList] 新規ページVM作成: PageId={page.Id}, Rotation={page.Rotation}, SourceImagePath={page.SourceImagePath}");
-                    
-                    // サムネイル生成
-                    await pageVm.LoadLeftThumbnailAsync();
-                    
-                    // 回転がある場合は明示的にサムネイル再生成（削除→Undo後の回転状態復元対応）
-                    if (page.Rotation != 0)
-                    {
-                        DebugLogger.Log($"[RefreshPageList] 回転ページのサムネイル再生成: PageId={page.Id}, Rotation={page.Rotation}");
-                        pageVm.UpdateRotationSync();
-                        await pageVm.RegenerateThumbnailAfterRotationAsync();
-                    }
+                    // 最適化されたサムネイル生成（回転考慮済み）
+                    var loadTask = pageVm.LoadThumbnailWithRotationAsync();
+                    tasksToRun.Add(loadTask);
                 }
                 
                 newPages.Add(pageVm);
+            }
+            
+            // バッチ処理で非同期タスクを効率的に実行
+            if (tasksToRun.Count > 0)
+            {
+                DebugLogger.Log($"[RefreshPageList] {tasksToRun.Count}個の非同期タスクを実行中...");
+                await Task.WhenAll(tasksToRun);
+                DebugLogger.Log($"[RefreshPageList] 非同期タスク完了");
             }
             
             // Pagesコレクションを更新
@@ -881,6 +881,8 @@ F11: フルスクリーン
             
             UpdatePageNumbers();
             UpdateSelectionState();
+            
+            DebugLogger.Log($"[RefreshPageList] 最適化版完了: 最終VM数={Pages.Count}");
         }
 
         public void NotifyPageSelectionChanged()

@@ -227,6 +227,58 @@ namespace DocOrganizer.UI.ViewModels
         }
 
         /// <summary>
+        /// 🎯 V3最適化: モデルからViewModelの状態を更新（RefreshPageList最適化用）
+        /// 既存のサムネイルを保持しながら、モデルの状態のみ更新
+        /// </summary>
+        public async Task<bool> UpdateFromModelAsync(PdfPage newPage)
+        {
+            try
+            {
+                // ページ番号の更新
+                PageNumber = newPage.PageNumber;
+                
+                // 回転が変更された場合のみサムネイル再生成
+                if (Rotation != newPage.Rotation)
+                {
+                    Rotation = newPage.Rotation;
+                    await LoadLeftThumbnailAsync();
+                    return true; // サムネイル再生成実行
+                }
+                
+                return false; // サムネイル再生成不要
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 🎯 V3最適化: 回転を考慮したサムネイル生成（初回生成用）
+        /// 回転がある場合でも確実にサムネイルを生成
+        /// </summary>
+        public async Task LoadThumbnailWithRotationAsync()
+        {
+            try
+            {
+                // 通常のサムネイル生成
+                await LoadLeftThumbnailAsync();
+                
+                // サムネイル生成に失敗し、かつ回転がある場合は再試行
+                if (ThumbnailImage == null && Rotation != 0)
+                {
+                    // 回転状態を再確認してリトライ
+                    UpdateRotationSync();
+                    await LoadLeftThumbnailAsync();
+                }
+            }
+            catch
+            {
+                ThumbnailImage = CreateErrorPlaceholder();
+            }
+        }
+
+        /// <summary>
         /// リソース解放
         /// </summary>
         public void Dispose()

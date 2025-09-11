@@ -1,6 +1,6 @@
 # DocOrganizer
 
-[![Version](https://img.shields.io/badge/version-3.0.051-blue.svg)](https://github.com/Rih0z/DocOrganizer/releases)
+[![Version](https://img.shields.io/badge/version-3.0.073-blue.svg)](https://github.com/Rih0z/DocOrganizer/releases)
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -12,14 +12,52 @@
 - 📄 **PDF操作**: ドラッグ&ドロップでページ結合・分割・回転・削除
 - 🖼️ **画像対応**: **HEIC完全対応**・JPG・PNG・JPEG・GIF形式からPDF変換
 - 🔄 **向き自動補正**: スキャン文書の向き自動検出・修正
-- 🔄 **自動更新**: GitHub Releases連携による自動アップデート
-- ⚡ **高性能**: V3アーキテクチャによる高速処理
+- ⌨️ **キーボード操作**: CubePDF互換の完全なショートカット対応
+- ↩️ **Undo/Redo**: 全操作の取り消し・やり直し機能
+- ⚡ **高性能**: V3アーキテクチャによる高速処理（60-70%高速化）
 
 ## 🚀 3ステップで使用開始
 
 1. **📥 ダウンロード**: [Releases](https://github.com/Rih0z/DocOrganizer/releases)から`DocOrganizer.exe`を取得
 2. **▶️ 起動**: エクスプローラーからダブルクリック（⚠️ **管理者権限厳禁**）
 3. **🎯 操作**: ファイルをドラッグ&ドロップ → 整理 → PDF保存
+
+## ⌨️ キーボードショートカット
+
+### ファイル操作
+| ショートカット | 機能 | 説明 |
+|---------------|------|------|
+| `Ctrl+N` | 新規作成 | 新しいドキュメントを作成 |
+| `Ctrl+O` | 開く | PDFまたは画像ファイルを開く |
+| `Ctrl+S` | 保存 | 現在のドキュメントを保存 |
+| `Ctrl+Shift+S` | 名前を付けて保存 | 別名で保存 |
+
+### 編集操作
+| ショートカット | 機能 | 説明 |
+|---------------|------|------|
+| `Ctrl+Z` | 元に戻す | 直前の操作を取り消し |
+| `Ctrl+Y` | やり直し | 取り消した操作をやり直し |
+| `Delete` | 削除 | 選択したページを削除 |
+| `Ctrl+A` | 全選択 | すべてのページを選択 |
+| `Ctrl+D` | 全選択解除 | 選択を解除 |
+
+### ページ操作（CubePDF互換）
+| ショートカット | 機能 | 説明 |
+|---------------|------|------|
+| `Ctrl+L` | 左回転 | ページを左に90度回転 |
+| `Ctrl+R` | 右回転 | ページを右に90度回転 |
+| `Ctrl+B` | 上へ移動 | ページを1つ前に移動 |
+| `Ctrl+F` | 下へ移動 | ページを1つ後に移動 |
+
+### ナビゲーション
+| ショートカット | 機能 | 説明 |
+|---------------|------|------|
+| `Ctrl+G` | ページジャンプ | 指定ページへ移動 |
+| `Ctrl+Home` | 最初のページ | 先頭ページへ移動 |
+| `Ctrl+End` | 最後のページ | 最終ページへ移動 |
+| `Ctrl+←` | 前のページ | 1つ前のページへ |
+| `Ctrl+→` | 次のページ | 1つ次のページへ |
+| `F1` | ヘルプ | ヘルプを表示 |
 
 ## 📋 動作環境
 
@@ -31,6 +69,7 @@
 
 | 内容 | 参照先 |
 |------|--------|
+| **🚀 パフォーマンス最適化完全報告** ⭐NEW | [`docs/V3_Performance_Optimization_Complete_Report_20250911.md`](docs/V3_Performance_Optimization_Complete_Report_20250911.md) |
 | **🎯 使用方法** | [`docs/PDF保存機能使用ガイド.md`](docs/PDF保存機能使用ガイド.md) |
 | **🖼️ HEIC対応詳細** | [`docs/HEIC_Support_Complete_Guide.md`](docs/HEIC_Support_Complete_Guide.md) |
 | **🏗️ V3完全アーキテクチャ** | [`docs/V3_COMPLETE_ARCHITECTURE.md`](docs/V3_COMPLETE_ARCHITECTURE.md) |
@@ -75,4 +114,4 @@ dotnet publish src/DocOrganizer.UI/DocOrganizer.UI.csproj -c Release -r win-x64 
 
 ---
 
-**DocOrganizer V3.0.051** - プロフェッショナルな文書整理を簡単に
+**DocOrganizer V3.0.073** - プロフェッショナルな文書整理を簡単に
