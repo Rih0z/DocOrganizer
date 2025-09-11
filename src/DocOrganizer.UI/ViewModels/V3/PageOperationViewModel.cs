@@ -109,23 +109,26 @@ namespace DocOrganizer.UI.ViewModels.V3
             System.Diagnostics.Debug.WriteLine("[ShowHelp] ヘルプ表示メソッド実行開始");
             DebugLogger.Log("[ShowHelp] ヘルプ表示メソッド実行開始");
             
-            var helpMessage = @"DocOrganizer - ショートカットキー一覧
+            var helpMessage = @"DocOrganizer V3.0.070 - ショートカットキー一覧
 
 【基本操作】
 Ctrl+A: 全ページを選択
 Ctrl+Shift+D: 選択解除
-Delete: 選択したページを削除
-Ctrl+H: このヘルプを表示
+Delete / Ctrl+D: 選択したページを削除
+F1 / Ctrl+H: このヘルプを表示
 
-【ページ操作】
-Ctrl+Shift+↑/↓: 選択ページを上下に移動
+【ページ操作】（CubePDF互換）
+Ctrl+B: 選択ページを上に移動（Back）
+Ctrl+F: 選択ページを下に移動（Forward）
+Alt+↑/↓: 選択ページを上下に移動（代替）
 PageUp/PageDown: 前後のページへ移動
 Home/End: 最初/最後のページへ
 Ctrl+G: ページジャンプ
 
-【回転】
-Ctrl+Shift+→: 右回転（時計回り）
-Ctrl+Shift+←: 左回転（反時計回り）
+【回転】（CubePDF互換）
+Ctrl+L: 左回転（反時計回り）（Left）
+Ctrl+R: 右回転（時計回り）（Right）
+Alt+←/→: 左右回転（代替）
 
 【ファイル操作】
 Ctrl+N: 新規作成
@@ -133,11 +136,23 @@ Ctrl+O: ファイルを開く
 Ctrl+S: 保存
 Ctrl+Shift+S: 名前を付けて保存
 Ctrl+W: 閉じる
+Ctrl+Q / Alt+F4: 終了
 
-【その他】
-ドラッグ&ドロップでページの並び替えが可能です。
+【編集操作】
+Ctrl+Z: 元に戻す（Undo）
+Ctrl+Y: やり直し（Redo）
 
-※Ctrl+Z（元に戻す）は現在実装中です。";
+【複数選択】
+Ctrl+クリック: 個別選択の追加/削除
+Shift+クリック: 範囲選択
+ドラッグ&ドロップ: ページの並び替え
+
+【表示】
+Ctrl+ +/-: 拡大/縮小
+Ctrl+0: ウィンドウに合わせる
+F11: フルスクリーン
+
+注：CubePDF Utility互換のキーボード操作を採用しています。";
 
             _dialogService.ShowInformation(helpMessage, "ヘルプ");
             
@@ -802,8 +817,9 @@ Ctrl+W: 閉じる
         
         /// <summary>
         /// ドキュメントからページリストを再読み込み（Undo/Redo後に使用）
+        /// 既存のV3PageViewModelインスタンスを可能な限り再利用してサムネイルを保持
         /// </summary>
-        private void RefreshPageList()
+        private async void RefreshPageList()
         {
             if (_currentDocument == null)
             {
@@ -811,10 +827,55 @@ Ctrl+W: 閉じる
                 return;
             }
             
-            Pages.Clear();
+            // 既存のPageViewModelをIDでマッピング
+            var existingPageVms = Pages.ToDictionary(vm => vm.Id);
+            
+            // 新しいページリストを構築
+            var newPages = new ObservableCollection<V3PageViewModel>();
+            
             foreach (var page in _currentDocument.Pages)
             {
-                var pageVm = new V3PageViewModel(page, _thumbnailService);
+                V3PageViewModel pageVm;
+                
+                // 既存のViewModelがあれば再利用（サムネイル保持）
+                if (existingPageVms.TryGetValue(page.Id, out var existingVm))
+                {
+                    pageVm = existingVm;
+                    // 回転が変更された場合は更新
+                    if (pageVm.Rotation != page.Rotation)
+                    {
+                        pageVm.UpdateRotationSync();
+                        // 回転が変更された場合のみサムネイル再生成
+                        await pageVm.RegenerateThumbnailAfterRotationAsync();
+                    }
+                }
+                else
+                {
+                    // 新規ページの場合のみ新しいViewModelを作成
+                    pageVm = new V3PageViewModel(page, _thumbnailService);
+                    
+                    // デバッグログ
+                    DebugLogger.Log($"[RefreshPageList] 新規ページVM作成: PageId={page.Id}, Rotation={page.Rotation}, SourceImagePath={page.SourceImagePath}");
+                    
+                    // サムネイル生成
+                    await pageVm.LoadLeftThumbnailAsync();
+                    
+                    // 回転がある場合は明示的にサムネイル再生成（削除→Undo後の回転状態復元対応）
+                    if (page.Rotation != 0)
+                    {
+                        DebugLogger.Log($"[RefreshPageList] 回転ページのサムネイル再生成: PageId={page.Id}, Rotation={page.Rotation}");
+                        pageVm.UpdateRotationSync();
+                        await pageVm.RegenerateThumbnailAfterRotationAsync();
+                    }
+                }
+                
+                newPages.Add(pageVm);
+            }
+            
+            // Pagesコレクションを更新
+            Pages.Clear();
+            foreach (var pageVm in newPages)
+            {
                 Pages.Add(pageVm);
             }
             

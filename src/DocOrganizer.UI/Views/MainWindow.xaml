@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:behaviors="clr-namespace:DocOrganizer.UI.Behaviors"
         mc:Ignorable="d"
-        Title="DocOrganizer 3.0.068" 
+        Title="DocOrganizer 3.0.071" 
         Height="700" Width="1000"
         WindowStartupLocation="CenterScreen"
         Background="#F0F0F0"
@@ -33,15 +33,18 @@
         <KeyBinding Key="Delete" Command="{Binding PageOperation.DeleteSelectedPagesCommand}"/>
         <KeyBinding Key="D" Modifiers="Ctrl" Command="{Binding PageOperation.DeleteSelectedPagesCommand}"/>
         
-        <!-- ページ操作 -->
-        <KeyBinding Key="Left" Modifiers="Ctrl+Shift" Command="{Binding PageOperation.RotateLeftCommand}"/>
-        <KeyBinding Key="L" Modifiers="Ctrl+Alt" Command="{Binding PageOperation.RotateLeftCommand}"/>
-        <KeyBinding Key="Right" Modifiers="Ctrl+Shift" Command="{Binding PageOperation.RotateRightCommand}"/>
-        <KeyBinding Key="R" Modifiers="Ctrl+Alt" Command="{Binding PageOperation.RotateRightCommand}"/>
-        <KeyBinding Key="Up" Modifiers="Ctrl+Shift" Command="{Binding PageOperation.MovePageUpCommand}"/>
-        <KeyBinding Key="U" Modifiers="Alt" Command="{Binding PageOperation.MovePageUpCommand}"/>
-        <KeyBinding Key="Down" Modifiers="Ctrl+Shift" Command="{Binding PageOperation.MovePageDownCommand}"/>
-        <KeyBinding Key="D" Modifiers="Alt" Command="{Binding PageOperation.MovePageDownCommand}"/>
+        <!-- ページ操作 (CubePDF方式) -->
+        <!-- 回転: Ctrl+L/R (CubePDF互換) -->
+        <KeyBinding Key="L" Modifiers="Ctrl" Command="{Binding PageOperation.RotateLeftCommand}"/>
+        <KeyBinding Key="R" Modifiers="Ctrl" Command="{Binding PageOperation.RotateRightCommand}"/>
+        <!-- 移動: Ctrl+B/F (CubePDF互換) -->
+        <KeyBinding Key="B" Modifiers="Ctrl" Command="{Binding PageOperation.MovePageUpCommand}"/>
+        <KeyBinding Key="F" Modifiers="Ctrl" Command="{Binding PageOperation.MovePageDownCommand}"/>
+        <!-- 代替ショートカット (互換性維持) -->
+        <KeyBinding Key="Left" Modifiers="Alt" Command="{Binding PageOperation.RotateLeftCommand}"/>
+        <KeyBinding Key="Right" Modifiers="Alt" Command="{Binding PageOperation.RotateRightCommand}"/>
+        <KeyBinding Key="Up" Modifiers="Alt" Command="{Binding PageOperation.MovePageUpCommand}"/>
+        <KeyBinding Key="Down" Modifiers="Alt" Command="{Binding PageOperation.MovePageDownCommand}"/>
         <KeyBinding Key="G" Modifiers="Ctrl" Command="{Binding PageOperation.GoToPageCommand}"/>
         <KeyBinding Key="PageUp" Command="{Binding PageOperation.PreviousPageCommand}"/>
         <KeyBinding Key="PageDown" Command="{Binding PageOperation.NextPageCommand}"/>
@@ -489,17 +492,60 @@
                         
                         <ListBox.ItemContainerStyle>
                             <Style TargetType="ListBoxItem">
-                                <Setter Property="Padding" Value="4"/>
                                 <Setter Property="Margin" Value="4,2"/>
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                <!-- IsSelectedバインディングを削除: WPF標準の複数選択を有効化 -->
-                                <Setter Property="Cursor" Value="Hand"/> <!-- 🎯 V3.0.024: ドラッグ可能カーソル表示 -->
-                                <Style.Triggers>
-                                    <Trigger Property="IsSelected" Value="True">
-                                        <Setter Property="Background" Value="#3399FF"/>
-                                        <Setter Property="Foreground" Value="White"/>
-                                    </Trigger>
-                                </Style.Triggers>
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <!-- ControlTemplateで完全制御し、選択時の視覚的フィードバックを強化 -->
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Border Name="Border" 
+                                                    Background="White" 
+                                                    BorderBrush="#CCCCCC" 
+                                                    BorderThickness="1"
+                                                    Padding="4">
+                                                <ContentPresenter/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <!-- 選択状態の強調表示 -->
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="Border" Property="BorderBrush" Value="#0078D4"/>
+                                                    <Setter TargetName="Border" Property="BorderThickness" Value="3"/>
+                                                    <Setter TargetName="Border" Property="Background">
+                                                        <Setter.Value>
+                                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                                <GradientStop Color="#E6F3FF" Offset="0"/>
+                                                                <GradientStop Color="#CCE4F7" Offset="1"/>
+                                                            </LinearGradientBrush>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                    <!-- 選択時の影効果 -->
+                                                    <Setter TargetName="Border" Property="Effect">
+                                                        <Setter.Value>
+                                                            <DropShadowEffect BlurRadius="8" 
+                                                                            ShadowDepth="2" 
+                                                                            Color="#400078D4"/>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Trigger>
+                                                <!-- ホバー時のハイライト -->
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Border" Property="BorderBrush" Value="#808080"/>
+                                                    <Setter TargetName="Border" Property="BorderThickness" Value="2"/>
+                                                </Trigger>
+                                                <!-- 選択+ホバー時の強調 -->
+                                                <MultiTrigger>
+                                                    <MultiTrigger.Conditions>
+                                                        <Condition Property="IsSelected" Value="True"/>
+                                                        <Condition Property="IsMouseOver" Value="True"/>
+                                                    </MultiTrigger.Conditions>
+                                                    <Setter TargetName="Border" Property="BorderBrush" Value="#005A9E"/>
+                                                    <Setter TargetName="Border" Property="BorderThickness" Value="3"/>
+                                                </MultiTrigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
                             </Style>
                         </ListBox.ItemContainerStyle>
                         
