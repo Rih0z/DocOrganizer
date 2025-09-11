@@ -580,6 +580,35 @@ namespace DocOrganizer.UI.ViewModels.V3
         }
 
         /// <summary>
+        /// V3.0.087: プレビュー同期メソッド - 編集操作後の強制プレビュー更新
+        /// 回転、削除、移動などの操作後に右側プレビューを確実に更新する
+        /// </summary>
+        public async Task SyncPreviewAfterEditAsync()
+        {
+            try
+            {
+                if (SelectedPage != null)
+                {
+                    await AppendDebugLogAsync($"[SyncPreviewAfterEdit] プレビュー同期開始 - PageNumber={SelectedPage.PageNumber}");
+                    
+                    // forceUpdate=true で強制更新
+                    await PreviewManagement.UpdatePreviewAsync(SelectedPage, true);
+                    
+                    await AppendDebugLogAsync($"[SyncPreviewAfterEdit] プレビュー同期完了");
+                }
+                else
+                {
+                    await AppendDebugLogAsync($"[SyncPreviewAfterEdit] SelectedPageがnull - プレビューをクリア");
+                    PreviewManagement.ClearPreview();
+                }
+            }
+            catch (Exception ex)
+            {
+                await AppendDebugLogAsync($"[SyncPreviewAfterEdit] エラー: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// PDF出力コマンド
         /// </summary>
         private async Task ExportPdfAsync()

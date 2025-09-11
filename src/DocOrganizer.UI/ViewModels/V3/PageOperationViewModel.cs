@@ -243,12 +243,20 @@ F11: フルスクリーン
                 .Select(vm => vm.Page)
                 .ToList();
             
+            var selectedViewModels = Pages.Where(p => p.IsSelected).ToList();
+            
             var command = new RotatePagesCommand(
                 selectedPages,
                 270, // 左回転 = 270度（反時計回り）
                 () => {
                     RefreshPageList();
                     PagesChanged?.Invoke(this, EventArgs.Empty);
+                    
+                    // V3.0.087: PageRotatedイベント発火でプレビュー更新
+                    foreach (var pageViewModel in selectedViewModels)
+                    {
+                        PageRotated?.Invoke(this, new PageOperationEventArgs(pageViewModel));
+                    }
                 }
             );
             
@@ -270,12 +278,20 @@ F11: フルスクリーン
                 .Select(vm => vm.Page)
                 .ToList();
             
+            var selectedViewModels = Pages.Where(p => p.IsSelected).ToList();
+            
             var command = new RotatePagesCommand(
                 selectedPages,
                 90, // 右回転 = 90度（時計回り）
                 () => {
                     RefreshPageList();
                     PagesChanged?.Invoke(this, EventArgs.Empty);
+                    
+                    // V3.0.087: PageRotatedイベント発火でプレビュー更新
+                    foreach (var pageViewModel in selectedViewModels)
+                    {
+                        PageRotated?.Invoke(this, new PageOperationEventArgs(pageViewModel));
+                    }
                 }
             );
             
