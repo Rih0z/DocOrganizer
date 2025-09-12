@@ -11,9 +11,9 @@
     <Company>DocOrganizer Project</Company>
     <Product>DocOrganizer</Product>
     <AssemblyName>DocOrganizer</AssemblyName>
-    <Version>3.0.085</Version>
-    <AssemblyVersion>3.0.087.0</AssemblyVersion>
-    <FileVersion>3.0.087.0</FileVersion>
+    <Version>3.0.100</Version>
+    <AssemblyVersion>3.0.100.0</AssemblyVersion>
+    <FileVersion>3.0.100.0</FileVersion>
     
     <!-- 単一EXEビルド設定 -->
     <PublishSingleFile>true</PublishSingleFile>
@@ -31,6 +31,8 @@
     <PublishReadyToRunShowWarnings>true</PublishReadyToRunShowWarnings>
     <!-- OCR機能の有効/無効制御 -->
     <EnableOCR Condition="'$(EnableOCR)' == ''">false</EnableOCR>
+    <!-- デバッグログの有効/無効制御 -->
+    <DefineConstants Condition="'$(Configuration)' == 'Release'">TRACE;ENABLE_LOGGING</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -51,7 +53,7 @@
     <ProjectReference Include="..\DocOrganizer.Infrastructure\DocOrganizer.Infrastructure.csproj" />
   </ItemGroup>
 
-  <!-- <ItemGroup>
+<!-- <ItemGroup>
     アイコンとリソース - 現在は画像ファイルなし
     <None Update="Images\*.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

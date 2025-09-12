@@ -23,7 +23,12 @@
 2. **▶️ 起動**: エクスプローラーからダブルクリック（⚠️ **管理者権限厳禁**）
 3. **🎯 操作**: ファイルをドラッグ&ドロップ → 整理 → PDF保存
 
-## 📦 V3.0.085の主な改善
+## 📦 V3.0.101の主な改善
+
+### 🔄 回転プレビュー同期完全修正 (V3.0.101)
+- **画像・PDF回転時の右側プレビュー更新問題を完全解決**
+- ボタンクリック・キーボードショートカット両方で正常動作
+- 左側サムネイルと右側プレビューの完全同期を実現
 
 ### ✅ 画像復元完全修正 (V3.0.084)
 - **削除→Ctrl+Z時の画像復元問題を完全解決**
@@ -97,6 +102,7 @@
 | **🔧 機能仕様** | [`docs/V3_ROTATION_AND_IMAGE_REPLACEMENT.md`](docs/V3_ROTATION_AND_IMAGE_REPLACEMENT.md) |
 | **🎯 ドラッグ&ドロップ並び替え完全実装** ⭐ | [`docs/V3_Drag_Drop_Complete_Implementation_Report_20250822.md`](docs/V3_Drag_Drop_Complete_Implementation_Report_20250822.md) |
 | **🔧 HEIC PDF出力バグ修正** | [`docs/HEIC_PDF_Export_Bug_Fix_Complete_Report_20250821.md`](docs/HEIC_PDF_Export_Bug_Fix_Complete_Report_20250821.md) |
+| **🔄 回転プレビュー同期完全修正** ⭐ | [`docs/Rotation_Preview_Complete_Fix_V3.0.101_Report_20250912.md`](docs/Rotation_Preview_Complete_Fix_V3.0.101_Report_20250912.md) |
 | **🔍 UI拡大機能バグ修正** | [`docs/UI_Zoom_Feature_Bug_Fix_Complete_Report_20250821.md`](docs/UI_Zoom_Feature_Bug_Fix_Complete_Report_20250821.md) |
 | **🐛 PDFサムネイル表示バグ修正** ⭐ | [`docs/BugFix_PDF_Thumbnail_Display_Report_20250904.md`](docs/BugFix_PDF_Thumbnail_Display_Report_20250904.md) |
 | **📝 統一デバッグログ管理システム** ⭐ | [`docs/Debug_Logging_System_Complete_Report_20250904.md`](docs/Debug_Logging_System_Complete_Report_20250904.md) |
@@ -142,4 +148,4 @@ dotnet publish src/DocOrganizer.UI/DocOrganizer.UI.csproj -c Release -r win-x64 
 
 ---
 
-**DocOrganizer V3.0.085** - プロフェッショナルな文書整理を簡単に・高速に
+**DocOrganizer V3.0.101** - プロフェッショナルな文書整理を簡単に・高速に

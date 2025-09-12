@@ -316,6 +316,7 @@ namespace DocOrganizer.UI.ViewModels
                 {
                     Rotation = newPage.Rotation;
                     await LoadLeftThumbnailAsync();
+                    await LoadRightPreviewAsync();  // V3.0.099: 右側プレビューも更新
                     return true; // サムネイル再生成実行
                 }
                 

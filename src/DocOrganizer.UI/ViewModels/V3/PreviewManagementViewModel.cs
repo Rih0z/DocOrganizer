@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
+using System.Windows.Media;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SixLabors.ImageSharp;
@@ -26,7 +27,26 @@ namespace DocOrganizer.UI.ViewModels.V3
         private readonly IPdfEditorService _pdfEditorService;
 
         [ObservableProperty]
-        private object? currentPageImage;
+        private ImageSource? currentPageImage;
+        
+        /// <summary>
+        /// CurrentPageImage変更時のデバッグログ出力
+        /// </summary>
+        partial void OnCurrentPageImageChanged(ImageSource? value)
+        {
+            try
+            {
+                AppendDebugLogSync($"[Preview] CurrentPageImage changed: {value?.GetType()?.Name ?? "null"}");
+                if (value is BitmapImage bmp)
+                {
+                    AppendDebugLogSync($"[Preview] Image dimensions: {bmp.PixelWidth}x{bmp.PixelHeight}");
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendDebugLogSync($"[Preview] OnCurrentPageImageChanged error: {ex.Message}");
+            }
+        }
 
         [ObservableProperty]
         private double previewWidth = 800;
@@ -173,10 +193,19 @@ namespace DocOrganizer.UI.ViewModels.V3
             await AppendDebugLogAsync($"[LoadPreviewImageAsync開始] forceUpdate={forceUpdate}");
             await AppendDebugLogAsync($"[LoadPreviewImageAsync] pageViewModel.PreviewImage={pageViewModel.PreviewImage != null}");
             
-            // PageViewModelに既にPreviewImageがある場合はそれを使用
-            if (!forceUpdate && pageViewModel.PreviewImage != null)
+            // V3.0.101: forceUpdateがtrueの場合は常に新しい画像を生成
+            // まず、forceUpdateがtrueの場合は最新のPreviewImageを再生成
+            if (forceUpdate)
             {
-                await AppendDebugLogAsync("[LoadPreviewImageAsync] 既存のPreviewImageを使用");
+                await AppendDebugLogAsync("[LoadPreviewImageAsync] forceUpdate=true - PreviewImageを再生成");
+                // 回転後の最新画像を生成
+                await pageViewModel.LoadRightPreviewAsync();
+            }
+            
+            // PageViewModelに既にPreviewImageがある場合はそれを使用
+            if (pageViewModel.PreviewImage != null)
+            {
+                await AppendDebugLogAsync("[LoadPreviewImageAsync] PreviewImageを使用");
                 await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     CurrentPageImage = pageViewModel.PreviewImage;
@@ -245,15 +274,13 @@ namespace DocOrganizer.UI.ViewModels.V3
                     {
                         try
                         {
-                            CurrentPageImage = previewImage;
-                            OnPropertyChanged(nameof(CurrentPageImage));
-                            AppendDebugLogSync($"[V3修正] CurrentPageImage設定成功: プロバイダー経由");
+                            CurrentPageImage = previewImage as ImageSource;
+                            AppendDebugLogSync($"[V3修正] CurrentPageImage設定成功: プロバイダー経由, Type: {CurrentPageImage?.GetType()?.Name}");
                         }
                         catch (Exception ex)
                         {
                             AppendDebugLogSync($"[V3修正] CurrentPageImage設定失敗: {ex.Message}");
                             CurrentPageImage = null;
-                            OnPropertyChanged(nameof(CurrentPageImage));
                         }
                     });
                 }
@@ -263,7 +290,6 @@ namespace DocOrganizer.UI.ViewModels.V3
                     await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                     {
                         CurrentPageImage = null;
-                        OnPropertyChanged(nameof(CurrentPageImage));
                     });
                 }
             }
@@ -273,7 +299,6 @@ namespace DocOrganizer.UI.ViewModels.V3
                 await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     CurrentPageImage = null;
-                    OnPropertyChanged(nameof(CurrentPageImage));
                 });
             }
             
@@ -457,9 +482,9 @@ namespace DocOrganizer.UI.ViewModels.V3
             return bitmap;
         }
 
-        private void UpdatePreviewSize(object? image)
+        private void UpdatePreviewSize(ImageSource? image)
         {
-            if (image is System.Windows.Media.Imaging.BitmapImage bitmapImage)
+            if (image is BitmapImage bitmapImage)
             {
                 PreviewWidth = bitmapImage.PixelWidth;
                 PreviewHeight = bitmapImage.PixelHeight;
@@ -487,7 +512,7 @@ namespace DocOrganizer.UI.ViewModels.V3
             ZoomLevel = $"{zoomPercentage:F0}%";
             
             // ✅ プレビューエリアのズーム（CurrentPageImage使用）
-            if (CurrentPageImage is System.Windows.Media.Imaging.BitmapImage bitmap)
+            if (CurrentPageImage is BitmapImage bitmap)
             {
                 var scale = zoomPercentage / 100.0;
                 PreviewWidth = bitmap.PixelWidth * scale;

@@ -11,6 +11,7 @@ using System.Linq;
 using System;
 using System.Windows.Input;
 using DocOrganizer.Core.Models;
+using DocOrganizer.Core.Logging;
 using DocOrganizer.UI.ViewModels;
 
 namespace DocOrganizer.UI.ViewModels.V3
@@ -44,6 +45,9 @@ namespace DocOrganizer.UI.ViewModels.V3
 
         // 🔧 V3リファクタリング: PageOperationのPagesを安定的に参照
         private ObservableCollection<V3PageViewModel>? _pagesCache;
+        
+        // V3.0.094: 回転処理中フラグ（_isMovingPageパターンと同一）
+        private bool _isRotatingPage = false;
     // 🎯 V3.0新機能: PDF出力関連
     [ObservableProperty]
     private PdfQualitySettings selectedQuality = PdfQualitySettings.GetDefault();
@@ -242,7 +246,16 @@ namespace DocOrganizer.UI.ViewModels.V3
         {
             try
             {
-                var pageIndex = Pages.IndexOf(e.Page);
+                // V3.0.094: 回転処理開始を記録
+                _isRotatingPage = true;
+                
+                // 🚨 緊急デバッグ: ログファイル出力で実行確認
+                await DebugLogger.LogAsync($"OnPageRotated called! Page ID: {e.Page.Id}, _isRotatingPage={_isRotatingPage}");
+                
+                // V3.0.089: ID ベース検索に修正（インスタンス参照比較問題の解決）
+                var pageIndex = Pages.ToList().FindIndex(p => p.Id == e.Page.Id);
+                await DebugLogger.LogAsync($"FindIndex result: {pageIndex}");
+                
                 if (pageIndex >= 0)
                 {
                     // ページコレクション更新
@@ -251,14 +264,46 @@ namespace DocOrganizer.UI.ViewModels.V3
                     // 選択ページが回転対象の場合、プレビュー更新
                     if (SelectedPage?.Id == e.Page.Id)
                     {
+                        await DebugLogger.LogAsync("Calling UpdatePreviewAsync...");
                         SelectedPage = e.Page;
+                        // V3.0.100: forceUpdate=trueで確実にプレビュー更新
                         await PreviewManagement.UpdatePreviewAsync(e.Page, true);
+                        await DebugLogger.LogAsync("UpdatePreviewAsync completed");
+                        
+                        // V3.0.100: SelectedPageの再設定でプロパティ変更通知を確実に発火
+                        OnPropertyChanged(nameof(SelectedPage));
                     }
+                    else
+                    {
+                        await DebugLogger.LogAsync($"SelectedPage mismatch: {SelectedPage?.Id} vs {e.Page.Id}");
+                        // V3.0.100: 選択ページでなくても、現在表示中のページなら更新
+                        if (SelectedPage != null && Pages.Any(p => p.Id == SelectedPage.Id))
+                        {
+                            var currentSelectedPage = Pages.FirstOrDefault(p => p.Id == SelectedPage.Id);
+                            if (currentSelectedPage != null)
+                            {
+                                await DebugLogger.LogAsync("Updating preview for current selected page after rotation");
+                                SelectedPage = currentSelectedPage;
+                                await PreviewManagement.UpdatePreviewAsync(currentSelectedPage, true);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    await DebugLogger.LogAsync("FindIndex failed - pageIndex < 0");
                 }
             }
             catch (Exception ex)
             {
+                await DebugLogger.LogAsync($"OnPageRotated Exception: {ex.Message}");
                 StatusManagement.ShowError($"ページ回転更新エラー: {ex.Message}", ex);
+            }
+            finally
+            {
+                // V3.0.094: 回転処理完了を記録
+                _isRotatingPage = false;
+                await DebugLogger.LogAsync($"OnPageRotated completed, _isRotatingPage={_isRotatingPage}");
             }
         }
 
@@ -490,7 +535,14 @@ namespace DocOrganizer.UI.ViewModels.V3
         {
             try
             {
-                await AppendDebugLogAsync("[OnPagesChanged] ページコレクション変更イベント受信");
+                await AppendDebugLogAsync($"[OnPagesChanged] ページコレクション変更イベント受信, _isRotatingPage={_isRotatingPage}");
+                
+                // V3.0.094: 回転処理中はプレビュー更新をスキップ（_isMovingPageパターンと同じ）
+                if (_isRotatingPage)
+                {
+                    await AppendDebugLogAsync("[OnPagesChanged] Skipped - Rotation operation in progress");
+                    return;
+                }
                 
                 // 🔧 修正: キャッシュをクリアして新しい参照を取得
                 _pagesCache = null;
@@ -556,7 +608,7 @@ namespace DocOrganizer.UI.ViewModels.V3
             if (value != null)
             {
                 // 🎯 V3アーキテクチャ修正: PreviewManagementViewModelを使用して右側プレビュー更新
-                _ = PreviewManagement.UpdatePreviewAsync(value, false);
+                _ = PreviewManagement.UpdatePreviewAsync(value, true);
                 
                 // 🔧 真の修正: 全ページのサムネイルが読み込まれていることを確認
                 // 初回読み込み時のみサムネイルが生成されている問題を修正
