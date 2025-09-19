@@ -6,6 +6,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using DocOrganizer.Application.Interfaces.V3;
 using Microsoft.Extensions.Logging;
+using System.Windows;
+using System.Windows.Media.Imaging;
 
 namespace DocOrganizer.Infrastructure.Services.V3
 {
@@ -53,15 +55,37 @@ namespace DocOrganizer.Infrastructure.Services.V3
         {
             try
             {
-                _logger.LogDebug("[V3_Thumbnail] 右プレビュー用高解像度生成開始: {FileName}, 回転: {Rotation}度, 上限: {MaxWidth}x{MaxHeight}", 
-                    Path.GetFileName(filePath), rotation, maxWidth, maxHeight);
+                _logger.LogDebug("[V3_Thumbnail] 右プレビュー用高解像度生成開始: {FileName}, 回転: {Rotation}度", 
+                    Path.GetFileName(filePath), rotation);
 
-                // 🎯 V3.0.009 プロバイダーアーキテクチャによる統一処理
+                // A4比率計算（595:842 = 1:1.414）
+                const double A4_RATIO = 842.0 / 595.0;
+                
+                // 表示領域に合わせたA4サイズ計算
+                int targetWidth, targetHeight;
+                if (maxWidth * A4_RATIO <= maxHeight)
+                {
+                    targetWidth = maxWidth;
+                    targetHeight = (int)(maxWidth * A4_RATIO);
+                }
+                else
+                {
+                    targetHeight = maxHeight;
+                    targetWidth = (int)(maxHeight / A4_RATIO);
+                }
+
+                _logger.LogDebug("[V3_Thumbnail] A4比率計算結果: {Width}x{Height}", targetWidth, targetHeight);
+
+                // 🎯 V3.0.109: A4比率に合わせたプレビュー生成
+                // プロバイダーに正確なA4サイズを渡す
                 var previewImage = await _providerManager.ProcessWithBestProvider(filePath, 
-                    provider => provider.GeneratePreviewAsync(filePath, maxWidth, maxHeight));
+                    provider => provider.GeneratePreviewAsync(filePath, targetWidth, targetHeight));
+                
+                // 画像をA4フレームに完全フィット（余白なし）
+                var fittedImage = await FitImageToA4FrameAsync(previewImage, targetWidth, targetHeight);
                 
                 // 🔧 回転適用（WPFのTransformedBitmapを使用）
-                if (rotation > 0 && previewImage is BitmapSource bitmapSource)
+                if (rotation > 0 && fittedImage is BitmapSource bitmapSource)
                 {
                     var transform = new RotateTransform(rotation);
                     var rotatedBitmap = new TransformedBitmap(bitmapSource, transform);
@@ -69,13 +93,106 @@ namespace DocOrganizer.Infrastructure.Services.V3
                     return rotatedBitmap;
                 }
                 
-                return previewImage;
+                return fittedImage;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[V3_Thumbnail] 右プレビュー生成エラー: {FilePath}", filePath);
                 throw;
             }
+        }
+
+        /// <summary>
+        /// 画像をA4フレームにフィット（V3.0.109）
+        /// </summary>
+        private async Task<ImageSource> FitImageToA4FrameAsync(ImageSource sourceImage, int targetWidth, int targetHeight)
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    // ImageSourceをBitmapSourceに変換
+                    if (sourceImage is not BitmapSource bitmapSource)
+                    {
+                        _logger.LogWarning("[V3_Thumbnail] ImageSourceがBitmapSourceではありません");
+                        return sourceImage;
+                    }
+
+                    // 元画像のサイズ取得
+                    var sourceWidth = bitmapSource.PixelWidth;
+                    var sourceHeight = bitmapSource.PixelHeight;
+                    
+                    // アスペクト比を保持してフィット計算
+                    double sourceAspect = (double)sourceWidth / sourceHeight;
+                    double targetAspect = (double)targetWidth / targetHeight;
+                    
+                    int drawWidth, drawHeight;
+                    
+                    if (sourceAspect > targetAspect)
+                    {
+                        // 画像が横長: 幅に合わせる
+                        drawWidth = targetWidth;
+                        drawHeight = (int)(targetWidth / sourceAspect);
+                    }
+                    else
+                    {
+                        // 画像が縦長: 高さに合わせる
+                        drawHeight = targetHeight;
+                        drawWidth = (int)(targetHeight * sourceAspect);
+                    }
+                    
+                    // V3.0.109: 画像を最大化して表示（余白なし）
+                    // 元画像がA4比率に近い場合はそのまま使用
+                    if (Math.Abs(sourceAspect - targetAspect) < 0.01)
+                    {
+                        // ほぼA4比率なのでそのままリサイズ
+                        var resized = new TransformedBitmap(bitmapSource, 
+                            new ScaleTransform(
+                                (double)targetWidth / sourceWidth,
+                                (double)targetHeight / sourceHeight));
+                        resized.Freeze();
+                        return resized;
+                    }
+                    
+                    // A4フレームに合わせて白背景で描画
+                    var drawingVisual = new DrawingVisual();
+                    using (var drawingContext = drawingVisual.RenderOpen())
+                    {
+                        // 白背景を描画
+                        drawingContext.DrawRectangle(
+                            Brushes.White,
+                            null,
+                            new Rect(0, 0, targetWidth, targetHeight));
+                        
+                        // 中央配置で画像を描画
+                        var x = (targetWidth - drawWidth) / 2.0;
+                        var y = (targetHeight - drawHeight) / 2.0;
+                        
+                        // スケーリングされた画像を描画
+                        var scaledBitmap = new TransformedBitmap(bitmapSource,
+                            new ScaleTransform(
+                                (double)drawWidth / sourceWidth,
+                                (double)drawHeight / sourceHeight));
+                        
+                        drawingContext.DrawImage(scaledBitmap,
+                            new Rect(x, y, drawWidth, drawHeight));
+                    }
+                    
+                    // DrawingVisualをBitmapSourceに変換
+                    var renderTarget = new RenderTargetBitmap(
+                        targetWidth, targetHeight, 96, 96, PixelFormats.Pbgra32);
+                    renderTarget.Render(drawingVisual);
+                    renderTarget.Freeze();
+                    
+                    _logger.LogDebug("[V3_Thumbnail] A4フレームフィット完了: {Width}x{Height}", targetWidth, targetHeight);
+                    return renderTarget;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[V3_Thumbnail] A4フレームフィットエラー");
+                    return sourceImage; // エラー時は元画像を返す
+                }
+            });
         }
 
         /// <summary>
