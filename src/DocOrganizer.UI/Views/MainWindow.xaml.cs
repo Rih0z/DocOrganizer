@@ -131,15 +131,10 @@ namespace DocOrganizer.UI.Views
             this.InputBindings.Add(f1Binding);
             System.Diagnostics.Debug.WriteLine($"[F1_FIX] F1バインディング追加完了 - Command: {f1Binding.Command}");
             
-            // Ctrl+A も同様に動的バインディング
-            var ctrlABinding = new KeyBinding
-            {
-                Key = Key.A,
-                Modifiers = ModifierKeys.Control,
-                Command = vm.PageOperation.SelectAllCommand
-            };
-            this.InputBindings.Add(ctrlABinding);
-            System.Diagnostics.Debug.WriteLine("[F1_FIX] Ctrl+A バインディング追加完了");
+            // Ctrl+A の動的バインディングは削除（XAMLで定義済み）
+            // XAMLでの定義を優先し、重複を避ける
+            // <KeyBinding Key="A" Modifiers="Ctrl" Command="{Binding PageOperation.SelectAllCommand}"/>
+            System.Diagnostics.Debug.WriteLine("[F1_FIX] Ctrl+A はXAML定義を使用");
             
             // PreviewKeyDownからF1処理を除去
             this.PreviewKeyDown -= Window_PreviewKeyDown;
@@ -663,32 +658,9 @@ namespace DocOrganizer.UI.Views
             // F1キーの処理はInputBindingに任せる（二重実装を避けるため削除）
             // InputBinding: <KeyBinding Key="F1" Command="{Binding PageOperation.ShowHelpCommand}"/>
             
-            // Ctrl+A - 全選択
-            if (e.Key == Key.A && Keyboard.Modifiers == ModifierKeys.Control)
-            {
-                System.Diagnostics.Debug.WriteLine("[MainWindow] Ctrl+A pressed");
-                System.Diagnostics.Debug.WriteLine($"[MainWindow] PageOperation is null: {V3ViewModel.PageOperation == null}");
-                
-                if (V3ViewModel.PageOperation != null)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[MainWindow] SelectAllCommand is null: {V3ViewModel.PageOperation.SelectAllCommand == null}");
-                }
-                
-                if (V3ViewModel.PageOperation?.SelectAllCommand?.CanExecute(null) == true)
-                {
-                    System.Diagnostics.Debug.WriteLine("[MainWindow] Executing SelectAllCommand");
-                    V3ViewModel.PageOperation.SelectAllCommand.Execute(null);
-                    
-                    // ViewModelの選択状態をListBoxに同期
-                    SyncSelectionFromViewModel();
-                    
-                    e.Handled = true;
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine("[MainWindow] SelectAllCommand cannot execute or is null");
-                }
-            }
+            // Ctrl+A - 全選択（コメントアウト: XAMLのKeyBindingを使用）
+            // PreviewKeyDownでの処理は削除し、XAMLのKeyBindingのみを使用
+            // これにより、ListBoxの標準的な選択動作との競合を防ぐ
         }
         
         // デバッグ: DataContextとコマンドの確認

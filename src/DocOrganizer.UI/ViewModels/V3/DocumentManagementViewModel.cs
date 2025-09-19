@@ -387,9 +387,45 @@ namespace DocOrganizer.UI.ViewModels.V3
                 HasDocument = false;
                 FileInfo = "";
                 StatusMessage = "準備完了";
-                
+
                 // 🆕 PDF編集フラグリセット
                 UpdateDocumentState();
+            }
+        }
+
+        /// <summary>
+        /// アプリケーションを終了
+        /// </summary>
+        [RelayCommand]
+        private void Exit()
+        {
+            try
+            {
+                // 現在のドキュメントがある場合は確認
+                if (_currentDocument != null && _currentDocument.IsModified)
+                {
+                    var result = _dialogService.ShowMessage(
+                        "現在のドキュメントは変更されています。保存しますか？",
+                        "確認",
+                        MessageBoxButtons.YesNoCancel,
+                        MessageBoxIcon.Question);
+
+                    if (result == DialogResult.Yes)
+                    {
+                        SaveAsync().Wait();
+                    }
+                    else if (result == DialogResult.Cancel)
+                    {
+                        return;
+                    }
+                }
+
+                // アプリケーション終了
+                System.Windows.Application.Current?.Shutdown();
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"アプリケーション終了エラー: {ex.Message}");
             }
         }
 

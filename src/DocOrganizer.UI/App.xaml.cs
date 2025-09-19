@@ -31,97 +31,214 @@ namespace DocOrganizer.UI
 
         public App()
         {
-            // 起動高速化: 非同期で重い初期化処理を実行
-            System.Threading.Tasks.Task.Run(() =>
+            // 🚨 EMERGENCY CONSTRUCTOR DIAGNOSTIC: コンストラクタ実行確認
+            try
             {
-                // pdfium.dll初期化（単一EXE対応）- バックグラウンドで実行
-                NativeDllExtractor.InitializePdfium();
-                
-                // OCR機能初期化 - バックグラウンドで実行
-                OcrConfig.Initialize();
-            });
-            
-            _host = Host.CreateDefaultBuilder()
-                .ConfigureServices((context, services) =>
+                var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                var constructorDiagnosticPath = Path.Combine(baseDir, "constructor_diagnostic.txt");
+                var message = $"App() constructor called at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n";
+                message += $"BaseDirectory: {baseDir}\n";
+                File.WriteAllText(constructorDiagnosticPath, message);
+            }
+            catch (Exception ex)
+            {
+                // 緊急診断ファイル作成失敗時はテンプフォルダに
+                try
                 {
-                    // ⭐修正: Serilog完全除去 - .NET標準ログのみ使用
+                    var tempPath = Path.GetTempPath();
+                    var fallbackPath = Path.Combine(tempPath, "app_constructor_fallback.txt");
+                    File.WriteAllText(fallbackPath, $"App constructor diagnostic failed: {ex.Message}\n");
+                }
+                catch { /* 完全無視 */ }
+            }
+            
+            try
+            {
+                // 🚨 STEP 1 DIAGNOSTIC: Task.Run前の診断
+                var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                var step1Path = Path.Combine(baseDir, "constructor_step1.txt");
+                File.WriteAllText(step1Path, $"Before Task.Run at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n");
+
+                // 起動高速化: 非同期で重い初期化処理を実行
+                System.Threading.Tasks.Task.Run(() =>
+                {
                     try
                     {
-                        // .NET標準ログ設定（Serilog不使用）
-                        services.AddLogging(loggingBuilder =>
+                        var taskDiagnosticPath = Path.Combine(baseDir, "constructor_task_diagnostic.txt");
+                        File.WriteAllText(taskDiagnosticPath, $"Task.Run started at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n");
+
+                        // pdfium.dll初期化（単一EXE対応）- バックグラウンドで実行
+                        NativeDllExtractor.InitializePdfium();
+                        
+                        // OCR機能初期化 - バックグラウンドで実行
+                        OcrConfig.Initialize();
+                        
+                        File.AppendAllText(taskDiagnosticPath, $"Task.Run completed at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n");
+                    }
+                    catch (Exception taskEx)
+                    {
+                        var taskErrorPath = Path.Combine(baseDir, "constructor_task_error.txt");
+                        File.WriteAllText(taskErrorPath, $"Task.Run error: {taskEx.Message}\n{taskEx.StackTrace}\n");
+                    }
+                });
+
+                // 🚨 STEP 2 DIAGNOSTIC: Host作成前の診断
+                var step2Path = Path.Combine(baseDir, "constructor_step2.txt");
+                File.WriteAllText(step2Path, $"Before Host.CreateDefaultBuilder at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n");
+                
+                _host = Host.CreateDefaultBuilder()
+                    .ConfigureServices((context, services) =>
+                    {
+                        try
                         {
-                            loggingBuilder.AddDebug();
-                            loggingBuilder.SetMinimumLevel(LogLevel.Warning);
-                        });
-                    }
-                    catch (Exception logEx)
-                    {
-                        // ログ設定失敗時は完全無効化
-                        System.Diagnostics.Debug.WriteLine($"Logging setup failed: {logEx.Message}");
-                        services.AddLogging(); // 最小限のログ設定
-                    }
+                            // 🚨 SERVICES CONFIG DIAGNOSTIC: サービス設定開始診断
+                            var servicesDiagnosticPath = Path.Combine(baseDir, "constructor_services_diagnostic.txt");
+                            File.WriteAllText(servicesDiagnosticPath, $"ConfigureServices started at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n");
 
-                    // 既存サービスの登録
-                    services.AddSingleton<IDialogService, DialogService>();
-                    services.AddSingleton<IRotationService, RotationService>();
-                    services.AddSingleton<IPdfService, PdfService>();
-                    services.AddSingleton<IPdfEditorService, PdfEditorService>();
-                    // 🎯 V3実装: IImageProcessingService削除済み（V2依存関係排除）
-                    // OCR機能の条件付き登録
-                    if (OcrConfig.IsOcrEnabled)
-                    {
-                        services.AddSingleton<ITextOrientationService, SafeIronOcrTextOrientationService>();
-                    }
-                    else
-                    {
-                        // OCR無効時はダミーサービスを登録
-                        services.AddSingleton<ITextOrientationService, NoOpTextOrientationService>();
-                    }
-                    
-                    // 🏗️ V3.0.009 究極拡張可能アーキテクチャ統合 - 全プロバイダー自動登録
-                    services.AddImageProcessingProviders(); // 🚀 統一プロバイダーアーキテクチャによる全画像処理サービス統合
-                    
-                    // V3.0.009 で統合された従来サービス（プロバイダー経由で自動提供）:
-                    // - IImageLoaderService → プロバイダーアーキテクチャ
-                    // - IThumbnailGeneratorService → プロバイダーアーキテクチャ  
-                    // - IImageValidationService → プロバイダーアーキテクチャ
-                    
-                    // 残存する専用サービス
-                    services.AddSingleton<IExifOrientationService, ExifOrientationService>();
-                    services.AddSingleton<IHeicConversionService, HeicConversionService>();
-                    services.AddSingleton<IFileAdditionService, FileAdditionService>();
-                    
-                    // 🎯 V3.0新機能: PDF出力サービス
-                    services.AddSingleton<IPdfExportService, PdfExportService>();
-                    
-                    // 🎯 V3.0.032新機能: Undo/Redo サービス
-                    services.AddSingleton<IUndoRedoService, UndoRedoService>();
-                    
-                    // アップデートサービスの登録
-                    services.AddHttpClient<IUpdateService, GitHubUpdateService>();
+                            // ⭐修正: Serilog完全除去 - .NET標準ログのみ使用
+                            try
+                            {
+                                // .NET標準ログ設定（Serilog不使用）
+                                services.AddLogging(loggingBuilder =>
+                                {
+                                    loggingBuilder.AddDebug();
+                                    loggingBuilder.SetMinimumLevel(LogLevel.Warning);
+                                });
+                                
+                                File.AppendAllText(servicesDiagnosticPath, "Logging configuration succeeded\n");
+                            }
+                            catch (Exception logEx)
+                            {
+                                // ログ設定失敗時は完全無効化
+                                System.Diagnostics.Debug.WriteLine($"Logging setup failed: {logEx.Message}");
+                                services.AddLogging(); // 最小限のログ設定
+                                File.AppendAllText(servicesDiagnosticPath, $"Logging configuration failed: {logEx.Message}\n");
+                            }
 
-                    // V3アーキテクチャ: 既存MainViewModelは不要（V3 MainCompositeViewModelを使用）
-                    
-                    // 🎯 V3 ViewModels登録
-                    services.AddSingleton<DocumentManagementViewModel>();
-                    services.AddSingleton<PageOperationViewModel>();
-                    services.AddSingleton<PreviewManagementViewModel>();
-                    services.AddSingleton<DragDropHandlerViewModel>();
-                    services.AddSingleton<StatusManagementViewModel>();
-                    services.AddSingleton<MainCompositeViewModel>();
+                            // 既存サービスの登録
+                            services.AddSingleton<IDialogService, DialogService>();
+                            services.AddSingleton<IRotationService, RotationService>();
+                            services.AddSingleton<IPdfService, PdfService>();
+                            services.AddSingleton<IPdfEditorService, PdfEditorService>();
+                            // 🎯 V3実装: IImageProcessingService削除済み（V2依存関係排除）
+                            // OCR機能の条件付き登録
+                            if (OcrConfig.IsOcrEnabled)
+                            {
+                                services.AddSingleton<ITextOrientationService, SafeIronOcrTextOrientationService>();
+                            }
+                            else
+                            {
+                                // OCR無効時はダミーサービスを登録
+                                services.AddSingleton<ITextOrientationService, NoOpTextOrientationService>();
+                            }
+                            
+                            File.AppendAllText(servicesDiagnosticPath, "Basic services registration completed\n");
+                            
+                            // 🏗️ V3.0.009 究極拡張可能アーキテクチャ統合 - 全プロバイダー自動登録
+                            services.AddImageProcessingProviders(); // 🚀 統一プロバイダーアーキテクチャによる全画像処理サービス統合
+                            
+                            File.AppendAllText(servicesDiagnosticPath, "Image processing providers registration completed\n");
+                            
+                            // V3.0.009 で統合された従来サービス（プロバイダー経由で自動提供）:
+                            // - IImageLoaderService → プロバイダーアーキテクチャ
+                            // - IThumbnailGeneratorService → プロバイダーアーキテクチャ  
+                            // - IImageValidationService → プロバイダーアーキテクチャ
+                            
+                            // 残存する専用サービス
+                            services.AddSingleton<IExifOrientationService, ExifOrientationService>();
+                            services.AddSingleton<IHeicConversionService, HeicConversionService>();
+                            services.AddSingleton<IFileAdditionService, FileAdditionService>();
+                            
+                            // 🎯 V3.0新機能: PDF出力サービス
+                            services.AddSingleton<IPdfExportService, PdfExportService>();
+                            
+                            // 🎯 V3.0.032新機能: Undo/Redo サービス
+                            services.AddSingleton<IUndoRedoService, UndoRedoService>();
+                            
+                            // アップデートサービスの登録
+                            services.AddHttpClient<IUpdateService, GitHubUpdateService>();
 
-                    // Viewの登録
-                    services.AddSingleton<MainWindow>();
-                })
-                .Build();
+                            File.AppendAllText(servicesDiagnosticPath, "Specialized services registration completed\n");
+
+                            // V3アーキテクチャ: 既存MainViewModelは不要（V3 MainCompositeViewModelを使用）
+                            
+                            // 🎯 V3 ViewModels登録
+                            services.AddSingleton<DocumentManagementViewModel>();
+                            services.AddSingleton<PageOperationViewModel>();
+                            services.AddSingleton<PreviewManagementViewModel>();
+                            services.AddSingleton<DragDropHandlerViewModel>();
+                            services.AddSingleton<StatusManagementViewModel>();
+                            services.AddSingleton<MainCompositeViewModel>();
+
+                            // Viewの登録
+                            services.AddSingleton<MainWindow>();
+                            
+                            File.AppendAllText(servicesDiagnosticPath, $"ConfigureServices completed at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n");
+                        }
+                        catch (Exception servicesEx)
+                        {
+                            var serviceErrorPath = Path.Combine(baseDir, "constructor_services_error.txt");
+                            File.WriteAllText(serviceErrorPath, $"ConfigureServices error: {servicesEx.Message}\n{servicesEx.StackTrace}\n");
+                            throw; // サービス設定エラーは再スロー
+                        }
+                    })
+                    .Build();
+                
+                // 🚨 STEP 3 DIAGNOSTIC: Host構築完了診断
+                var step3Path = Path.Combine(baseDir, "constructor_step3.txt");
+                File.WriteAllText(step3Path, $"Host.Build completed at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n");
+                
+                // 🚨 FINAL DIAGNOSTIC: コンストラクタ完了診断
+                var finalPath = Path.Combine(baseDir, "constructor_completed.txt");
+                File.WriteAllText(finalPath, $"App() constructor completed successfully at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n");
+                
+            }
+            catch (Exception constructorEx)
+            {
+                // 🚨 CONSTRUCTOR ERROR DIAGNOSTIC: コンストラクタエラー診断
+                try
+                {
+                    var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                    var errorPath = Path.Combine(baseDir, "constructor_error.txt");
+                    var errorMessage = $"App() constructor error at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n";
+                    errorMessage += $"Error: {constructorEx.Message}\n";
+                    errorMessage += $"StackTrace: {constructorEx.StackTrace}\n";
+                    if (constructorEx.InnerException != null)
+                    {
+                        errorMessage += $"InnerException: {constructorEx.InnerException.Message}\n";
+                    }
+                    File.WriteAllText(errorPath, errorMessage);
+                }
+                catch { /* エラー診断失敗は無視 */ }
+                
+                throw; // コンストラクタエラーは再スロー
+            }
         }
 
         protected override async void OnStartup(StartupEventArgs e)
         {
+            // 🚨 EMERGENCY DEBUG TEST: 最もシンプルなファイル書き込みテスト
+            DocOrganizer.Core.Logging.SimpleDebugTest.WriteTestFile();
+            
             // DebugLoggerを使用してログ出力を統一
             
             try
             {
+                // 🚨 開発用ログ制御: リリース版では削除される部分
+                #if DEBUG
+                Environment.SetEnvironmentVariable("DOCORGANIZER_DEBUG", "true");
+                #endif
+                
+                // バットファイルまたは環境変数で制御可能
+                // run-debug.bat: set DOCORGANIZER_DEBUG=true でログ有効化
+                // run-production.bat: set DOCORGANIZER_DEBUG=false でログ無効化
+                
+                // 🚨 緊急ログテスト: ログファイル作成確認
+                await DocOrganizer.Core.Logging.DebugLogger.LogAsync("=== V3.0.092 DEBUG LOG TEST START ===");
+                await DocOrganizer.Core.Logging.DebugLogger.LogAsync($"Application started at: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
+                await DocOrganizer.Core.Logging.DebugLogger.LogAsync($"IsDebugEnabled: {DocOrganizer.Core.Logging.DebugLogger.IsDebugEnabled}");
+                await DocOrganizer.Core.Logging.DebugLogger.LogAsync($"LogPath: {DocOrganizer.Core.Logging.DebugLogger.LogPath}");
+                
                 // 🎯 V3起動ログ: 起動プロセス詳細記録
                 DocOrganizer.Core.Logging.DebugLogger.LogStartup("V3 Startup開始");
                 

@@ -21,7 +21,7 @@
         <KeyBinding Key="O" Modifiers="Ctrl" Command="{Binding DocumentManagement.OpenCommand}"/>
         <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding DocumentManagement.SaveCommand}"/>
         <KeyBinding Key="S" Modifiers="Ctrl+Shift" Command="{Binding DocumentManagement.SaveAsCommand}"/>
-        <KeyBinding Key="W" Modifiers="Ctrl" Command="{Binding DocumentManagement.CloseCommand}"/>
+        <KeyBinding Key="W" Modifiers="Ctrl" Command="{Binding DocumentManagement.ExitCommand}"/>
         <KeyBinding Key="Q" Modifiers="Ctrl" Command="{Binding DocumentManagement.ExitCommand}"/>
         <KeyBinding Key="F4" Modifiers="Alt" Command="{Binding DocumentManagement.ExitCommand}"/>
         
@@ -123,9 +123,9 @@
                 </MenuItem>
                 <MenuItem Header="名前を付けて保存(_A)..." Command="{Binding DocumentManagement.SaveAsCommand}" InputGestureText="Ctrl+Shift+S"/>
                 <Separator/>
-                <MenuItem Header="閉じる(_C)" Command="{Binding DocumentManagement.CloseCommand}" InputGestureText="Ctrl+W"/>
+                <MenuItem Header="閉じる(_C)" Command="{Binding DocumentManagement.CloseCommand}"/>
                 <Separator/>
-                <MenuItem Header="終了(_X)" Command="{Binding DocumentManagement.ExitCommand}" InputGestureText="Ctrl+Q / Alt+F4"/>
+                <MenuItem Header="終了(_X)" Command="{Binding DocumentManagement.ExitCommand}" InputGestureText="Ctrl+W / Ctrl+Q / Alt+F4"/>
             </MenuItem>
             
             <MenuItem Header="編集(_E)">

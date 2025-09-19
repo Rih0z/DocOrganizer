@@ -252,10 +252,17 @@ F11: フルスクリーン
                     RefreshPageList();
                     PagesChanged?.Invoke(this, EventArgs.Empty);
                     
-                    // V3.0.087: PageRotatedイベント発火でプレビュー更新
-                    foreach (var pageViewModel in selectedViewModels)
+                    // V3.0.088: ID再検索方式で最新インスタンス取得（古いインスタンス参照問題の解決）
+                    var selectedPageIds = selectedViewModels.Select(vm => vm.Id).ToList();
+                    var updatedViewModels = Pages.Where(vm => selectedPageIds.Contains(vm.Id)).ToList();
+                    
+                    _ = DebugLogger.LogAsync($"Found {updatedViewModels.Count} updated ViewModels to fire PageRotated for");
+                    
+                    foreach (var pageViewModel in updatedViewModels)
                     {
+                        _ = DebugLogger.LogAsync($"Firing PageRotated for Page {pageViewModel.PageNumber} (ID: {pageViewModel.Id})");
                         PageRotated?.Invoke(this, new PageOperationEventArgs(pageViewModel));
+                        _ = DebugLogger.LogAsync($"PageRotated fired for Page {pageViewModel.PageNumber}");
                     }
                 }
             );
@@ -287,8 +294,11 @@ F11: フルスクリーン
                     RefreshPageList();
                     PagesChanged?.Invoke(this, EventArgs.Empty);
                     
-                    // V3.0.087: PageRotatedイベント発火でプレビュー更新
-                    foreach (var pageViewModel in selectedViewModels)
+                    // V3.0.088: ID再検索方式で最新インスタンス取得（古いインスタンス参照問題の解決）
+                    var selectedPageIds = selectedViewModels.Select(vm => vm.Id).ToList();
+                    var updatedViewModels = Pages.Where(vm => selectedPageIds.Contains(vm.Id)).ToList();
+                    
+                    foreach (var pageViewModel in updatedViewModels)
                     {
                         PageRotated?.Invoke(this, new PageOperationEventArgs(pageViewModel));
                     }
