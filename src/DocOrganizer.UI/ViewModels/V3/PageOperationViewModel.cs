@@ -239,6 +239,11 @@ F11: フルスクリーン
                 return;
             }
             
+            // V3.0.108: 選択状態を保存
+            var selectedPageIds = Pages.Where(p => p.IsSelected)
+                                      .Select(p => p.Id)
+                                      .ToHashSet();
+            
             var selectedPages = Pages.Where(p => p.IsSelected)
                 .Select(vm => vm.Page)
                 .ToList();
@@ -249,25 +254,25 @@ F11: フルスクリーン
                 selectedPages,
                 270, // 左回転 = 270度（反時計回り）
                 () => {
-                    RefreshPageList();
+                    // V3.0.108: 同期的なRefreshを使用し、選択状態を保持
+                    RefreshPageListWithSelection(selectedPageIds);
                     PagesChanged?.Invoke(this, EventArgs.Empty);
                     
                     // V3.0.088: ID再検索方式で最新インスタンス取得（古いインスタンス参照問題の解決）
-                    var selectedPageIds = selectedViewModels.Select(vm => vm.Id).ToList();
                     var updatedViewModels = Pages.Where(vm => selectedPageIds.Contains(vm.Id)).ToList();
-                    
-                    _ = DebugLogger.LogAsync($"Found {updatedViewModels.Count} updated ViewModels to fire PageRotated for");
                     
                     foreach (var pageViewModel in updatedViewModels)
                     {
-                        _ = DebugLogger.LogAsync($"Firing PageRotated for Page {pageViewModel.PageNumber} (ID: {pageViewModel.Id})");
                         PageRotated?.Invoke(this, new PageOperationEventArgs(pageViewModel));
-                        _ = DebugLogger.LogAsync($"PageRotated fired for Page {pageViewModel.PageNumber}");
                     }
                 }
             );
             
             _undoRedoService.Execute(command);
+            
+            // V3.0.108: コマンド実行後の選択復元は不要（RefreshPageListWithSelectionで処理済み）
+            // RestoreSelection(selectedPageIds);
+            
             StatusMessage = "選択したページを左回転しました";
         }
 
@@ -281,6 +286,11 @@ F11: フルスクリーン
                 return;
             }
             
+            // V3.0.108: 選択状態を保存
+            var selectedPageIds = Pages.Where(p => p.IsSelected)
+                                      .Select(p => p.Id)
+                                      .ToHashSet();
+            
             var selectedPages = Pages.Where(p => p.IsSelected)
                 .Select(vm => vm.Page)
                 .ToList();
@@ -291,11 +301,11 @@ F11: フルスクリーン
                 selectedPages,
                 90, // 右回転 = 90度（時計回り）
                 () => {
-                    RefreshPageList();
+                    // V3.0.108: 同期的なRefreshを使用し、選択状態を保持
+                    RefreshPageListWithSelection(selectedPageIds);
                     PagesChanged?.Invoke(this, EventArgs.Empty);
                     
                     // V3.0.088: ID再検索方式で最新インスタンス取得（古いインスタンス参照問題の解決）
-                    var selectedPageIds = selectedViewModels.Select(vm => vm.Id).ToList();
                     var updatedViewModels = Pages.Where(vm => selectedPageIds.Contains(vm.Id)).ToList();
                     
                     foreach (var pageViewModel in updatedViewModels)
@@ -306,6 +316,10 @@ F11: フルスクリーン
             );
             
             _undoRedoService.Execute(command);
+            
+            // V3.0.108: コマンド実行後の選択復元は不要（RefreshPageListWithSelectionで処理済み）
+            // RestoreSelection(selectedPageIds);
+            
             StatusMessage = "選択したページを右回転しました";
         }
 
@@ -835,6 +849,22 @@ F11: フルスクリーン
             OnPropertyChanged(nameof(IsAllPagesSelected));
         }
 
+        // 選択状態を復元するメソッド
+        private void RestoreSelection(HashSet<Guid> selectedPageIds)
+        {
+            if (selectedPageIds == null || selectedPageIds.Count == 0)
+                return;
+
+            foreach (var pageVm in Pages)
+            {
+                pageVm.IsSelected = selectedPageIds.Contains(pageVm.Id);
+            }
+
+            UpdateSelectionState();
+
+            DebugLogger.Log($"[RestoreSelection] 選択状態を復元: {selectedPageIds.Count}ページ");
+        }
+
         // Public methods for external coordination
         public void SetCurrentDocument(PdfDocument? document)
         {
@@ -913,6 +943,83 @@ F11: フルスクリーン
             UpdateSelectionState();
             
             DebugLogger.Log($"[RefreshPageList] 最適化版完了: 最終VM数={Pages.Count}");
+        }
+
+        /// <summary>
+        /// V3.0.108: 選択状態を保持しながらページリストをリフレッシュする同期メソッド
+        /// async void RefreshPageList()の非同期問題を回避するための実装
+        /// </summary>
+        private void RefreshPageListWithSelection(HashSet<Guid> selectedIds)
+        {
+            if (_currentDocument == null)
+            {
+                Pages.Clear();
+                return;
+            }
+            
+            DebugLogger.Log($"[RefreshPageListWithSelection] 開始: 選択ID数={selectedIds?.Count ?? 0}, 既存VM数={Pages.Count}, 新規ページ数={_currentDocument.Pages.Count}");
+            
+            // 既存のPageViewModelをIDでマッピング
+            var existingPageVms = Pages.ToDictionary(vm => vm.Id);
+            
+            // 新しいページリストを構築
+            var newPages = new ObservableCollection<V3PageViewModel>();
+            var tasksToRun = new List<Task>();
+            
+            foreach (var page in _currentDocument.Pages)
+            {
+                V3PageViewModel pageVm;
+                
+                // 既存のViewModelがあれば再利用（サムネイル保持）
+                if (existingPageVms.TryGetValue(page.Id, out var existingVm))
+                {
+                    pageVm = existingVm;
+                    DebugLogger.Log($"[RefreshPageListWithSelection] 既存VM再利用: PageId={page.Id}, 現在Rotation={pageVm.Rotation}, 新Rotation={page.Rotation}");
+                    
+                    // 回転状態を同期的に更新
+                    pageVm.UpdateRotationSync();
+                }
+                else
+                {
+                    // 新規ページの場合のみ新しいViewModelを作成
+                    pageVm = new V3PageViewModel(page, _thumbnailService);
+                    DebugLogger.Log($"[RefreshPageListWithSelection] 新規VM作成: PageId={page.Id}, Rotation={page.Rotation}");
+                    
+                    // 回転状態をViewModelに同期
+                    pageVm.UpdateRotationSync();
+                }
+                
+                // 選択状態を保持/復元
+                if (selectedIds != null && selectedIds.Contains(pageVm.Id))
+                {
+                    pageVm.IsSelected = true;
+                    DebugLogger.Log($"[RefreshPageListWithSelection] 選択状態復元: PageId={pageVm.Id}");
+                }
+                
+                newPages.Add(pageVm);
+            }
+            
+            // Pagesコレクションを更新
+            Pages.Clear();
+            foreach (var pageVm in newPages)
+            {
+                Pages.Add(pageVm);
+            }
+            
+            UpdatePageNumbers();
+            UpdateSelectionState();
+            
+            DebugLogger.Log($"[RefreshPageListWithSelection] 完了: 最終VM数={Pages.Count}, 選択数={Pages.Count(p => p.IsSelected)}");
+            
+            // サムネイルの更新は非同期でバックグラウンド実行（UIブロックを回避）
+            Task.Run(async () => {
+                DebugLogger.Log($"[RefreshPageListWithSelection] サムネイル非同期更新開始");
+                foreach (var pageVm in newPages)
+                {
+                    await pageVm.LoadThumbnailWithRotationAsync();
+                }
+                DebugLogger.Log($"[RefreshPageListWithSelection] サムネイル非同期更新完了");
+            });
         }
 
         public void NotifyPageSelectionChanged()
