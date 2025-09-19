@@ -614,11 +614,12 @@ namespace DocOrganizer.UI.Views
                             System.Diagnostics.Debug.WriteLine("[右側プレビューデバッグ] SourceImagePathがNULL");
                         }
                         
-                        // 選択状態を明示的に設定
-                        foreach (var page in V3ViewModel.Pages)
-                        {
-                            page.IsSelected = (page == selectedPage);
-                        }
+                        // V3.0.102: 複数選択対応 - 単一選択の強制を削除
+                        // 以下のコードは複数選択を破壊するためコメントアウト
+                        // foreach (var page in V3ViewModel.Pages)
+                        // {
+                        //     page.IsSelected = (page == selectedPage);
+                        // }
                         
                         // ページ選択状態を更新（上下移動ボタンの有効化）
                         // 🔧 根本修正: Pages.Clear()を削除し、通知のみ実行

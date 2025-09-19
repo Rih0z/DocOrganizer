@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:behaviors="clr-namespace:DocOrganizer.UI.Behaviors"
         mc:Ignorable="d"
-        Title="DocOrganizer 3.0.087" 
+        Title="DocOrganizer 3.0.103" 
         Height="700" Width="1000"
         WindowStartupLocation="CenterScreen"
         Background="#F0F0F0"
@@ -493,62 +493,54 @@
                              behaviors:V3AdvancedDragDropBehavior.DropHandler="{Binding DragDropHandler}">
                         
                         <ListBox.ItemContainerStyle>
-                            <Style TargetType="ListBoxItem">
+                            <!-- V3.0.103: BasedOnでデフォルトスタイル継承、IsSelectedバインディングで複数選択対応 -->
+                            <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
                                 <Setter Property="Margin" Value="4,2"/>
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                                 <Setter Property="Cursor" Value="Hand"/>
-                                <!-- ControlTemplateで完全制御し、選択時の視覚的フィードバックを強化 -->
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="ListBoxItem">
-                                            <Border Name="Border" 
-                                                    Background="White" 
-                                                    BorderBrush="#CCCCCC" 
-                                                    BorderThickness="1"
-                                                    Padding="4">
-                                                <ContentPresenter/>
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <!-- 選択状態の強調表示（より目立つ青い枠） -->
-                                                <Trigger Property="IsSelected" Value="True">
-                                                    <Setter TargetName="Border" Property="BorderBrush" Value="#0066CC"/>
-                                                    <Setter TargetName="Border" Property="BorderThickness" Value="4"/>
-                                                    <Setter TargetName="Border" Property="Background">
-                                                        <Setter.Value>
-                                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                                                <GradientStop Color="#E8F4FF" Offset="0"/>
-                                                                <GradientStop Color="#D0E8FF" Offset="1"/>
-                                                            </LinearGradientBrush>
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                    <!-- 選択時の強い影効果 -->
-                                                    <Setter TargetName="Border" Property="Effect">
-                                                        <Setter.Value>
-                                                            <DropShadowEffect BlurRadius="10" 
-                                                                            ShadowDepth="3" 
-                                                                            Color="#600066CC"
-                                                                            Opacity="0.8"/>
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                </Trigger>
-                                                <!-- ホバー時のハイライト -->
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="Border" Property="BorderBrush" Value="#808080"/>
-                                                    <Setter TargetName="Border" Property="BorderThickness" Value="2"/>
-                                                </Trigger>
-                                                <!-- 選択+ホバー時の強調 -->
-                                                <MultiTrigger>
-                                                    <MultiTrigger.Conditions>
-                                                        <Condition Property="IsSelected" Value="True"/>
-                                                        <Condition Property="IsMouseOver" Value="True"/>
-                                                    </MultiTrigger.Conditions>
-                                                    <Setter TargetName="Border" Property="BorderBrush" Value="#0052A3"/>
-                                                    <Setter TargetName="Border" Property="BorderThickness" Value="5"/>
-                                                </MultiTrigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
+                                <Setter Property="Padding" Value="4"/>
+                                <!-- IsSelectedバインディングでViewModelと同期 -->
+                                <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+                                
+                                <Style.Triggers>
+                                    <!-- 選択状態の強調表示 -->
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter Property="BorderBrush" Value="#0066CC"/>
+                                        <Setter Property="BorderThickness" Value="4"/>
+                                        <Setter Property="Background">
+                                            <Setter.Value>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                    <GradientStop Color="#E8F4FF" Offset="0"/>
+                                                    <GradientStop Color="#D0E8FF" Offset="1"/>
+                                                </LinearGradientBrush>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Setter Property="Effect">
+                                            <Setter.Value>
+                                                <DropShadowEffect BlurRadius="10" 
+                                                                ShadowDepth="3" 
+                                                                Color="#600066CC"
+                                                                Opacity="0.8"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                    
+                                    <!-- ホバー時のハイライト -->
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="BorderBrush" Value="#808080"/>
+                                        <Setter Property="BorderThickness" Value="2"/>
+                                    </Trigger>
+                                    
+                                    <!-- 選択+ホバー時の強調 -->
+                                    <MultiTrigger>
+                                        <MultiTrigger.Conditions>
+                                            <Condition Property="IsSelected" Value="True"/>
+                                            <Condition Property="IsMouseOver" Value="True"/>
+                                        </MultiTrigger.Conditions>
+                                        <Setter Property="BorderBrush" Value="#0052A3"/>
+                                        <Setter Property="BorderThickness" Value="5"/>
+                                    </MultiTrigger>
+                                </Style.Triggers>
                             </Style>
                         </ListBox.ItemContainerStyle>
                         
