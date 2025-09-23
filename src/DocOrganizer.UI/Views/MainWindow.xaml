@@ -228,8 +228,8 @@
             </MenuItem>
             
             <MenuItem Header="表示(_V)">
-                <MenuItem Header="拡大(_I)" Command="{Binding ZoomInCommand}" InputGestureText="Ctrl++"/>
-                <MenuItem Header="縮小(_O)" Command="{Binding ZoomOutCommand}" InputGestureText="Ctrl+-"/>
+                <MenuItem Header="拡大(_I)" Command="{Binding PreviewManagement.ZoomInCommand}" InputGestureText="Ctrl++"/>
+                <MenuItem Header="縮小(_O)" Command="{Binding PreviewManagement.ZoomOutCommand}" InputGestureText="Ctrl+-"/>
                 <MenuItem Header="全体表示(_F)" Command="{Binding FitToWindowCommand}" InputGestureText="Ctrl+0"/>
                 <Separator/>
                 <MenuItem Header="サムネイルサイズ(_T)">
@@ -319,10 +319,10 @@
                 <Separator/>
                 
                 <!-- 表示 -->
-                <Button Command="{Binding ZoomInCommand}" ToolTip="拡大" Style="{StaticResource ToolBarButtonStyle}">
+                <Button Command="{Binding PreviewManagement.ZoomInCommand}" ToolTip="拡大" Style="{StaticResource ToolBarButtonStyle}">
                     <TextBlock Text="🔍+" Style="{StaticResource ToolBarButtonIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
-                <Button Command="{Binding ZoomOutCommand}" ToolTip="縮小" Style="{StaticResource ToolBarButtonStyle}">
+                <Button Command="{Binding PreviewManagement.ZoomOutCommand}" ToolTip="縮小" Style="{StaticResource ToolBarButtonStyle}">
                     <TextBlock Text="🔍-" Style="{StaticResource ToolBarButtonIconStyle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
                 <ComboBox Width="80" 
@@ -692,10 +692,13 @@
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center">
                             <Image Source="{Binding PreviewManagement.CurrentPageImage}" 
-                                   Stretch="Uniform"
-                                   Width="{Binding PreviewManagement.PreviewWidth}"
-                                   Height="{Binding PreviewManagement.PreviewHeight}"
-                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                                   Stretch="None"
+                                   RenderOptions.BitmapScalingMode="HighQuality">
+                                <Image.LayoutTransform>
+                                    <ScaleTransform ScaleX="{Binding PreviewManagement.ZoomScale}" 
+                                                    ScaleY="{Binding PreviewManagement.ZoomScale}"/>
+                                </Image.LayoutTransform>
+                            </Image>
                         </Border>
                     </ScrollViewer>
 

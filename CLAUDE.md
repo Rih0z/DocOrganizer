@@ -5,7 +5,7 @@ ai_coding_principles:
   version: "3.0"
   last_updated: "2025-09-10"
   project: "DocOrganizer - CubePDF Utility互換 汎用PDF編集ツール"
-  current_version: "3.0.108"
+  current_version: "3.0.110"
 ```
 
 ## ⚠️ 必須宣言事項
@@ -133,6 +133,7 @@ release\run-production.bat  # 本番モード
 - [画像表示システム](docs/V3_ARCHITECTURE_IMAGE_DISPLAY.md)
 
 ### 最新実装
+- [ズーム機能バグ修正完全報告](docs/Zoom_Feature_Bug_Fix_Complete_Report_20250922.md)
 - [複数選択バグ修正完全報告](docs/Multiple_Selection_Bug_Fix_Complete_Project_Report_20250918.md)
 - [回転プレビュー同期完全修正](docs/Rotation_Preview_Complete_Fix_V3.0.101_Report_20250912.md)
 - [パフォーマンス最適化完全報告](docs/V3_Performance_Optimization_Complete_Report_20250911.md)
@@ -158,6 +159,7 @@ release\run-production.bat  # 本番モード
 
 | バージョン | 日付 | 主な変更 |
 |-----------|------|----------|
+| V3.0.110 | 2025-09-22 | ズーム機能完全修正・ScaleTransform実装でプレビュー拡大/縮小実現 |
 | V3.0.103 | 2025-09-18 | 複数選択バグ完全修正・ControlTemplate削除でCtrl/Shift選択実現 |
 | V3.0.102 | 2025-09-18 | 複数選択バグ修正試行・単一選択強制コード削除 |
 | V3.0.101 | 2025-09-12 | 回転プレビュー同期完全修正・forceUpdate時のPreviewImage再生成 |

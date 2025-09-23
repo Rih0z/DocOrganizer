@@ -21,6 +21,11 @@ namespace DocOrganizer.UI.ViewModels.V3
     /// </summary>
     public partial class PreviewManagementViewModel : ObservableObject
     {
+        // ズームコマンド（明示的実装）
+        public IRelayCommand ZoomInCommand { get; private set; }
+        public IRelayCommand ZoomOutCommand { get; private set; }
+        public IRelayCommand ZoomResetCommand { get; private set; }
+        public IRelayCommand FitToWindowCommand { get; private set; }
         private readonly IImageLoaderService _imageLoaderService;
         private readonly IDialogService _dialogService;
         private readonly ILogger<PreviewManagementViewModel> _logger;
@@ -41,6 +46,12 @@ namespace DocOrganizer.UI.ViewModels.V3
                 {
                     AppendDebugLogSync($"[Preview] Image dimensions: {bmp.PixelWidth}x{bmp.PixelHeight}");
                 }
+                
+                // コマンドの有効/無効状態を更新（重要）
+                ((RelayCommand?)ZoomInCommand)?.NotifyCanExecuteChanged();
+                ((RelayCommand?)ZoomOutCommand)?.NotifyCanExecuteChanged();
+                ((RelayCommand?)ZoomResetCommand)?.NotifyCanExecuteChanged();
+                ((RelayCommand?)FitToWindowCommand)?.NotifyCanExecuteChanged();
             }
             catch (Exception ex)
             {
@@ -48,16 +59,41 @@ namespace DocOrganizer.UI.ViewModels.V3
             }
         }
 
-        [ObservableProperty]
-        private double previewWidth = 800;
+        private double _previewWidth = 800;
+        public double PreviewWidth
+        {
+            get => _previewWidth;
+            set => SetProperty(ref _previewWidth, value);
+        }
 
-        [ObservableProperty]
-        private double previewHeight = 1000;
+        private double _previewHeight = 1000;
+        public double PreviewHeight
+        {
+            get => _previewHeight;
+            set => SetProperty(ref _previewHeight, value);
+        }
 
-        [ObservableProperty]
-        private string zoomLevel = "100%";
+        private double _zoomScale = 1.0;
+        public double ZoomScale
+        {
+            get => _zoomScale;
+            set => SetProperty(ref _zoomScale, value);
+        }
 
-        partial void OnZoomLevelChanged(string value)
+        private string _zoomLevel = "100%";
+        public string ZoomLevel
+        {
+            get => _zoomLevel;
+            set
+            {
+                if (SetProperty(ref _zoomLevel, value))
+                {
+                    OnZoomLevelChanged(value);
+                }
+            }
+        }
+
+        private void OnZoomLevelChanged(string value)
         {
             if (!string.IsNullOrEmpty(value) && value.EndsWith("%"))
             {
@@ -76,6 +112,15 @@ namespace DocOrganizer.UI.ViewModels.V3
 
         [ObservableProperty]
         private string emptyStateVisibility = "Visible";
+        // プレビュー状態の保持（WYSIWYG PDF出力用）
+        [ObservableProperty]
+        private bool isOriginalSize = false;
+
+        [ObservableProperty]
+        private double currentZoomPercentage = 100.0;
+
+        [ObservableProperty]
+        private System.Windows.Rect currentViewportRect;
 
         private V3PageViewModel? _selectedPage;
         private PdfDocument? _currentDocument;
@@ -92,6 +137,12 @@ namespace DocOrganizer.UI.ViewModels.V3
             _dialogService = dialogService;
             _logger = logger;
             _pdfEditorService = pdfEditorService;
+            
+            // コマンドを明示的に初期化（CommunityToolkit.Mvvmソースジェネレータ問題回避）
+            ZoomInCommand = new RelayCommand(ExecuteZoomIn, CanExecuteZoomIn);
+            ZoomOutCommand = new RelayCommand(ExecuteZoomOut, CanExecuteZoomOut);
+            ZoomResetCommand = new RelayCommand(ExecuteZoomReset);
+            FitToWindowCommand = new RelayCommand(ExecuteFitToWindow);
         }
 
         /// <summary>
@@ -143,7 +194,6 @@ namespace DocOrganizer.UI.ViewModels.V3
         /// <summary>
         /// ズームイン
         /// </summary>
-        [RelayCommand]
         private void ZoomIn()
         {
             var currentZoom = GetCurrentZoomPercentage();
@@ -154,7 +204,6 @@ namespace DocOrganizer.UI.ViewModels.V3
         /// <summary>
         /// ズームアウト
         /// </summary>
-        [RelayCommand]
         private void ZoomOut()
         {
             var currentZoom = GetCurrentZoomPercentage();
@@ -165,7 +214,6 @@ namespace DocOrganizer.UI.ViewModels.V3
         /// <summary>
         /// ウィンドウに合わせる
         /// </summary>
-        [RelayCommand]
         private void FitToWindow()
         {
             if (_selectedPage?.PreviewImage is System.Windows.Media.Imaging.BitmapImage bitmap)
@@ -178,12 +226,49 @@ namespace DocOrganizer.UI.ViewModels.V3
                 var scaleY = availableHeight / bitmap.PixelHeight;
                 var scale = Math.Min(scaleX, scaleY);
 
-                PreviewWidth = bitmap.PixelWidth * scale;
-                PreviewHeight = bitmap.PixelHeight * scale;
-
                 var zoomPercentage = scale * 100;
-                ZoomLevel = $"{zoomPercentage:F0}%";
+                ApplyZoom(zoomPercentage); // ApplyZoomを通してZoomScaleを設定
             }
+        }
+
+        // コマンド実行メソッド（CommunityToolkit.Mvvm問題回避）
+        private void ExecuteZoomIn()
+        {
+            ZoomIn();
+        }
+
+        private bool CanExecuteZoomIn()
+        {
+            // CurrentPageImageが存在し、ズームレベル500%未満の場合のみ有効
+            if (CurrentPageImage == null) return false;
+            
+            var currentZoom = GetCurrentZoomPercentage();
+            return currentZoom < 500;
+        }
+
+        private void ExecuteZoomOut()
+        {
+            ZoomOut();
+        }
+
+        private bool CanExecuteZoomOut()
+        {
+            // CurrentPageImageが存在し、ズームレベル25%より大きい場合のみ有効
+            if (CurrentPageImage == null) return false;
+            
+            var currentZoom = GetCurrentZoomPercentage();
+            return currentZoom > 25;
+        }
+
+        private void ExecuteZoomReset()
+        {
+            // 100%にリセット
+            ApplyZoom(100);
+        }
+
+        private void ExecuteFitToWindow()
+        {
+            FitToWindow();
         }
 
         // Private helper methods
@@ -486,8 +571,14 @@ namespace DocOrganizer.UI.ViewModels.V3
         {
             if (image is BitmapImage bitmapImage)
             {
+                // 画像の元のサイズは保存しておくが、実際のスケーリングはZoomScaleで制御
                 PreviewWidth = bitmapImage.PixelWidth;
                 PreviewHeight = bitmapImage.PixelHeight;
+                
+                // デフォルトで100%（スケール1.0）で表示
+                ZoomScale = 1.0;
+                ZoomLevel = "100%";
+                AppendDebugLogSync($"[UpdatePreviewSize] Original size: {PreviewWidth}x{PreviewHeight}");
             }
         }
 
@@ -509,14 +600,25 @@ namespace DocOrganizer.UI.ViewModels.V3
 
         private void ApplyZoom(double zoomPercentage)
         {
-            ZoomLevel = $"{zoomPercentage:F0}%";
-            
-            // ✅ プレビューエリアのズーム（CurrentPageImage使用）
-            if (CurrentPageImage is BitmapImage bitmap)
+            try
             {
+                ZoomLevel = $"{zoomPercentage:F0}%";
+                CurrentZoomPercentage = zoomPercentage;
+                
+                // ✅ ScaleTransform用のスケール値を設定
                 var scale = zoomPercentage / 100.0;
-                PreviewWidth = bitmap.PixelWidth * scale;
-                PreviewHeight = bitmap.PixelHeight * scale;
+                ZoomScale = scale;
+                
+                AppendDebugLogSync($"[Zoom] Applied: {zoomPercentage}%, Scale: {scale:F2}");
+                
+                // 100%を基準にoriginalSizeフラグを更新
+                IsOriginalSize = Math.Abs(zoomPercentage - 100.0) < 0.1;
+            }
+            catch (Exception ex)
+            {
+                AppendDebugLogSync($"[Zoom] Error in ApplyZoom: {ex.Message}");
+                // エラー時はデフォルトスケール
+                ZoomScale = 1.0;
             }
         }
 
@@ -524,6 +626,19 @@ namespace DocOrganizer.UI.ViewModels.V3
         public void SetCurrentDocument(PdfDocument? document)
         {
             _currentDocument = document;
+        }
+
+        /// <summary>
+        /// 現在のプレビュー状態を取得（WYSIWYG PDF出力用）
+        /// </summary>
+        public DocOrganizer.Application.Models.V3.PreviewState GetCurrentPreviewState()
+        {
+            return new DocOrganizer.Application.Models.V3.PreviewState
+            {
+                IsOriginalSize = IsOriginalSize,
+                CurrentZoomPercentage = CurrentZoomPercentage,
+                CurrentViewportRect = new System.Windows.Rect(CurrentViewportRect.X, CurrentViewportRect.Y, CurrentViewportRect.Width, CurrentViewportRect.Height)
+            };
         }
 
         public void ClearPreview()
