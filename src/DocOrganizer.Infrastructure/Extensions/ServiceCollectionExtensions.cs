@@ -53,11 +53,12 @@ namespace DocOrganizer.Infrastructure.Extensions
                 // マネージャー登録
                 services.AddScoped<IImageProcessingProviderManager, ImageProcessingProviderManager>();
                 
-                // 統合サービス登録
-                services.AddScoped<IThumbnailGeneratorService>(provider => 
+                // 統合サービス登録（V3.0.111: AutoCropService追加）
+                services.AddScoped<IThumbnailGeneratorService>(provider =>
                     new ThumbnailGeneratorService(
                         provider.GetRequiredService<IImageProcessingProviderManager>(),
-                        provider.GetRequiredService<ILogger<ThumbnailGeneratorService>>()));
+                        provider.GetRequiredService<ILogger<ThumbnailGeneratorService>>(),
+                        provider.GetService<IAutoCropService>())); // AutoCropServiceを追加
                         
                 services.AddScoped<IImageLoaderService>(provider => 
                     new ImageLoaderService(
@@ -78,6 +79,9 @@ namespace DocOrganizer.Infrastructure.Extensions
                 
                 // 🎯 PDFパフォーマンス監視サービス（V3.0.025）
                 services.AddScoped<PdfPerformanceMonitor>();
+
+                // 🎯 画像余白自動削除サービス（V3.0.111 - 余白は絶対に必要なし）
+                services.AddScoped<IAutoCropService, AutoCropService>();
 
                 extensionLogger.LogInformation("[V3_DI] ✅ 究極拡張可能アーキテクチャ統合完了!");
                 

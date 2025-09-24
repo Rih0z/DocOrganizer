@@ -24,11 +24,11 @@ namespace DocOrganizer.Core
         /// <summary>
         /// 現在のアプリケーションバージョン
         /// 形式: Major.Minor.Build (例: 3.0.031)
-        /// 
+        ///
         /// 【重要】このバージョン番号が全システムの基準となる
         /// ビルド時はこの値を基に他の全ファイルが自動更新される
         /// </summary>
-        public const string Version = "3.0.109";
+        public const string Version = "3.0.113";
         
         /// <summary>
         /// .NET AssemblyVersionで使用する4桁形式

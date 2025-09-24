@@ -550,6 +550,12 @@ namespace DocOrganizer.UI.ViewModels.V3
                 );
 
                 await AppendDebugLogAsync($"[SaveDocument] V3 ExportCurrentStateAsync開始");
+                
+                // WYSIWYG対応: プレビュー状態を取得（MainCompositeViewModelから）
+                DocOrganizer.Application.Models.V3.PreviewState? previewState = null;
+                // TODO: MainCompositeViewModelへの参照が必要な場合は、DIで注入する
+                // 現在は通常のエクスポートを使用
+                
                 var success = await _pdfExportService.ExportCurrentStateAsync(pageData, settings, filePath);
                 await AppendDebugLogAsync($"[SaveDocument] V3 ExportCurrentStateAsync結果: {success}");
                 

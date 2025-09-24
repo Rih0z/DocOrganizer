@@ -705,11 +705,36 @@ namespace DocOrganizer.UI.ViewModels.V3
                             PageIndex = Pages.IndexOf(p)
                         });
 
-                        var success = await _pdfExportService.ExportCurrentStateAsync(
-                            pageData, 
-                            SelectedQuality, 
-                            saveDialog.FileName
-                        );
+                        // WYSIWYG対応: プレビュー状態を取得
+                        DocOrganizer.Application.Models.V3.PreviewState? previewState = null;
+                        if (PreviewManagement != null)
+                        {
+                            previewState = PreviewManagement.GetCurrentPreviewState();
+                            await AppendDebugLogAsync($"[MainCompositeViewModel] プレビュー状態取得: IsOriginalSize={previewState?.IsOriginalSize}, Zoom={previewState?.CurrentZoomPercentage}%");
+                        }
+                        
+                        bool success;
+                        if (previewState != null)
+                        {
+                            // WYSIWYG PDF出力（プレビュー状態を反映）
+                            await AppendDebugLogAsync("[MainCompositeViewModel] WYSIWYG PDF出力を実行");
+                            success = await _pdfExportService.ExportCurrentStateAsync(
+                                pageData, 
+                                SelectedQuality, 
+                                saveDialog.FileName,
+                                previewState
+                            );
+                        }
+                        else
+                        {
+                            // 従来のPDF出力（互換性のため）
+                            await AppendDebugLogAsync("[MainCompositeViewModel] 従来のPDF出力を実行");
+                            success = await _pdfExportService.ExportCurrentStateAsync(
+                                pageData, 
+                                SelectedQuality, 
+                                saveDialog.FileName
+                            );
+                        }
 
                         if (success)
                         {

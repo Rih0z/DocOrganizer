@@ -19,13 +19,16 @@ namespace DocOrganizer.Infrastructure.Services.V3
     {
         private readonly IImageProcessingProviderManager _providerManager;
         private readonly ILogger<ThumbnailGeneratorService> _logger;
+        private readonly IAutoCropService _autoCropService;
 
         public ThumbnailGeneratorService(
             IImageProcessingProviderManager providerManager,
-            ILogger<ThumbnailGeneratorService> logger)
+            ILogger<ThumbnailGeneratorService> logger,
+            IAutoCropService autoCropService = null) // オプショナル（既存コードとの互換性）
         {
             _providerManager = providerManager;
             _logger = logger;
+            _autoCropService = autoCropService;
         }
 
         /// <summary>
@@ -49,51 +52,44 @@ namespace DocOrganizer.Infrastructure.Services.V3
         }
 
         /// <summary>
-        /// 右側プレビュー用高解像度画像生成
+        /// 右側プレビュー用高解像度画像生成（余白自動削除適用）
         /// </summary>
         public async Task<ImageSource> GenerateRightPreviewImageAsync(string filePath, int rotation = 0, int maxWidth = 1920, int maxHeight = 1080)
         {
             try
             {
-                _logger.LogDebug("[V3_Thumbnail] 右プレビュー用高解像度生成開始: {FileName}, 回転: {Rotation}度", 
+                _logger.LogDebug("[V3_Thumbnail] 右プレビュー用高解像度生成開始: {FileName}, 回転: {Rotation}度",
                     Path.GetFileName(filePath), rotation);
 
-                // A4比率計算（595:842 = 1:1.414）
-                const double A4_RATIO = 842.0 / 595.0;
-                
-                // 表示領域に合わせたA4サイズ計算
-                int targetWidth, targetHeight;
-                if (maxWidth * A4_RATIO <= maxHeight)
+                // プロバイダーで画像読み込み
+                var previewImage = await _providerManager.ProcessWithBestProvider(filePath,
+                    provider => provider.GeneratePreviewAsync(filePath, maxWidth, maxHeight));
+
+                // 🎯 V3.0.111: 余白自動削除を必ず適用（ユーザー要求：余白は絶対に必要なし）
+                if (_autoCropService != null && previewImage is BitmapSource bitmapSource)
                 {
-                    targetWidth = maxWidth;
-                    targetHeight = (int)(maxWidth * A4_RATIO);
-                }
-                else
-                {
-                    targetHeight = maxHeight;
-                    targetWidth = (int)(maxHeight / A4_RATIO);
+                    try
+                    {
+                        var croppedImage = await _autoCropService.AutoCropAsync(bitmapSource);
+                        _logger.LogDebug("[V3_Thumbnail] 余白削除適用完了");
+                        previewImage = croppedImage;
+                    }
+                    catch (Exception cropEx)
+                    {
+                        _logger.LogWarning(cropEx, "[V3_Thumbnail] 余白削除失敗、元画像を使用");
+                    }
                 }
 
-                _logger.LogDebug("[V3_Thumbnail] A4比率計算結果: {Width}x{Height}", targetWidth, targetHeight);
-
-                // 🎯 V3.0.109: A4比率に合わせたプレビュー生成
-                // プロバイダーに正確なA4サイズを渡す
-                var previewImage = await _providerManager.ProcessWithBestProvider(filePath, 
-                    provider => provider.GeneratePreviewAsync(filePath, targetWidth, targetHeight));
-                
-                // 画像をA4フレームに完全フィット（余白なし）
-                var fittedImage = await FitImageToA4FrameAsync(previewImage, targetWidth, targetHeight);
-                
                 // 🔧 回転適用（WPFのTransformedBitmapを使用）
-                if (rotation > 0 && fittedImage is BitmapSource bitmapSource)
+                if (rotation > 0 && previewImage is BitmapSource rotateSource)
                 {
                     var transform = new RotateTransform(rotation);
-                    var rotatedBitmap = new TransformedBitmap(bitmapSource, transform);
+                    var rotatedBitmap = new TransformedBitmap(rotateSource, transform);
                     rotatedBitmap.Freeze();
                     return rotatedBitmap;
                 }
-                
-                return fittedImage;
+
+                return previewImage;
             }
             catch (Exception ex)
             {

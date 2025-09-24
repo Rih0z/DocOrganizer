@@ -34,6 +34,21 @@ public interface IPdfExportService
     );
 
     /// <summary>
+    /// WYSIWYG対応 - プレビュー状態を反映したPDF出力
+    /// </summary>
+    /// <param name="pageData">出力対象のページデータ一覧</param>
+    /// <param name="qualitySettings">画質設定</param>
+    /// <param name="outputPath">出力先パス</param>
+    /// <param name="previewState">プレビューの表示状態</param>
+    /// <returns>出力成功可否</returns>
+    Task<bool> ExportCurrentStateAsync(
+        IEnumerable<PdfExportPageData> pageData, 
+        PdfQualitySettings qualitySettings,
+        string outputPath,
+        DocOrganizer.Application.Models.V3.PreviewState previewState
+    );
+
+    /// <summary>
     /// ページ状態を考慮した画像処理
     /// </summary>
     /// <param name="pageData">対象ページデータ</param>
