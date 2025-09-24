@@ -297,10 +297,11 @@ public class PdfExportService : IPdfExportService
                 }
                 else
                 {
-                    // A4フィット
+                    // 🎯 V3.0.114: A4フィット時も画像の向きに応じてページ向きを決定
+                    var orientation = DeterminePageOrientation(imageWidth, imageHeight);
+                    page.Orientation = orientation;
                     page.Size = PdfSharp.PageSize.A4;
-                    page.Orientation = PdfSharp.PageOrientation.Portrait;
-                    await AppendDebugLogAsync($"[ProcessPageWithPreviewState] A4フィットモード: {page.Width}pt x {page.Height}pt");
+                    await AppendDebugLogAsync($"[ProcessPageWithPreviewState] A4フィットモード: {page.Width}pt x {page.Height}pt, 向き: {orientation}");
                 }
 
                 // XGraphicsを作成
@@ -438,7 +439,7 @@ public class PdfExportService : IPdfExportService
         try
         {
             await AppendDebugLogAsync($"[ProcessPageToPdfAsync] 開始: {pageData.ImagePath}");
-            
+
             // 画像データを処理
             var imageBytes = await ProcessPageImageAsync(pageData, qualitySettings);
             await AppendDebugLogAsync($"[ProcessPageToPdfAsync] 画像処理完了: {imageBytes.Length}バイト");
@@ -451,10 +452,14 @@ public class PdfExportService : IPdfExportService
             var imageWidthInPoints = tempImage.PixelWidth * 72.0 / 96.0; // 96 DPIを72ポイントに変換
             var imageHeightInPoints = tempImage.PixelHeight * 72.0 / 96.0;
 
+            // 🎯 V3.0.114: 画像の向きに応じてページ向きを動的に決定（情報削除問題の根本解決）
+            var orientation = DeterminePageOrientation(tempImage.PixelWidth, tempImage.PixelHeight);
+            page.Orientation = orientation;
+            await AppendDebugLogAsync($"[ProcessPageToPdfAsync] ページ向き決定: {orientation} (画像サイズ: {tempImage.PixelWidth}x{tempImage.PixelHeight})");
+
             // ページサイズを画像サイズに完全一致させる（余白完全排除）
             page.Width = XUnit.FromPoint(imageWidthInPoints);
             page.Height = XUnit.FromPoint(imageHeightInPoints);
-            page.Orientation = PdfSharp.PageOrientation.Portrait;
             
             await AppendDebugLogAsync($"[ProcessPageToPdfAsync] PDFページ作成完了: {page.Width}pt x {page.Height}pt");
 
@@ -584,11 +589,45 @@ public class PdfExportService : IPdfExportService
     }
 
     /// <summary>
+    /// 画像サイズに基づいてPDFページの向きを動的に決定
+    /// </summary>
+    /// <param name="imageWidth">画像の幅（ピクセル）</param>
+    /// <param name="imageHeight">画像の高さ（ピクセル）</param>
+    /// <returns>PDFページの向き</returns>
+    private PdfSharp.PageOrientation DeterminePageOrientation(int imageWidth, int imageHeight)
+    {
+        // 横長画像（Width > Height）→ Landscape（横向き）
+        // 縦長・正方形画像（Width <= Height）→ Portrait（縦向き）
+        var orientation = imageWidth > imageHeight
+            ? PdfSharp.PageOrientation.Landscape
+            : PdfSharp.PageOrientation.Portrait;
+
+        AppendDebugLogSync($"[DeterminePageOrientation] 画像: {imageWidth}x{imageHeight} → 向き: {orientation}");
+        return orientation;
+    }
+
+    /// <summary>
     /// HEIC形式のファイルかどうかを判定
     /// </summary>
     private static bool IsHeicFile(string filePath)
     {
         var extension = Path.GetExtension(filePath).ToLowerInvariant();
         return extension == ".heic" || extension == ".heif";
+    }
+
+    /// <summary>
+    /// 同期的にデバッグログを出力（DeterminePageOrientation内で使用）
+    /// </summary>
+    private void AppendDebugLogSync(string message)
+    {
+        try
+        {
+            // 非同期メソッドを同期的に実行（内部処理でのみ使用）
+            Task.Run(async () => await AppendDebugLogAsync(message));
+        }
+        catch
+        {
+            // ログ出力エラーは無視
+        }
     }
 }

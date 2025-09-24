@@ -5,7 +5,7 @@ ai_coding_principles:
   version: "3.0"
   last_updated: "2025-09-23"
   project: "DocOrganizer - CubePDF Utility互換 汎用PDF編集ツール"
-  current_version: "3.0.113"
+  current_version: "3.0.114"
 ```
 
 ## ⚠️ 必須宣言事項
@@ -159,6 +159,7 @@ release\run-production.bat  # 本番モード
 
 | バージョン | 日付 | 主な変更 |
 |-----------|------|----------|
+| V3.0.114 | 2025-09-23 | 横向き画像PDF出力修正・画像の向きに応じてページ向き自動決定（情報削除防止） |
 | V3.0.113 | 2025-09-23 | PDFページサイズを画像サイズに完全一致・A4固定を廃止し余白完全排除 |
 | V3.0.112 | 2025-09-23 | PDF出力余白完全削除・CalculateDrawingRectangle修正でWYSIWYG実現（プレビューとPDF完全一致） |
 | V3.0.111 | 2025-09-23 | 画像余白自動削除機能実装・Magick.NET Trim()で可視域最大化（余白は絶対に必要なし） |
