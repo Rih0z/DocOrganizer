@@ -169,6 +169,31 @@ namespace DocOrganizer.UI.Views
                 };
             }
             
+            // V3.0.115: PageOperationViewModelに選択同期アクションを登録
+            if (V3ViewModel?.PageOperation != null)
+            {
+                V3ViewModel.PageOperation.SetSyncSelectionAction(
+                    syncAction: () => SyncSelectionFromViewModel(),
+                    disableEvents: () => 
+                    {
+                        if (PageListBox != null)
+                        {
+                            PageListBox.SelectionChanged -= PageListBox_SelectionChanged;
+                            System.Diagnostics.Debug.WriteLine("[MainWindow] SelectionChanged event DISABLED");
+                        }
+                    },
+                    enableEvents: () => 
+                    {
+                        if (PageListBox != null)
+                        {
+                            PageListBox.SelectionChanged += PageListBox_SelectionChanged;
+                            System.Diagnostics.Debug.WriteLine("[MainWindow] SelectionChanged event ENABLED");
+                        }
+                    }
+                );
+                System.Diagnostics.Debug.WriteLine("[MainWindow] SyncSelectionAction registered with event control");
+            }
+            
             if (PageListBox != null)
             {
                 System.Diagnostics.Debug.WriteLine("[MainWindow] PageListBox found and configured");
@@ -680,19 +705,19 @@ namespace DocOrganizer.UI.Views
         #region Helper Methods
         
         // ViewModelの選択状態をListBoxに反映するヘルパーメソッド
+        // ViewModelの選択状態をListBoxに反映するヘルパーメソッド
         public void SyncSelectionFromViewModel()
         {
             if (PageListBox != null && V3ViewModel?.PageOperation?.Pages != null)
             {
-                PageListBox.SelectionChanged -= PageListBox_SelectionChanged; // 一時的にイベントを無効化
+                // V3.0.115: イベント制御は呼び出し側（RefreshPageListWithSelection）で実施
+                // ここではイベント制御を行わず、純粋に選択同期のみ実行
                 
                 PageListBox.SelectedItems.Clear();
                 foreach (var page in V3ViewModel.PageOperation.Pages.Where(p => p.IsSelected))
                 {
                     PageListBox.SelectedItems.Add(page);
                 }
-                
-                PageListBox.SelectionChanged += PageListBox_SelectionChanged; // イベントを再有効化
                 
                 System.Diagnostics.Debug.WriteLine($"[SyncSelectionFromViewModel] ListBox選択同期完了: {PageListBox.SelectedItems.Count}ページ");
             }

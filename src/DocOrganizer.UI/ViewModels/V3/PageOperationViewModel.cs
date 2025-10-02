@@ -27,6 +27,9 @@ namespace DocOrganizer.UI.ViewModels.V3
         private readonly IUndoRedoService _undoRedoService;
         private readonly IThumbnailGeneratorService _thumbnailService;
         private bool _isMovingPage = false;  // 再入防止フラグ
+        private Action? _syncSelectionToView;  // V3.0.115: View選択状態同期用コールバック
+        private Action? _disableSelectionEvents;  // V3.0.115: SelectionChangedイベント無効化用
+        private Action? _enableSelectionEvents;   // V3.0.115: SelectionChangedイベント再有効化用
 
         [ObservableProperty]
         private ObservableCollection<V3PageViewModel> pages = new();
@@ -871,6 +874,22 @@ F11: フルスクリーン
             _currentDocument = document;
             UpdateSelectionState();
         }
+
+        /// <summary>
+        /// V3.0.115: View選択状態同期アクションを設定
+        /// MainWindow.xaml.csのSyncSelectionFromViewModelを呼び出すためのコールバック
+        /// </summary>
+        /// <summary>
+        /// V3.0.115: View選択状態同期アクションを設定
+        /// MainWindow.xaml.csのSyncSelectionFromViewModelを呼び出すためのコールバック
+        /// </summary>
+        public void SetSyncSelectionAction(Action syncAction, Action disableEvents, Action enableEvents)
+        {
+            _syncSelectionToView = syncAction;
+            _disableSelectionEvents = disableEvents;
+            _enableSelectionEvents = enableEvents;
+            DebugLogger.Log("[PageOperationViewModel] SyncSelectionAction registered with event control");
+        }
         
         /// <summary>
         /// ドキュメントからページリストを再読み込み（Undo/Redo後に使用）
@@ -959,6 +978,9 @@ F11: フルスクリーン
             
             DebugLogger.Log($"[RefreshPageListWithSelection] 開始: 選択ID数={selectedIds?.Count ?? 0}, 既存VM数={Pages.Count}, 新規ページ数={_currentDocument.Pages.Count}");
             
+            // V3.0.115: Pages.Clear()によるSelectionChangedイベント発火を防ぐため、イベントを一時無効化
+            _disableSelectionEvents?.Invoke();
+            
             // 既存のPageViewModelをIDでマッピング
             var existingPageVms = Pages.ToDictionary(vm => vm.Id);
             
@@ -1008,6 +1030,17 @@ F11: フルスクリーン
             
             UpdatePageNumbers();
             UpdateSelectionState();
+            
+            // V3.0.115: View層の選択状態を同期（イベント無効化状態で実行）
+            _syncSelectionToView?.Invoke();
+            
+            // V3.0.115: UI更新完了を待機してからイベントを再有効化
+            // WPFのDispatcher経由で次のUIサイクルまで待機し、遅延SelectionChangedを防ぐ
+            System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
+            {
+                _enableSelectionEvents?.Invoke();
+                DebugLogger.Log("[RefreshPageListWithSelection] イベント再有効化完了（Dispatcher経由）");
+            }, System.Windows.Threading.DispatcherPriority.Loaded);
             
             DebugLogger.Log($"[RefreshPageListWithSelection] 完了: 最終VM数={Pages.Count}, 選択数={Pages.Count(p => p.IsSelected)}");
             
