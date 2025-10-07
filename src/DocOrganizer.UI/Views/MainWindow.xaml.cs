@@ -590,24 +590,14 @@ namespace DocOrganizer.UI.Views
                 {
                     System.Diagnostics.Debug.WriteLine($"[PageListBox_SelectionChanged] ListBox found, SelectedItems.Count: {listBox.SelectedItems.Count}");
                     
-                    // 🔧 複数選択対応: ListBoxの選択状態をViewModelに同期
-                    if (V3ViewModel?.PageOperation?.Pages != null)
+                    // 🎯 V3.0.121: 二重バインディング防止 - 手動同期ループを完全削除
+                    // TwoWayBindingが既に同期を保証しているため、手動同期は不要かつ有害
+                    
+                    // ✅ 選択状態の変更を通知（ボタン有効化等のUI更新用）
+                    if (V3ViewModel?.PageOperation != null)
                     {
-                        // 全ページの選択状態を更新
-                        foreach (V3PageViewModel page in V3ViewModel.PageOperation.Pages)
-                        {
-                            bool shouldBeSelected = listBox.SelectedItems.Contains(page);
-                            if (page.IsSelected != shouldBeSelected)
-                            {
-                                page.IsSelected = shouldBeSelected;
-                                System.Diagnostics.Debug.WriteLine($"[複数選択] Page {page.PageNumber}: IsSelected = {shouldBeSelected}");
-                            }
-                        }
-                        
-                        // 選択状態の更新を通知
                         V3ViewModel.PageOperation.NotifyPageSelectionChanged();
-                        
-                        System.Diagnostics.Debug.WriteLine($"[複数選択] 選択ページ数: {listBox.SelectedItems.Count}");
+                        System.Diagnostics.Debug.WriteLine($"[PageListBox_SelectionChanged] 選択ページ数: {listBox.SelectedItems.Count}");
                     }
                     
                     // 単一選択時のプレビュー更新（最初の選択ページ）

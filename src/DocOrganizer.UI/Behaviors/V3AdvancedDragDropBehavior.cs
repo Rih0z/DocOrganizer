@@ -127,15 +127,16 @@ namespace DocOrganizer.UI.Behaviors
                 if ((bool)e.NewValue)
                 {
                     element.MouseMove += OnMouseMove;
+                    // 🆕 V3.0.117: MouseLeftButtonDownを使用（ListBoxの選択処理後に実行）
                     element.MouseLeftButtonDown += OnMouseLeftButtonDown;
-                    element.GiveFeedback += OnGiveFeedback; // 🎯 V3.0.024: 視覚フィードバック追加
+                    element.GiveFeedback += OnGiveFeedback;
                     _ = AppendDebugLogAsync($"[OnIsDragSourceChanged] ドラッグソース有効化: {element.GetType().Name} - DataContext: {element.DataContext?.GetType().Name ?? "null"}");
                 }
                 else
                 {
                     element.MouseMove -= OnMouseMove;
                     element.MouseLeftButtonDown -= OnMouseLeftButtonDown;
-                    element.GiveFeedback -= OnGiveFeedback; // 🎯 V3.0.024: 視覚フィードバック削除
+                    element.GiveFeedback -= OnGiveFeedback;
                     _ = AppendDebugLogAsync($"[OnIsDragSourceChanged] ドラッグソース無効化: {element.GetType().Name}");
                 }
             }
@@ -177,10 +178,13 @@ namespace DocOrganizer.UI.Behaviors
 
         private static void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            // 🆕 V3.0.120: シンプルなドラッグ開始点記録のみ
+            // ListBoxの標準選択メカニズムに一切干渉しない
             _dragStartPoint = e.GetPosition(null);
             _isDragging = false;
-            _ = AppendDebugLogAsync($"[OnMouseLeftButtonDown] ドラッグ開始点設定 - sender: {sender?.GetType().Name}, Position: X={_dragStartPoint.X:F1}, Y={_dragStartPoint.Y:F1}");
+            _ = AppendDebugLogAsync($"[OnMouseLeftButtonDown] ドラッグ開始点記録 - Position: X={_dragStartPoint.X:F1}, Y={_dragStartPoint.Y:F1}");
         }
+
 
         private static async void OnMouseMove(object sender, MouseEventArgs e)
         {

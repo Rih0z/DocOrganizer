@@ -3,9 +3,9 @@
 ```yaml
 ai_coding_principles:
   version: "3.0"
-  last_updated: "2025-09-23"
+  last_updated: "2025-10-06"
   project: "DocOrganizer - CubePDF Utility互換 汎用PDF編集ツール"
-  current_version: "3.0.114"
+  current_version: "3.0.123"
 ```
 
 ## ⚠️ 必須宣言事項
@@ -101,7 +101,7 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 ## ⚡ クイックリファレンス
 
 ### 現在の情報
-- **バージョン**: V3.0.100
+- **バージョン**: V3.0.123
 - **GitHub**: https://github.com/Rih0z/DocOrganizer
 - **デフォルトEXE**: `C:\Users\217216X721451\github\DocOrganizer\release-debug\DocOrganizer.exe`
 - **リリースEXE**: `C:\Users\217216X721451\github\DocOrganizer\release\DocOrganizer.exe`（明示的指示時）
@@ -159,6 +159,14 @@ release\run-production.bat  # 本番モード
 
 | バージョン | 日付 | 主な変更 |
 |-----------|------|----------|
+| V3.0.123 | 2025-10-06 | 複数選択移動バグ完全修正・相対位置保持ロジック削除/処理順序最適化でV3.0.117機能実現 |
+| V3.0.122 | 2025-10-06 | 複数選択時上下移動ボタン有効化・V3.0.117実装のUI制御修正 |
+| V3.0.121 | 2025-10-06 | 複数選択完全修正・二重バインディングループ削除で3枚以上選択安定化 |
+| V3.0.120 | 2025-10-02 | 複数選択修正V2・干渉ゼロのシンプルロジックで標準選択メカニズム完全保持 |
+| V3.0.119 | 2025-10-02 | ❌失敗: Ctrl/Shift早期リターンで複数選択機能自体が破壊 |
+| V3.0.118 | 2025-10-02 | ❌失敗: ListBoxItemレベルBehaviorで選択完全破壊（緊急ロールバック実施） |
+| V3.0.117 | 2025-10-02 | 複数選択一括移動完全実装・上下移動ボタン複数対応/ドラッグ時選択保護 |
+| V3.0.116 | 2025-10-02 | 複数ページドラッグ&ドロップ実装・V3DragInfo複数選択対応 |
 | V3.0.114 | 2025-09-23 | 横向き画像PDF出力修正・画像の向きに応じてページ向き自動決定（情報削除防止） |
 | V3.0.113 | 2025-09-23 | PDFページサイズを画像サイズに完全一致・A4固定を廃止し余白完全排除 |
 | V3.0.112 | 2025-09-23 | PDF出力余白完全削除・CalculateDrawingRectangle修正でWYSIWYG実現（プレビューとPDF完全一致） |

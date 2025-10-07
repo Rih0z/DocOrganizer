@@ -98,11 +98,23 @@ namespace DocOrganizer.Core.Commands
         /// </summary>
         public void Execute()
         {
-            // 移動操作を実行（新しい位置順でソートして処理）
-            foreach (var moveInfo in _moveInfo.OrderBy(m => m.NewPosition))
+            // 🎯 V3.0.123: 複数ページ移動時の位置ズレ修正
+            // 移動方向を判定し、適切な順序で処理
+            if (!_moveInfo.Any()) return;
+
+            // 移動方向を判定（上移動 or 下移動）
+            bool isMovingDown = _moveInfo.First().NewPosition > _moveInfo.First().OriginalPosition;
+
+            // 下移動: 後ろから処理（降順） - 前のページに影響しない
+            // 上移動: 前から処理（昇順） - 後ろのページに影響しない
+            var sortedMoves = isMovingDown
+                ? _moveInfo.OrderByDescending(m => m.OriginalPosition).ToList()
+                : _moveInfo.OrderBy(m => m.OriginalPosition).ToList();
+
+            foreach (var moveInfo in sortedMoves)
             {
                 var currentIndex = Array.IndexOf(_document.Pages.ToArray(), moveInfo.Page);
-                if (currentIndex >= 0 && currentIndex != moveInfo.NewPosition)
+                if (currentIndex >= 0)
                 {
                     // PDF文書の標準メソッドを使用してページを移動
                     _document.MovePage(currentIndex, moveInfo.NewPosition);
@@ -118,11 +130,21 @@ namespace DocOrganizer.Core.Commands
         /// </summary>
         public void Undo()
         {
-            // 元の位置に復元（元の位置順でソートして処理）
-            foreach (var moveInfo in _moveInfo.OrderBy(m => m.OriginalPosition))
+            // 🎯 V3.0.123: Undo時も適切な順序で処理
+            if (!_moveInfo.Any()) return;
+
+            // Undoは元の位置に戻すので、Execute()と逆の順序
+            // Execute()が下移動（降順）だった場合、Undoは昇順
+            bool wasMovingDown = _moveInfo.First().NewPosition > _moveInfo.First().OriginalPosition;
+
+            var sortedMoves = wasMovingDown
+                ? _moveInfo.OrderBy(m => m.OriginalPosition).ToList()
+                : _moveInfo.OrderByDescending(m => m.OriginalPosition).ToList();
+
+            foreach (var moveInfo in sortedMoves)
             {
                 var currentIndex = Array.IndexOf(_document.Pages.ToArray(), moveInfo.Page);
-                if (currentIndex >= 0 && currentIndex != moveInfo.OriginalPosition)
+                if (currentIndex >= 0)
                 {
                     // PDF文書の標準メソッドを使用してページを元の位置に移動
                     _document.MovePage(currentIndex, moveInfo.OriginalPosition);

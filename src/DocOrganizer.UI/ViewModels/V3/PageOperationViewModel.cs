@@ -379,41 +379,63 @@ F11: フルスクリーン
                 return;
             }
             
-            // 最初の選択ページを取得
-            var selectedPage = Pages.FirstOrDefault(p => p.IsSelected);
-            if (selectedPage == null)
+            // 🆕 V3.0.117: 全ての選択ページを取得（インデックス順）
+            var selectedPages = Pages.Where(p => p.IsSelected)
+                                     .OrderBy(p => Pages.IndexOf(p))
+                                     .ToList();
+
+            if (!selectedPages.Any())
             {
                 return;
             }
 
-            var currentIndex = Pages.IndexOf(selectedPage);
-            
-            if (currentIndex <= 0) 
+            // 🆕 V3.0.117: 選択状態を保存（V3.0.115パターン）
+            var selectedPageIds = selectedPages.Select(p => p.Id).ToHashSet();
+
+            // 🆕 V3.0.117: 各ページの移動先を計算
+            var pageMoves = new List<(PdfPage page, int newPosition)>();
+            for (int i = 0; i < selectedPages.Count; i++)
             {
-                await AppendDebugLogAsync($"[MovePageUp] Cannot move up - already at top or not found");
+                var page = selectedPages[i];
+                int currentIndex = Pages.IndexOf(page);
+
+                // 先頭ページは移動できない
+                if (currentIndex == 0)
+                    continue;
+
+                int newPosition = currentIndex - 1;
+
+                // 🎯 V3.0.123: 相対位置保持ロジック削除
+                // 全ての選択ページを移動対象に追加（MovePagesCommandで処理）
+
+                pageMoves.Add((page.Page, newPosition));
+            }
+
+            // 移動するページがない場合は終了
+            if (!pageMoves.Any())
+            {
+                StatusMessage = "これ以上上に移動できません";
+                await AppendDebugLogAsync("[MovePageUp] Cannot move up - already at top");
                 return;
             }
 
-            // MovePagesCommandを作成して実行
+            // 🆕 V3.0.117: 複数ページ用コンストラクタ使用
             var command = new MovePagesCommand(
                 _currentDocument,
-                selectedPage.Page,
-                currentIndex - 1,
+                pageMoves,
                 () => {
-                    RefreshPageList();
+                    // V3.0.115: 選択状態を保持してリフレッシュ
+                    RefreshPageListWithSelection(selectedPageIds);
                     PagesChanged?.Invoke(this, EventArgs.Empty);
                 }
             );
             
             _undoRedoService.Execute(command);
-            StatusMessage = $"ページ {selectedPage.PageNumber} を上に移動しました";
+            StatusMessage = selectedPages.Count == 1 
+                ? $"ページ {selectedPages[0].PageNumber} を上に移動しました"
+                : $"{selectedPages.Count}ページを上に移動しました";
             
-            // 選択状態を復元
-            if (currentIndex - 1 < Pages.Count)
-            {
-                Pages[currentIndex - 1].IsSelected = true;
-            }
-            UpdateSelectionState();
+            await AppendDebugLogAsync($"[MovePageUp] Moved {selectedPages.Count} page(s) up");
         }
 
         /// <summary>
@@ -428,41 +450,63 @@ F11: フルスクリーン
                 return;
             }
             
-            // 最初の選択ページを取得
-            var selectedPage = Pages.FirstOrDefault(p => p.IsSelected);
-            if (selectedPage == null)
+            // 🆕 V3.0.117: 全ての選択ページを取得（インデックス降順）
+            var selectedPages = Pages.Where(p => p.IsSelected)
+                                     .OrderByDescending(p => Pages.IndexOf(p))
+                                     .ToList();
+
+            if (!selectedPages.Any())
             {
                 return;
             }
 
-            var currentIndex = Pages.IndexOf(selectedPage);
-            
-            if (currentIndex >= Pages.Count - 1 || currentIndex < 0) 
+            // 🆕 V3.0.117: 選択状態を保存（V3.0.115パターン）
+            var selectedPageIds = selectedPages.Select(p => p.Id).ToHashSet();
+
+            // 🆕 V3.0.117: 各ページの移動先を計算（下から処理）
+            var pageMoves = new List<(PdfPage page, int newPosition)>();
+            for (int i = 0; i < selectedPages.Count; i++)
             {
-                await AppendDebugLogAsync($"[MovePageDown] Cannot move down - already at bottom or not found");
+                var page = selectedPages[i];
+                int currentIndex = Pages.IndexOf(page);
+
+                // 末尾ページは移動できない
+                if (currentIndex >= Pages.Count - 1)
+                    continue;
+
+                int newPosition = currentIndex + 1;
+
+                // 🎯 V3.0.123: 相対位置保持ロジック削除
+                // 全ての選択ページを移動対象に追加（MovePagesCommandで処理）
+
+                pageMoves.Add((page.Page, newPosition));
+            }
+
+            // 移動するページがない場合は終了
+            if (!pageMoves.Any())
+            {
+                StatusMessage = "これ以上下に移動できません";
+                await AppendDebugLogAsync("[MovePageDown] Cannot move down - already at bottom");
                 return;
             }
 
-            // MovePagesCommandを作成して実行
+            // 🆕 V3.0.117: 複数ページ用コンストラクタ使用
             var command = new MovePagesCommand(
                 _currentDocument,
-                selectedPage.Page,
-                currentIndex + 1,
+                pageMoves,
                 () => {
-                    RefreshPageList();
+                    // V3.0.115: 選択状態を保持してリフレッシュ
+                    RefreshPageListWithSelection(selectedPageIds);
                     PagesChanged?.Invoke(this, EventArgs.Empty);
                 }
             );
             
             _undoRedoService.Execute(command);
-            StatusMessage = $"ページ {selectedPage.PageNumber} を下に移動しました";
+            StatusMessage = selectedPages.Count == 1 
+                ? $"ページ {selectedPages[0].PageNumber} を下に移動しました"
+                : $"{selectedPages.Count}ページを下に移動しました";
             
-            // 選択状態を復元
-            if (currentIndex + 1 < Pages.Count)
-            {
-                Pages[currentIndex + 1].IsSelected = true;
-            }
-            UpdateSelectionState();
+            await AppendDebugLogAsync($"[MovePageDown] Moved {selectedPages.Count} page(s) down");
         }
 
         /// <summary>
@@ -815,29 +859,27 @@ F11: フルスクリーン
             
             System.Diagnostics.Debug.WriteLine($"[UpdateSelectionState] SelectedCount: {selectedCount}, HasSelectedPages: {HasSelectedPages}, IsAllPagesSelected: {IsAllPagesSelected}");
 
-            // 移動可能性を判定
-            if (selectedCount == 1)
+            // 🎯 V3.0.122: 複数選択時も上下移動ボタン有効化
+            // V3.0.117でMovePageUpAsync/Downは既に複数対応済み
+            if (selectedCount >= 1)
             {
-                var selectedPage = Pages.FirstOrDefault(p => p.IsSelected);
-                if (selectedPage != null)
-                {
-                    var selectedIndex = Pages.IndexOf(selectedPage);
-                    var oldCanMoveUp = CanMoveUp;
-                    var oldCanMoveDown = CanMoveDown;
-                    
-                    CanMoveUp = selectedIndex > 0;
-                    CanMoveDown = selectedIndex < Pages.Count - 1;
-                    
-                    System.Diagnostics.Debug.WriteLine($"[UpdateSelectionState] SelectedIndex: {selectedIndex}, CanMoveUp: {oldCanMoveUp} -> {CanMoveUp}, CanMoveDown: {oldCanMoveDown} -> {CanMoveDown}, PagesCount: {Pages.Count}");
-                }
+                var selectedPages = Pages.Where(p => p.IsSelected).ToList();
+
+                // 最小インデックスが0より大きければ上移動可能
+                var minIndex = selectedPages.Min(p => Pages.IndexOf(p));
+                CanMoveUp = minIndex > 0;
+
+                // 最大インデックスが末尾より小さければ下移動可能
+                var maxIndex = selectedPages.Max(p => Pages.IndexOf(p));
+                CanMoveDown = maxIndex < Pages.Count - 1;
+                
+                System.Diagnostics.Debug.WriteLine($"[UpdateSelectionState] SelectedCount: {selectedCount}, MinIndex: {minIndex}, MaxIndex: {maxIndex}, CanMoveUp: {CanMoveUp}, CanMoveDown: {CanMoveDown}");
             }
             else
             {
-                var oldCanMoveUp = CanMoveUp;
-                var oldCanMoveDown = CanMoveDown;
                 CanMoveUp = false;
                 CanMoveDown = false;
-                System.Diagnostics.Debug.WriteLine($"[UpdateSelectionState] Multiple or no selection - CanMoveUp: {oldCanMoveUp} -> false, CanMoveDown: {oldCanMoveDown} -> false");
+                System.Diagnostics.Debug.WriteLine("[UpdateSelectionState] No selection - CanMoveUp/Down = false");
             }
 
             // Force command state refresh

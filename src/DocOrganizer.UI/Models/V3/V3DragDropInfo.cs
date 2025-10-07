@@ -259,6 +259,9 @@ namespace DocOrganizer.UI.Models.V3
         public object SourceItem { get; private set; }
         public MouseEventArgs MouseEventArgs { get; private set; }
 
+        // 🆕 V3.0.116: 複数選択対応プロパティ
+        public List<object>? SelectedItems { get; private set; }
+
         public V3DragInfo(FrameworkElement sourceElement, MouseEventArgs mouseEventArgs)
         {
             SourceElement = sourceElement;
@@ -270,6 +273,13 @@ namespace DocOrganizer.UI.Models.V3
             {
                 // ListBoxItemの場合は直接DataContextを使用
                 SourceItem = listBoxItem.DataContext;
+                
+                // 🆕 V3.0.116: 親ListBoxから複数選択を取得
+                var listBox = FindAncestor<ListBox>(listBoxItem);
+                if (listBox != null && listBox.SelectedItems.Count > 0)
+                {
+                    SelectedItems = listBox.SelectedItems.Cast<object>().ToList();
+                }
             }
             else if (sourceElement is ListBox listBox)
             {
@@ -295,11 +305,31 @@ namespace DocOrganizer.UI.Models.V3
                 {
                     SourceItem = sourceElement.DataContext;
                 }
+                
+                // 🆕 V3.0.116: 複数選択を取得
+                if (listBox.SelectedItems.Count > 0)
+                {
+                    SelectedItems = listBox.SelectedItems.Cast<object>().ToList();
+                }
             }
             else
             {
                 SourceItem = sourceElement.DataContext;
             }
+        }
+
+        /// <summary>
+        /// 🆕 V3.0.116: ビジュアルツリーから祖先要素を検索
+        /// </summary>
+        private static T? FindAncestor<T>(DependencyObject current) where T : DependencyObject
+        {
+            while (current != null)
+            {
+                if (current is T ancestor)
+                    return ancestor;
+                current = VisualTreeHelper.GetParent(current);
+            }
+            return null;
         }
     }
 

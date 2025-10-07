@@ -9,6 +9,7 @@ using CommunityToolkit.Mvvm.Input;
 using DocOrganizer.Application.Interfaces;
 using DocOrganizer.Application.Interfaces.V3;
 using DocOrganizer.Core.Models;
+using DocOrganizer.UI.Models.V3;
 
 namespace DocOrganizer.UI.ViewModels.V3
 {
@@ -21,7 +22,8 @@ namespace DocOrganizer.UI.ViewModels.V3
     public partial class DragDropHandlerViewModel : ObservableObject, IAdvancedDropHandler, IAdvancedDragHandler
     {
         // 🎯 V3.0.019: 静的キャッシュによる安全なドラッグ&ドロップ実装
-        private static readonly Dictionary<string, V3PageViewModel> _dragCache = new();
+        // 🎯 V3.0.116: 複数ページ対応 - object型でV3PageViewModelまたはList<V3PageViewModel>を格納
+        private static readonly Dictionary<string, object> _dragCache = new();
         private static readonly Timer _cacheCleanupTimer = new Timer(CleanupExpiredCache, null, 
             TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5));
         
@@ -150,14 +152,44 @@ namespace DocOrganizer.UI.ViewModels.V3
                     {
                         await AppendDebugLogAsync($"[DropAsync] Text形式検出 - DragID: {dragId}");
                         
-                        if (_dragCache.TryGetValue(dragId, out var pageViewModel))
+                        if (_dragCache.TryGetValue(dragId, out var cachedItem))
                         {
-                            await AppendDebugLogAsync($"[DropAsync] ✅ サムネイル並び替え検出 - Page: {pageViewModel.PageNumber}, InsertIndex: {dropInfo.InsertIndex}");
-                            
-                            try
+                            // 🆕 V3.0.116: 複数ページ対応
+                            if (cachedItem is List<V3PageViewModel> pageList)
                             {
-                                // 🎯 V3.0.021: InsertIndex活用の並び替え処理
-                                await HandlePageReorderWithInsertIndex(pageViewModel, dropInfo.InsertIndex);
+                                await AppendDebugLogAsync($"[DropAsync] ✅ 複数ページ並び替え検出 - Count: {pageList.Count}, InsertIndex: {dropInfo.InsertIndex}");
+                                
+                                try
+                                {
+                                    await HandlePageReorderWithInsertIndex(pageList, dropInfo.InsertIndex);
+                                    
+                                    dropInfo.Effects = DragDropEffects.Move;
+                                    StatusMessage = $"{pageList.Count}ページ並び替え完了";
+                                    
+                                    await AppendDebugLogAsync("[DropAsync] ✅ 複数ページ並び替え完了");
+                                }
+                                catch (Exception ex)
+                                {
+                                    await AppendDebugLogAsync($"[DropAsync] ❌ 並び替えエラー: {ex.Message}");
+                                    _dialogService.ShowError($"ページ並び替えエラー: {ex.Message}");
+                                    dropInfo.Effects = DragDropEffects.None;
+                                }
+                                finally
+                                {
+                                    _dragCache.Remove(dragId);
+                                    await AppendDebugLogAsync($"[DropAsync] キャッシュクリーンアップ完了 - DragID: {dragId}");
+                                }
+                                
+                                return;
+                            }
+                            else if (cachedItem is V3PageViewModel pageViewModel)
+                            {
+                                await AppendDebugLogAsync($"[DropAsync] ✅ サムネイル並び替え検出 - Page: {pageViewModel.PageNumber}, InsertIndex: {dropInfo.InsertIndex}");
+                            
+                                try
+                                {
+                                    // 🎯 V3.0.021: InsertIndex活用の並び替え処理（単一ページ）
+                                    await HandlePageReorderWithInsertIndex(pageViewModel, dropInfo.InsertIndex);
                                 
                                 dropInfo.Effects = DragDropEffects.Move;
                                 StatusMessage = "ページ並び替え完了";
@@ -172,12 +204,13 @@ namespace DocOrganizer.UI.ViewModels.V3
                             }
                             finally
                             {
-                                // 🎯 V3.0.019: 必ずキャッシュクリーンアップ
-                                _dragCache.Remove(dragId);
-                                await AppendDebugLogAsync($"[DropAsync] キャッシュクリーンアップ完了 - DragID: {dragId}");
+                                    // 🎯 V3.0.019: 必ずキャッシュクリーンアップ
+                                    _dragCache.Remove(dragId);
+                                    await AppendDebugLogAsync($"[DropAsync] キャッシュクリーンアップ完了 - DragID: {dragId}");
+                                }
+                                
+                                return;
                             }
-                            
-                            return;
                         }
                         else
                         {
@@ -236,6 +269,24 @@ namespace DocOrganizer.UI.ViewModels.V3
         }
 
         /// <summary>
+        /// 🆕 V3.0.116: 複数ページ並び替え処理（InsertIndex指定）
+        /// </summary>
+        private async Task HandlePageReorderWithInsertIndex(List<V3PageViewModel> pageViewModels, int insertIndex)
+        {
+            await AppendDebugLogAsync($"[HandlePageReorderWithInsertIndex] 開始 - Pages: {pageViewModels.Count}, InsertIndex: {insertIndex}");
+            
+            // PageReorderRequestedイベント発火でMainCompositeViewModelに処理委譲
+            var eventArgs = new PageReorderEventArgs(
+                pageViewModels,
+                insertIndex: insertIndex
+            );
+            
+            PageReorderRequested?.Invoke(this, eventArgs);
+            
+            await AppendDebugLogAsync($"[HandlePageReorderWithInsertIndex] PageReorderRequestedイベント発火完了");
+        }
+
+        /// <summary>
         /// 🎯 OSS標準: ドラッグオーバー処理
         /// </summary>
         public async Task DragOverAsync(IAdvancedDropInfo dropInfo)
@@ -284,14 +335,40 @@ namespace DocOrganizer.UI.ViewModels.V3
         {
             try
             {
-                // ページViewModelからのドラッグの場合
+                // 🆕 V3.0.116: 複数選択対応（V3DragInfo専用機能）
+                if (dragInfo is V3DragInfo v3DragInfo &&
+                    v3DragInfo.SelectedItems != null &&
+                    v3DragInfo.SelectedItems.Count > 1)
+                {
+                    var selectedPages = v3DragInfo.SelectedItems
+                        .OfType<V3PageViewModel>()
+                        .ToList();
+
+                    if (selectedPages.Count > 1)
+                    {
+                        // 複数ページをキャッシュ
+                        var dragId = Guid.NewGuid().ToString();
+                        _dragCache[dragId] = selectedPages;
+
+                        await AppendDebugLogAsync($"[StartDragAsync] Multiple pages drag started - DragID: {dragId}, Count: {selectedPages.Count}");
+
+                        var dataObject = new DataObject();
+                        dataObject.SetData(DataFormats.Text, dragId);
+
+                        StatusMessage = $"{selectedPages.Count} ページをドラッグ中...";
+
+                        return dataObject;
+                    }
+                }
+
+                // 🔧 既存の単一ページ処理（フォールバック）
                 if (dragInfo.SourceItem is V3PageViewModel pageViewModel)
                 {
                     // 🎯 V3.0.019: 静的キャッシュに安全保存
                     var dragId = Guid.NewGuid().ToString();
                     _dragCache[dragId] = pageViewModel;
                     
-                    await AppendDebugLogAsync($"[StartDragAsync] Page drag started - DragID: {dragId}, Page: {pageViewModel.PageNumber}");
+                    await AppendDebugLogAsync($"[StartDragAsync] Single page drag started - DragID: {dragId}, Page: {pageViewModel.PageNumber}");
                     
                     // 🎯 V3.0.019: WPF標準形式でGUID文字列転送（安全）
                     var dataObject = new DataObject();
