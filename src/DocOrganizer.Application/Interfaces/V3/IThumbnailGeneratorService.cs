@@ -25,8 +25,9 @@ namespace DocOrganizer.Application.Interfaces.V3
         /// <param name="rotation">回転角度（0, 90, 180, 270）</param>
         /// <param name="maxWidth">最大幅（デフォルト: 1920）</param>
         /// <param name="maxHeight">最大高さ（デフォルト: 1080）</param>
+        /// <param name="enableAutoCrop">余白自動削除を有効化（デフォルト: false）</param>
         /// <returns>高解像度プレビュー画像</returns>
-        Task<ImageSource> GenerateRightPreviewImageAsync(string filePath, int rotation = 0, int maxWidth = 1920, int maxHeight = 1080);
+        Task<ImageSource> GenerateRightPreviewImageAsync(string filePath, int rotation = 0, int maxWidth = 1920, int maxHeight = 1080, bool enableAutoCrop = false);
 
         /// <summary>
         /// PDFページからサムネイル生成

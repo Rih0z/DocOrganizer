@@ -52,9 +52,9 @@ namespace DocOrganizer.Infrastructure.Services.V3
         }
 
         /// <summary>
-        /// 右側プレビュー用高解像度画像生成（余白自動削除適用）
+        /// 右側プレビュー用高解像度画像生成
         /// </summary>
-        public async Task<ImageSource> GenerateRightPreviewImageAsync(string filePath, int rotation = 0, int maxWidth = 1920, int maxHeight = 1080)
+        public async Task<ImageSource> GenerateRightPreviewImageAsync(string filePath, int rotation = 0, int maxWidth = 1920, int maxHeight = 1080, bool enableAutoCrop = false)
         {
             try
             {
@@ -65,8 +65,8 @@ namespace DocOrganizer.Infrastructure.Services.V3
                 var previewImage = await _providerManager.ProcessWithBestProvider(filePath,
                     provider => provider.GeneratePreviewAsync(filePath, maxWidth, maxHeight));
 
-                // 🎯 V3.0.111: 余白自動削除を必ず適用（ユーザー要求：余白は絶対に必要なし）
-                if (_autoCropService != null && previewImage is BitmapSource bitmapSource)
+                // 🎯 V3.0.124: 余白自動削除をオプション化（デフォルト無効）
+                if (enableAutoCrop && _autoCropService != null && previewImage is BitmapSource bitmapSource)
                 {
                     try
                     {

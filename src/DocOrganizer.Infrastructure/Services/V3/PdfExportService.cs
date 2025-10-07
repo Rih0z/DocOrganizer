@@ -375,17 +375,9 @@ public class PdfExportService : IPdfExportService
                 await AppendDebugLogAsync($"[ProcessPageImageAsync] HEIC→JPEG変換完了: {imagePath}");
             }
 
-            // 🎯 V3.0.111: 余白削除を適用（ユーザー要求：余白は絶対に必要なし）
-            ImageMagick.MagickImage magickImage;
-            if (_autoCropService != null)
-            {
-                var trimmedBytes = await _autoCropService.TrimWhitespaceAsync(imagePath);
-                magickImage = new ImageMagick.MagickImage(trimmedBytes);
-            }
-            else
-            {
-                magickImage = new ImageMagick.MagickImage(imagePath);
-            }
+            // 🎯 V3.0.124: 余白削除をオプション化（デフォルト無効）
+            // PDF出力時は画像を元のまま使用（余白も含めて）
+            ImageMagick.MagickImage magickImage = new ImageMagick.MagickImage(imagePath);
 
             using (magickImage)
             {
