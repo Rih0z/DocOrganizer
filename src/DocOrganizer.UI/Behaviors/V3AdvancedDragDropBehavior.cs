@@ -599,6 +599,11 @@ namespace DocOrganizer.UI.Behaviors
         private static InsertionIndicatorAdorner _currentInsertionIndicator;
 
         /// <summary>
+        /// 🎯 V3.0.125: 自動スクロールのスキップカウンター（3イベントに1回スクロール）
+        /// </summary>
+        private static int _autoScrollSkipCounter = 0;
+
+        /// <summary>
         /// 挿入位置インジケーターの表示
         /// </summary>
         private static void ShowInsertionIndicator(InsertionInfo insertionInfo)
@@ -664,22 +669,32 @@ namespace DocOrganizer.UI.Behaviors
 
                 // Step 2: マウス位置・コンテナサイズ取得
                 // 🎯 OSS標準値: Tolerance=24px, ScrollSpeed=1-3px (Stack Overflow実装は3-20px)
-                // 🎯 ユーザー要望: さらにゆっくり → 1px/イベント (最低速度・最大コントロール性)
+                // 🎯 ユーザー要望: 3倍遅く → 3イベントに1回スクロール (1px/3イベント)
                 const double autoScrollZone = 24.0; // 境界領域: 上下24px (OSS標準)
-                const double scrollSpeed = 1.0; // スクロール速度: 1px/イベント (最低速度版)
+                const double scrollSpeed = 1.0; // スクロール速度: 1px/実行
+                const int skipInterval = 3; // スキップ間隔: 3イベントに1回実行
                 double mouseY = e.GetPosition(target).Y;
                 double containerHeight = target.ActualHeight;
 
                 // 境界外早期リターン（パフォーマンス最適化）
                 if (mouseY >= autoScrollZone && mouseY <= containerHeight - autoScrollZone)
                 {
+                    _autoScrollSkipCounter = 0; // カウンターリセット
                     return; // 中央領域: スクロール不要
                 }
+
+                // 🎯 3イベントに1回だけスクロール実行（3倍遅く）
+                _autoScrollSkipCounter++;
+                if (_autoScrollSkipCounter < skipInterval)
+                {
+                    return; // スキップ
+                }
+                _autoScrollSkipCounter = 0; // カウンターリセット
 
                 // Step 3: 上端境界領域での自動スクロール
                 if (mouseY < autoScrollZone && mouseY >= 0)
                 {
-                    // 🎯 OSS標準: 固定速度スクロール（3px/イベント）
+                    // 🎯 3イベントに1回: 1px/3イベント = 約20-33px/秒 (1px/イベントの1/3速度)
                     double newOffset = Math.Max(0, scrollViewer.VerticalOffset - scrollSpeed);
                     scrollViewer.ScrollToVerticalOffset(newOffset);
                     _ = AppendDebugLogAsync($"[AutoScroll] 上方向: MouseY={mouseY:F1}, Speed={scrollSpeed}, NewOffset={newOffset:F1}");
@@ -687,7 +702,7 @@ namespace DocOrganizer.UI.Behaviors
                 // Step 4: 下端境界領域での自動スクロール
                 else if (mouseY > containerHeight - autoScrollZone && mouseY <= containerHeight)
                 {
-                    // 🎯 OSS標準: 固定速度スクロール（3px/イベント）
+                    // 🎯 3イベントに1回: 1px/3イベント = 約20-33px/秒 (1px/イベントの1/3速度)
                     double newOffset = Math.Min(scrollViewer.ScrollableHeight,
                                                  scrollViewer.VerticalOffset + scrollSpeed);
                     scrollViewer.ScrollToVerticalOffset(newOffset);
