@@ -3,9 +3,9 @@
 ```yaml
 ai_coding_principles:
   version: "3.0"
-  last_updated: "2025-10-06"
+  last_updated: "2025-10-07"
   project: "DocOrganizer - CubePDF Utility互換 汎用PDF編集ツール"
-  current_version: "3.0.124"
+  current_version: "3.0.125"
 ```
 
 ## ⚠️ 必須宣言事項
@@ -101,7 +101,7 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 ## ⚡ クイックリファレンス
 
 ### 現在の情報
-- **バージョン**: V3.0.124
+- **バージョン**: V3.0.125
 - **GitHub**: https://github.com/Rih0z/DocOrganizer
 - **デフォルトEXE**: `C:\Users\217216X721451\github\DocOrganizer\release-debug\DocOrganizer.exe`
 - **リリースEXE**: `C:\Users\217216X721451\github\DocOrganizer\release\DocOrganizer.exe`（明示的指示時）
@@ -159,6 +159,7 @@ release\run-production.bat  # 本番モード
 
 | バージョン | 日付 | 主な変更 |
 |-----------|------|----------|
+| V3.0.125 | 2025-10-07 | ドラッグ中自動スクロール機能実装・1px/イベント最低速度で最大コントロール性実現 |
 | V3.0.124 | 2025-10-06 | 画像余白自動削除機能をオプション化・デフォルト無効でV3.0.110以前の動作に復帰/PDF出力も余白保持 |
 | V3.0.123 | 2025-10-06 | 複数選択移動バグ完全修正・相対位置保持ロジック削除/処理順序最適化でV3.0.117機能実現 |
 | V3.0.122 | 2025-10-06 | 複数選択時上下移動ボタン有効化・V3.0.117実装のUI制御修正 |
