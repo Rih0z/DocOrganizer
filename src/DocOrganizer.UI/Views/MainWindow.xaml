@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:behaviors="clr-namespace:DocOrganizer.UI.Behaviors"
         mc:Ignorable="d"
-        Title="DocOrganizer 3.0.126" 
+        Title="DocOrganizer 3.0.127" 
         Height="700" Width="1000"
         WindowStartupLocation="CenterScreen"
         Background="#F0F0F0"
@@ -50,6 +50,9 @@
         <KeyBinding Key="G" Modifiers="Ctrl" Command="{Binding PageOperation.GoToPageCommand}"/>
         <KeyBinding Key="PageUp" Command="{Binding PageOperation.PreviousPageCommand}"/>
         <KeyBinding Key="PageDown" Command="{Binding PageOperation.NextPageCommand}"/>
+        <!-- 🎯 V3.0.127: 単独↓↑キーでページ選択移動（PageUp/PageDownと同じ動作） -->
+        <KeyBinding Key="Up" Command="{Binding PageOperation.PreviousPageCommand}"/>
+        <KeyBinding Key="Down" Command="{Binding PageOperation.NextPageCommand}"/>
         <KeyBinding Key="Home" Command="{Binding PageOperation.FirstPageCommand}"/>
         <KeyBinding Key="End" Command="{Binding PageOperation.LastPageCommand}"/>
         
