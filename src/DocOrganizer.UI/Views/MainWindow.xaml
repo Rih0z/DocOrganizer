@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:behaviors="clr-namespace:DocOrganizer.UI.Behaviors"
         mc:Ignorable="d"
-        Title="DocOrganizer 3.0.128" 
+        Title="DocOrganizer 3.0.129" 
         Height="700" Width="1000"
         WindowStartupLocation="CenterScreen"
         Background="#F0F0F0"
@@ -140,19 +140,7 @@
                     </MenuItem.Icon>
                 </MenuItem>
             </MenuItem>
-            
-            <MenuItem Header="表示(_V)">
-                <MenuItem Header="拡大(_I)" Command="{Binding PreviewManagement.ZoomInCommand}" InputGestureText="Ctrl++"/>
-                <MenuItem Header="縮小(_O)" Command="{Binding PreviewManagement.ZoomOutCommand}" InputGestureText="Ctrl+-"/>
-                <MenuItem Header="全体表示(_F)" Command="{Binding FitToWindowCommand}" InputGestureText="Ctrl+0"/>
-                <Separator/>
-                <MenuItem Header="サムネイルサイズ(_T)">
-                    <MenuItem Header="小" Command="{Binding ThumbnailSmallCommand}" IsCheckable="True"/>
-                    <MenuItem Header="中" Command="{Binding ThumbnailMediumCommand}" IsCheckable="True" IsChecked="True"/>
-                    <MenuItem Header="大" Command="{Binding ThumbnailLargeCommand}" IsCheckable="True"/>
-                </MenuItem>
-            </MenuItem>
-            
+
             <MenuItem Header="ヘルプ(_H)">
                 <MenuItem Header="ヘルプの表示(_H)" Command="{Binding PageOperation.ShowHelpCommand}" InputGestureText="Ctrl+H (F1)"/>
                 <Separator/>
