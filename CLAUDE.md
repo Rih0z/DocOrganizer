@@ -127,6 +127,7 @@ release\run-production.bat  # 本番モード
 - **[プロジェクト構造](docs/rule/project_structure.md)** - ディレクトリ構成・技術スタック
 - **[バージョン管理詳細](docs/rule/version_management.md)** - バージョン更新手順詳細
 - **[デバッグログ詳細](docs/rule/debug_logging_system.md)** - ログ出力システム詳細
+- **[GitHubアップデート手順](docs/rule/github_update_process.md)** - 自動アップデート機能とリリース手順
 
 ### アーキテクチャ
 - [V3完全アーキテクチャ](docs/V3_COMPLETE_ARCHITECTURE.md)

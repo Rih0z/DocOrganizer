@@ -28,6 +28,9 @@ namespace DocOrganizer.UI.Views
             InitializeComponent();
             _logger = logger;
 
+            // バージョン情報を統一ソースから設定
+            this.Title = DocOrganizer.Core.VersionInfo.DisplayVersion;
+
             _logger?.LogInformation("MainWindow initialized");
             
             this.Loaded += MainWindow_Loaded;
