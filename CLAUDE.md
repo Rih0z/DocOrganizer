@@ -156,15 +156,12 @@ release\run-production.bat  # 本番モード
 - [画像表示システム](docs/V3_ARCHITECTURE_IMAGE_DISPLAY.md)
 
 ### 最新実装
-- [ズーム機能バグ修正完全報告](docs/Zoom_Feature_Bug_Fix_Complete_Report_20250922.md)
-- [複数選択バグ修正完全報告](docs/Multiple_Selection_Bug_Fix_Complete_Project_Report_20250918.md)
-- [回転プレビュー同期完全修正](docs/Rotation_Preview_Complete_Fix_V3.0.101_Report_20250912.md)
-- [パフォーマンス最適化完全報告](docs/V3_Performance_Optimization_Complete_Report_20250911.md)
-- [ページ移動機能バグ修正](docs/Page_Movement_Bug_Fix_Complete_Report_20250909.md)
-- [UIボタン・アイコンサイズ拡大](docs/UI_Button_Icon_Size_Enhancement_Report_20250905.md)
-- [PDFサムネイル表示バグ修正](docs/BugFix_PDF_Thumbnail_Display_Report_20250904.md)
-- [統一ログ管理システム](docs/Debug_Logging_System_Complete_Report_20250904.md)
-- [ドラッグ&ドロップ実装](docs/V3_Drag_Drop_Complete_Implementation_Report_20250822.md)
+- [V3.0.129 表示メニュー削除](docs/reports/v3.0.129/v3.0.129_view_menu_removal_implementation.md)
+- [V3.0.128 UI簡素化実装](docs/reports/v3.0.128/v3.0.128_ui_simplification_implementation.md)
+- [V3.0.127 回転後キーボードナビゲーションバグ修正](docs/reports/v3.0.127/v3.0.127_rotation_keyboard_navigation_fix.md)
+- [V3.0.110 ズーム機能完全修正](docs/reports/v3.0.110_zoom_feature_fix.md)
+- [V3.0.103 複数選択バグ完全修正](docs/reports/v3.0.103_multiple_selection_fix.md)
+- [V3.0.101 回転プレビュー同期修正](docs/reports/v3.0.101_rotation_preview_fix.md)
 
 ---
 
