@@ -96,6 +96,28 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 - release\DocOrganizer.exe の生成確認（リリース版指示時）
 - エクスプローラーから起動テスト
 
+### 4. GitHubリリース作成（自動化）
+
+**前提条件**: GitHub CLI (gh) インストール・認証済み
+
+#### Windows (PowerShell)
+```powershell
+.\.script\create-github-release.ps1
+```
+
+#### macOS / Linux / Git Bash
+```bash
+./.script/create-github-release.sh
+```
+
+**自動実行内容**:
+- Version.csからバージョン番号取得
+- リリースビルド実行
+- GitHubリリース作成
+- EXE自動アップロード
+
+**詳細**: [.script/README.md](.script/README.md) を参照
+
 ---
 
 ## ⚡ クイックリファレンス
