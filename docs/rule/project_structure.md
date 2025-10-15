@@ -3,7 +3,8 @@
 ## プロジェクト基本情報
 
 - **プロジェクト名**: DocOrganizer - CubePDF Utility互換 汎用PDF編集ツール
-- **現在バージョン**: V3.0.123
+- **現在バージョン**: V3.0.129
+- **最終更新**: 2025-10-14
 - **GitHubリポジトリ**: https://github.com/Rih0z/DocOrganizer
 - **デフォルトEXE**: `C:\Users\217216X721451\github\DocOrganizer\release-debug\DocOrganizer.exe`
 - **リリースEXE**: `C:\Users\217216X721451\github\DocOrganizer\release\DocOrganizer.exe`（明示的指示時）
@@ -18,11 +19,14 @@
 - PDF結合・分割
 
 ### V3実装（V3.0.068以降の主要機能）
-- **Undo/Redo完全実装**（V3.0.068）
+- **UI簡素化・ミニマルデザイン**（V3.0.128-129）
+- **キーボードナビゲーション完全対応**（V3.0.127）
+- **ドラッグ自動スクロール**（V3.0.125）
 - **複数ページ一括移動**（V3.0.117）
 - **複数選択ドラッグ&ドロップ**（V3.0.116）
 - **ズーム機能**（V3.0.110）
 - **複数選択対応**（V3.0.103）
+- **Undo/Redo完全実装**（V3.0.068）
 - **統一ログ管理システム**（V3.0.064）
 - **パフォーマンス最適化**（ViewModelの再利用、V3.0.073）
 
@@ -168,18 +172,23 @@ $env:DOCORGANIZER_DEBUG = "false"
 - `release-debug\run-debug.bat`: デバッグモード起動
 - `release-debug\run-production.bat`: 本番モード起動
 
-## V3.0.123 最新実装詳細
+## V3.0.129 最新実装詳細
 
-### MovePagesCommand（複数ページ移動修正）
-```csharp
-// 🎯 V3.0.123: 複数ページ移動時の位置ズレ修正
-// 移動方向を判定し、適切な順序で処理
+### UI簡素化（V3.0.128-129）
+- **メニューバー**: PDF編集・ヘルプのみ
+- **ツールバー**: 15個のアイコンで全操作可能
+- **キーボードショートカット**: 50+完全実装（CubePDF互換）
 
-// 下移動: 後ろから処理（降順） - 前のページに影響しない
-// 上移動: 前から処理（昇順） - 後ろのページに影響しない
-```
+### ViewModelアーキテクチャ
+- **合計実装規模**: 4731行（6つのViewModel）
+- **MainCompositeViewModel**: 913行 - ViewModel統合ハブ
+- **PageOperationViewModel**: 1283行 - 最大のViewModel（ページ操作）
+- **StatusManagementViewModel**: 201行 - 最小のViewModel（状態管理）
 
-**実装ファイル**: `src/DocOrganizer.Core/Commands/MovePagesCommand.cs:98-125`
+### Provider Pattern実装
+- **6つのProvider**: HEIC, GIF, WebP, Standard, PDF, PSD
+- **優先度ベース自動選択**: ImageProcessingProviderManager
+- **属性ベース自動発見**: ServiceCollectionExtensions
 
 ### V3アーキテクチャ文書
 - **[V3完全アーキテクチャ](../architecture/V3_COMPLETE_ARCHITECTURE.md)**
@@ -194,14 +203,17 @@ $env:DOCORGANIZER_DEBUG = "false"
 - **[development_principles.md](development_principles.md)** - 開発原則
 
 ### 運用ガイド
+- **[キーボードショートカット完全ガイド](../guides/keyboard_shortcuts_guide.md)** - V3.0.127対応
 - **[環境変数](../guides/environment_variables.md)** - 環境変数設定
 - **[HEIC対応ガイド](../guides/heic_support_guide.md)** - HEIC画像処理
 - **[PDF保存ガイド](../guides/pdf_save_guide.md)** - PDF保存機能
 - **[Ghostscript不要実装](../guides/ghostscript_free_implementation.md)** - Ghostscript依存削除
 
 ### 最新レポート
-- **[複数選択移動修正](../reports/v3.0.123_multiple_selection_move_fix.md)** - V3.0.123
-- **[複数選択UI修正](../reports/v3.0.122_multiple_selection_ui_fix.md)** - V3.0.122
+- **[表示メニュー削除](../reports/v3.0.129/)** - V3.0.129
+- **[UI簡素化実装](../reports/v3.0.128/)** - V3.0.128
+- **[回転後キーボードナビゲーション修正](../reports/v3.0.127/)** - V3.0.127
+- **[複数選択移動修正](../reports/v3.0.123/)** - V3.0.123
 - **[ズーム機能修正](../reports/v3.0.110_zoom_feature_fix.md)** - V3.0.110
 
 ## 重要な注意事項

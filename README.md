@@ -1,21 +1,22 @@
 # DocOrganizer
 
-[![Version](https://img.shields.io/badge/version-3.0.085-blue.svg)](https://github.com/Rih0z/DocOrganizer/releases)
+[![Version](https://img.shields.io/badge/version-3.0.129-blue.svg)](https://github.com/Rih0z/DocOrganizer/releases)
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**CubePDF Utility互換のモダンなPDF編集・文書管理ツール**
+**CubePDF Utility互換のモダンなPDF編集・文書管理ツール**（最終更新: 2025-10-14 / Serena MCP分析済み）
 
 ## ⚡ 主な機能
 
 - 📄 **PDF操作**: ドラッグ&ドロップでページ結合・分割・回転・削除
-- 🖼️ **画像対応**: **HEIC完全対応**・JPG・PNG・JPEG・GIF形式からPDF変換
-- 🔄 **向き自動補正**: スキャン文書の向き自動検出・修正
-- ⌨️ **キーボード操作**: CubePDF互換の完全なショートカット対応
-- ↩️ **Undo/Redo**: 全操作の取り消し・やり直し機能（**V3.0.083で完全修正**）
-- 🔧 **画像復元**: 削除→Ctrl+Z時の画像復元完全対応（**V3.0.084で修正**）
-- ⚡ **高性能・高速起動**: OCR無効化により50MB削減、起動時間大幅短縮（**V3.0.085**）
+- 🖼️ **画像対応**: **HEIC/GIF/WebP/PSD完全対応**（6つのProvider実装）
+- ⌨️ **キーボード操作**: **50+ショートカット完全実装**（CubePDF互換）
+- 🎨 **シンプルUI**: ミニマルデザイン - メニュー2つ・ツールバー15個（**V3.0.128-129**）
+- 🧭 **高度なナビゲーション**: Up/Downキーでページ移動（**V3.0.127**）
+- 🖱️ **ドラッグ自動スクロール**: 最適化された速度制御（**V3.0.125-126**）
+- ↩️ **Undo/Redo**: 全操作の取り消し・やり直し機能（V3.0.068）
+- ⚡ **高性能**: ViewModel再利用・最適化済み（6つのViewModel・合計4731行）
 
 ## 🚀 3ステップで使用開始
 
@@ -23,26 +24,29 @@
 2. **▶️ 起動**: エクスプローラーからダブルクリック（⚠️ **管理者権限厳禁**）
 3. **🎯 操作**: ファイルをドラッグ&ドロップ → 整理 → PDF保存
 
-## 📦 V3.0.101の主な改善
+## 📦 V3.0.129 最新の改善
 
-### 🔄 回転プレビュー同期完全修正 (V3.0.101)
-- **画像・PDF回転時の右側プレビュー更新問題を完全解決**
-- ボタンクリック・キーボードショートカット両方で正常動作
-- 左側サムネイルと右側プレビューの完全同期を実現
+### 🎨 UI簡素化・ミニマルデザイン (V3.0.128-129)
+- **メニューバーをPDF編集・ヘルプのみに簡素化**
+- ツールバーアイコンで全操作可能（15個のボタン）
+- 50+キーボードショートカット完全実装
+- 視認性向上・直感的な操作
 
-### ✅ 画像復元完全修正 (V3.0.084)
-- **削除→Ctrl+Z時の画像復元問題を完全解決**
-- サムネイル画像が正しく復元される
-- 元の位置に正確に復元される
+### 🧭 キーボードナビゲーション完全対応 (V3.0.127)
+- **単独Up/Downキーでページ移動**（PageUp/PageDownと同じ動作）
+- 回転後の強制1枚目移動バグを完全修正
+- CubePDF Utility完全互換
 
-### ⚡ 起動高速化 (V3.0.085)
-- **OCR機能無効化によりファイルサイズ50MB削減**
-- 158MB → 107MB（約32%削減）
-- 起動時間大幅短縮
+### 🖱️ ドラッグ自動スクロール (V3.0.125-126)
+- **最適化された速度制御**（3イベントに1回実行）
+- 体感3倍減速で最大コントロール性実現
+- 1px/イベント最低速度
 
-### 🔧 Undo/Redo完全修正 (V3.0.083)
-- Ctrl+Z/Ctrl+Y が全操作で正常動作
-- PropertyChanged伝播問題解決
+### 🏗️ エンタープライズアーキテクチャ
+- **ViewModelクラス**: 6つ・合計4731行
+- **Provider Pattern**: 6つのProvider（HEIC/GIF/WebP/Standard/PDF/PSD）
+- **Clean Architecture**: 完全な層分離
+- **SOLID原則**: 完全実践
 
 ## ⌨️ キーボードショートカット
 
@@ -71,15 +75,19 @@
 | `Ctrl+B` | 上へ移動 | ページを1つ前に移動 |
 | `Ctrl+F` | 下へ移動 | ページを1つ後に移動 |
 
-### ナビゲーション
+### ナビゲーション ⭐V3.0.127強化
 | ショートカット | 機能 | 説明 |
 |---------------|------|------|
+| **`Up`** | **前のページ** | **1つ前のページへ** ⭐NEW |
+| **`Down`** | **次のページ** | **1つ次のページへ** ⭐NEW |
+| `PageUp` | 前のページ | 1つ前のページへ |
+| `PageDown` | 次のページ | 1つ次のページへ |
+| `Home` | 最初のページ | 先頭ページへ移動 |
+| `End` | 最後のページ | 最終ページへ移動 |
 | `Ctrl+G` | ページジャンプ | 指定ページへ移動 |
-| `Ctrl+Home` | 最初のページ | 先頭ページへ移動 |
-| `Ctrl+End` | 最後のページ | 最終ページへ移動 |
-| `Ctrl+←` | 前のページ | 1つ前のページへ |
-| `Ctrl+→` | 次のページ | 1つ次のページへ |
-| `F1` | ヘルプ | ヘルプを表示 |
+| `Ctrl+H` / `F1` | ヘルプ | ヘルプを表示 |
+
+**完全なショートカット一覧**: [`docs/guides/keyboard_shortcuts_guide.md`](docs/guides/keyboard_shortcuts_guide.md)
 
 ## 📋 動作環境
 
@@ -90,25 +98,37 @@
 
 ## 📚 詳細ドキュメント
 
+### アーキテクチャ（最新）
 | 内容 | 参照先 |
 |------|--------|
-| **🔧 画像復元Undo機能修正** ⭐NEW | [`docs/Image_Restoration_Undo_Fix_Complete_Report_20250911.md`](docs/Image_Restoration_Undo_Fix_Complete_Report_20250911.md) |
-| **↩️ Undo/Redo機能修正** ⭐NEW | [`docs/Undo_Redo_Fix_Complete_Report_20250911.md`](docs/Undo_Redo_Fix_Complete_Report_20250911.md) |
-| **🚀 パフォーマンス最適化完全報告** ⭐ | [`docs/V3_Performance_Optimization_Complete_Report_20250911.md`](docs/V3_Performance_Optimization_Complete_Report_20250911.md) |
-| **🎯 使用方法** | [`docs/PDF保存機能使用ガイド.md`](docs/PDF保存機能使用ガイド.md) |
-| **🖼️ HEIC対応詳細** | [`docs/HEIC_Support_Complete_Guide.md`](docs/HEIC_Support_Complete_Guide.md) |
-| **🏗️ V3完全アーキテクチャ** | [`docs/V3_COMPLETE_ARCHITECTURE.md`](docs/V3_COMPLETE_ARCHITECTURE.md) |
-| **📱 画像表示システム** | [`docs/V3_ARCHITECTURE_IMAGE_DISPLAY.md`](docs/V3_ARCHITECTURE_IMAGE_DISPLAY.md) |
-| **🔧 機能仕様** | [`docs/V3_ROTATION_AND_IMAGE_REPLACEMENT.md`](docs/V3_ROTATION_AND_IMAGE_REPLACEMENT.md) |
-| **🎯 ドラッグ&ドロップ並び替え完全実装** ⭐ | [`docs/V3_Drag_Drop_Complete_Implementation_Report_20250822.md`](docs/V3_Drag_Drop_Complete_Implementation_Report_20250822.md) |
-| **🔧 HEIC PDF出力バグ修正** | [`docs/HEIC_PDF_Export_Bug_Fix_Complete_Report_20250821.md`](docs/HEIC_PDF_Export_Bug_Fix_Complete_Report_20250821.md) |
-| **🔄 回転プレビュー同期完全修正** ⭐ | [`docs/Rotation_Preview_Complete_Fix_V3.0.101_Report_20250912.md`](docs/Rotation_Preview_Complete_Fix_V3.0.101_Report_20250912.md) |
-| **🔍 UI拡大機能バグ修正** | [`docs/UI_Zoom_Feature_Bug_Fix_Complete_Report_20250821.md`](docs/UI_Zoom_Feature_Bug_Fix_Complete_Report_20250821.md) |
-| **🐛 PDFサムネイル表示バグ修正** ⭐ | [`docs/BugFix_PDF_Thumbnail_Display_Report_20250904.md`](docs/BugFix_PDF_Thumbnail_Display_Report_20250904.md) |
-| **📝 統一デバッグログ管理システム** ⭐ | [`docs/Debug_Logging_System_Complete_Report_20250904.md`](docs/Debug_Logging_System_Complete_Report_20250904.md) |
-| **⚙️ 統一設定システム** ⭐ | [`docs/Unified_Configuration_System_Complete_Report_20250904.md`](docs/Unified_Configuration_System_Complete_Report_20250904.md) |
-| **🔧 統一ログシステム実装完了** ⭐ | [`docs/Unified_Logging_System_Complete_Report_20250904.md`](docs/Unified_Logging_System_Complete_Report_20250904.md) |
-| **🔧 環境変数仕様** | [`docs/ENVIRONMENT_VARIABLES.md`](docs/ENVIRONMENT_VARIABLES.md) |
+| **🏗️ V3完全アーキテクチャ** ⭐ | [`docs/architecture/V3_COMPLETE_ARCHITECTURE.md`](docs/architecture/V3_COMPLETE_ARCHITECTURE.md) |
+| **📱 画像表示システム** | [`docs/architecture/V3_ARCHITECTURE_IMAGE_DISPLAY.md`](docs/architecture/V3_ARCHITECTURE_IMAGE_DISPLAY.md) |
+| **🔧 回転と画像置換** | [`docs/architecture/V3_ROTATION_AND_IMAGE_REPLACEMENT.md`](docs/architecture/V3_ROTATION_AND_IMAGE_REPLACEMENT.md) |
+| **🖱️ ドラッグ&ドロップ技術分析** | [`docs/architecture/drag_drop_architecture_analysis.md`](docs/architecture/drag_drop_architecture_analysis.md) |
+
+### 運用ガイド
+| 内容 | 参照先 |
+|------|--------|
+| **⌨️ キーボードショートカット完全ガイド** ⭐NEW | [`docs/guides/keyboard_shortcuts_guide.md`](docs/guides/keyboard_shortcuts_guide.md) |
+| **🖼️ HEIC対応ガイド** | [`docs/guides/heic_support_guide.md`](docs/guides/heic_support_guide.md) |
+| **📄 PDF保存ガイド** | [`docs/guides/pdf_save_guide.md`](docs/guides/pdf_save_guide.md) |
+| **🔧 環境変数設定** | [`docs/guides/environment_variables.md`](docs/guides/environment_variables.md) |
+
+### 開発規約
+| 内容 | 参照先 |
+|------|--------|
+| **📋 プロジェクト構造** | [`docs/rule/project_structure.md`](docs/rule/project_structure.md) |
+| **🔢 バージョン管理手順** | [`docs/rule/version_management.md`](docs/rule/version_management.md) |
+| **🐛 デバッグログシステム** | [`docs/rule/debug_logging_system.md`](docs/rule/debug_logging_system.md) |
+
+### 最新レポート（V3.0.127-129）
+| 内容 | 参照先 |
+|------|--------|
+| **🎨 表示メニュー削除** | [`docs/reports/v3.0.129/`](docs/reports/v3.0.129/) |
+| **🎨 UI簡素化実装** | [`docs/reports/v3.0.128/`](docs/reports/v3.0.128/) |
+| **🧭 回転後キーボードナビゲーション修正** | [`docs/reports/v3.0.127/`](docs/reports/v3.0.127/) |
+
+**全ドキュメント**: [`docs/README.md`](docs/README.md)を参照
 
 ## ⚙️ 設定システム
 
@@ -148,4 +168,12 @@ dotnet publish src/DocOrganizer.UI/DocOrganizer.UI.csproj -c Release -r win-x64 
 
 ---
 
-**DocOrganizer V3.0.101** - プロフェッショナルな文書整理を簡単に・高速に
+**DocOrganizer V3.0.129** - プロフェッショナルな文書整理を簡単に・高速に
+
+---
+
+**📊 V3アーキテクチャの成熟度**:
+- ViewModelクラス: **6つ・合計4731行**
+- Provider実装: **6クラス**（HEIC/GIF/WebP/Standard/PDF/PSD）
+- キーボードショートカット: **50+完全実装**
+- **127バージョン**の継続的改善を経て、エンタープライズグレードの成熟したアーキテクチャを実現
