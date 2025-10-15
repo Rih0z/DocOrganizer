@@ -12,7 +12,7 @@
 ```
 docs/
 ├── architecture/      # システムアーキテクチャ（4ファイル）
-├── guides/           # 運用ガイド（5ファイル）
+├── guides/           # 運用ガイド（6ファイル）
 ├── reports/          # バージョン別レポート（V3.0.101〜V3.0.129）
 ├── rule/             # 開発規約（4ファイル）
 └── archive/          # 過去のレポート（月別整理）
@@ -55,6 +55,7 @@ docs/
 ### 📖 [guides/](guides/) - 運用ガイド
 | ファイル | 内容 |
 |---------|------|
+| [keyboard_shortcuts_guide.md](guides/keyboard_shortcuts_guide.md) | キーボードショートカット完全ガイド（V3.0.127対応） |
 | [environment_variables.md](guides/environment_variables.md) | 環境変数設定 |
 | [heic_support_guide.md](guides/heic_support_guide.md) | HEIC画像対応 |
 | [pdf_save_guide.md](guides/pdf_save_guide.md) | PDF保存機能 |

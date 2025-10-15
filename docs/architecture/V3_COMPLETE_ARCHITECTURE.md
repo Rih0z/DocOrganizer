@@ -31,9 +31,11 @@ DocOrganizer V3は、Clean Architecture + Provider Pattern + MVVM パターン�
 │  Infrastructure Layer (Services & Providers)               │
 │  ├── Provider Pattern Implementation                       │
 │  │   ├── HeicImageProcessingProvider                       │
-│  │   ├── StandardImageProcessingProvider                   │
 │  │   ├── GifImageProcessingProvider                        │
-│  │   └── WebPImageProcessingProvider                       │
+│  │   ├── WebPImageProcessingProvider                       │
+│  │   ├── StandardImageProcessingProvider                   │
+│  │   ├── PdfImageProcessingProvider                        │
+│  │   └── PsdImageProcessingProvider                        │
 │  ├── Provider Managers                                     │
 │  │   ├── ImageProcessingProviderManager                    │
 │  │   └── ImageValidationProviderManager                    │
@@ -64,13 +66,16 @@ public class MainCompositeViewModel
 ```
 
 ### 専門化されたViewModel構成
-| ViewModel | 責務 |
-|-----------|------|
-| **DocumentManagementViewModel** | ファイル管理・ページ操作 |
-| **PreviewManagementViewModel** | 左右プレビュー表示制御 |
-| **PageOperationViewModel** | 回転・削除・並び替え・キーボードナビゲーション |
-| **DragDropHandlerViewModel** | ドラッグ&ドロップ処理・自動スクロール |
-| **StatusManagementViewModel** | 状態管理・進捗表示 |
+| ViewModel | 実装規模 | 責務 |
+|-----------|---------|------|
+| **DocumentManagementViewModel** | 714行 | ファイル管理（New/Open/Save）・PDF編集（Split/Merge）・Undo/Redo |
+| **PreviewManagementViewModel** | 663行 | プレビュー表示・ズーム機能（In/Out/FitToWindow） |
+| **PageOperationViewModel** | 1283行 | 回転・削除・移動・並び替え・選択管理・キーボードナビゲーション |
+| **DragDropHandlerViewModel** | 957行 | ドラッグ&ドロップ処理・ファイル追加・ページ並び替え・自動スクロール |
+| **StatusManagementViewModel** | 201行 | 状態管理・進捗表示・メッセージ表示 |
+| **MainCompositeViewModel** | 913行 | ViewModel統合・イベント管理・PDF出力 |
+
+**合計実装規模**: 4731行（V3.0.129時点）
 
 ### UI設計哲学（V3.0.128-129）
 **シンプリシティ第一**:
@@ -130,6 +135,16 @@ public interface IImageProcessingProvider
 - **対応形式**: `.jpg`, `.jpeg`, `.png`, `.bmp`
 - **特徴**: 標準画像形式の最適化処理
 - **実装**: ImageSharp + EXIF自動補正
+
+#### 5. PdfImageProcessingProvider
+- **対応形式**: `.pdf`
+- **特徴**: PDF処理専用プロバイダー
+- **実装**: PdfiumViewer使用
+
+#### 6. PsdImageProcessingProvider
+- **対応形式**: `.psd`
+- **特徴**: Photoshop形式対応
+- **実装**: ImageSharp使用
 
 ### ImageProcessingProviderManager
 **設計パターン**: Strategy Pattern + Factory Pattern
@@ -313,6 +328,30 @@ public class AvifImageProcessingProvider : IImageProcessingProvider
 - **L**iskov Substitution: IImageProcessingProvider実装の交換可能性
 - **I**nterface Segregation: 目的別インターフェース分離
 - **D**ependency Inversion: 抽象への依存（具象への依存なし）
+
+---
+
+## 📊 コードメトリクス（V3.0.129）
+
+### ViewModelクラス規模
+| ViewModel | 行数 | 主要メソッド数 | イベント数 | 依存サービス数 |
+|-----------|------|---------------|-----------|---------------|
+| MainCompositeViewModel | 913 | 20+ | 7 | 3 |
+| DocumentManagementViewModel | 714 | 15+ | 3 | 6 |
+| PreviewManagementViewModel | 663 | 12+ | 1 | 4 |
+| PageOperationViewModel | 1283 | 30+ | 5 | 4 |
+| DragDropHandlerViewModel | 957 | 15+ | 6 | 3 |
+| StatusManagementViewModel | 201 | 7 | 6 | 2 |
+| **合計** | **4731** | **99+** | **28** | **22** |
+
+### Provider実装数
+- IImageProcessingProvider実装: **6クラス**
+- サポート画像形式: **HEIC, GIF, WebP, JPG, PNG, BMP, PDF, PSD**
+
+### UI実装
+- メニュー項目: **2カテゴリ**（PDF編集、ヘルプ）
+- ツールバーボタン: **15個**
+- キーボードショートカット: **50+**
 
 ---
 
