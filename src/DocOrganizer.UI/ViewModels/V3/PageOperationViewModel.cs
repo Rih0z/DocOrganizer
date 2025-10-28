@@ -12,6 +12,7 @@ using DocOrganizer.Core.Models;
 using DocOrganizer.Core.Logging;
 using DocOrganizer.Core.Services;
 using DocOrganizer.Core.Commands;
+using DocOrganizer.UI.Views;  // ✅ V3.0.130: MainWindow参照用
 
 namespace DocOrganizer.UI.ViewModels.V3
 {
@@ -51,6 +52,22 @@ namespace DocOrganizer.UI.ViewModels.V3
 
         [ObservableProperty]
         private string statusMessage = "準備完了";
+
+        /// <summary>
+        /// ✅ V3.0.132: 選択ページ数の表示テキスト
+        /// ViewModelの選択状態を直接表示（ListBoxの仮想化に依存しない）
+        /// </summary>
+        public string SelectedPagesCountText
+        {
+            get
+            {
+                if (Pages == null || Pages.Count == 0)
+                    return "";
+
+                var selectedCount = Pages.Count(p => p.IsSelected);
+                return selectedCount > 0 ? $"{selectedCount}ページ選択" : "";
+            }
+        }
 
         private PdfDocument? _currentDocument;
 
@@ -99,10 +116,17 @@ namespace DocOrganizer.UI.ViewModels.V3
 
             UpdateSelectionState();
             StatusMessage = $"全てのページ ({Pages.Count}ページ) を選択しました";
-            
+
+            // ✅ V3.0.130: MainWindowに全選択を通知（ListBoxの仮想化対策）
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            {
+                var mainWindow = System.Windows.Application.Current.MainWindow as MainWindow;
+                mainWindow?.ForceListBoxFullSelection();
+            });
+
             // 選択状態変更を通知
             NotifyPageSelectionChanged();
-            
+
             // ポップアップは表示しない（ステータスメッセージのみ）
         }
 
@@ -892,6 +916,8 @@ F11: フルスクリーン
             OnPropertyChanged(nameof(HasSelectedPages));
             OnPropertyChanged(nameof(SelectedPagesCount));
             OnPropertyChanged(nameof(IsAllPagesSelected));
+            // ✅ V3.0.132: 選択数テキストの更新を通知（ListBox仮想化に依存しない正確な表示）
+            OnPropertyChanged(nameof(SelectedPagesCountText));
         }
 
         // 選択状態を復元するメソッド
@@ -1073,10 +1099,13 @@ F11: フルスクリーン
             UpdatePageNumbers();
             UpdateSelectionState();
             
-            // V3.0.115: View層の選択状態を同期（イベント無効化状態で実行）
+            // ✅ V3.0.131: V3.0.115〜V3.0.129の実証済み方式に復帰
+            // 選択同期は即座に実行（選択が外れたように見える問題を解決）
+            // イベント再有効化のみを遅延実行（遅延SelectionChangedイベントを防止）
             _syncSelectionToView?.Invoke();
-            
-            // V3.0.115: UI更新完了を待機してからイベントを再有効化
+            DebugLogger.Log("[RefreshPageListWithSelection] ListBox選択同期完了（即座実行）");
+
+            // イベント再有効化のみをDispatcher遅延実行
             // WPFのDispatcher経由で次のUIサイクルまで待機し、遅延SelectionChangedを防ぐ
             System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
             {
@@ -1198,36 +1227,46 @@ F11: フルスクリーン
         private void PreviousPage()
         {
             if (Pages == null || Pages.Count == 0) return;
-            
-            var selectedPage = Pages.FirstOrDefault(p => p.IsSelected);
-            if (selectedPage != null)
+
+            // ✅ V3.0.131: 単一選択のみを対象とする（複数選択時のFirstOrDefault問題を回避）
+            var selectedPages = Pages.Where(p => p.IsSelected).ToList();
+            if (selectedPages.Count != 1)
             {
-                var currentIndex = Pages.IndexOf(selectedPage);
-                if (currentIndex > 0)
-                {
-                    selectedPage.IsSelected = false;
-                    Pages[currentIndex - 1].IsSelected = true;
-                    UpdateSelectionState();
-                    StatusMessage = $"ページ {currentIndex} に移動しました";
-                }
+                // 複数選択または未選択時はキーボードナビゲーション無効
+                return;
+            }
+
+            var selectedPage = selectedPages[0];
+            var currentIndex = Pages.IndexOf(selectedPage);
+            if (currentIndex > 0)
+            {
+                selectedPage.IsSelected = false;
+                Pages[currentIndex - 1].IsSelected = true;
+                UpdateSelectionState();
+                StatusMessage = $"ページ {currentIndex} に移動しました";
             }
         }
         
         private void NextPage()
         {
             if (Pages == null || Pages.Count == 0) return;
-            
-            var selectedPage = Pages.FirstOrDefault(p => p.IsSelected);
-            if (selectedPage != null)
+
+            // ✅ V3.0.131: 単一選択のみを対象とする（複数選択時のFirstOrDefault問題を回避）
+            var selectedPages = Pages.Where(p => p.IsSelected).ToList();
+            if (selectedPages.Count != 1)
             {
-                var currentIndex = Pages.IndexOf(selectedPage);
-                if (currentIndex < Pages.Count - 1)
-                {
-                    selectedPage.IsSelected = false;
-                    Pages[currentIndex + 1].IsSelected = true;
-                    UpdateSelectionState();
-                    StatusMessage = $"ページ {currentIndex + 2} に移動しました";
-                }
+                // 複数選択または未選択時はキーボードナビゲーション無効
+                return;
+            }
+
+            var selectedPage = selectedPages[0];
+            var currentIndex = Pages.IndexOf(selectedPage);
+            if (currentIndex < Pages.Count - 1)
+            {
+                selectedPage.IsSelected = false;
+                Pages[currentIndex + 1].IsSelected = true;
+                UpdateSelectionState();
+                StatusMessage = $"ページ {currentIndex + 2} に移動しました";
             }
         }
         

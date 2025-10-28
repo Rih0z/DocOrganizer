@@ -9,6 +9,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;  // ✅ V3.0.132: ScrollBar判定用
 // Microsoft.Xaml.Behaviors.Wpfは未使用 - 削除
 using DocOrganizer.UI.ViewModels.V3;
 using DocOrganizer.UI.ViewModels;
@@ -127,15 +128,15 @@ namespace DocOrganizer.UI.Behaviors
                 if ((bool)e.NewValue)
                 {
                     element.MouseMove += OnMouseMove;
-                    // 🆕 V3.0.117: MouseLeftButtonDownを使用（ListBoxの選択処理後に実行）
-                    element.MouseLeftButtonDown += OnMouseLeftButtonDown;
+                    // ✅ V3.0.133: PreviewMouseLeftButtonDownに変更（トンネリングイベントで確実に検出）
+                    element.PreviewMouseLeftButtonDown += OnPreviewMouseLeftButtonDown;
                     element.GiveFeedback += OnGiveFeedback;
-                    _ = AppendDebugLogAsync($"[OnIsDragSourceChanged] ドラッグソース有効化: {element.GetType().Name} - DataContext: {element.DataContext?.GetType().Name ?? "null"}");
+                    _ = AppendDebugLogAsync($"[OnIsDragSourceChanged] ドラッグソース有効化（Preview使用）: {element.GetType().Name} - DataContext: {element.DataContext?.GetType().Name ?? "null"}");
                 }
                 else
                 {
                     element.MouseMove -= OnMouseMove;
-                    element.MouseLeftButtonDown -= OnMouseLeftButtonDown;
+                    element.PreviewMouseLeftButtonDown -= OnPreviewMouseLeftButtonDown;
                     element.GiveFeedback -= OnGiveFeedback;
                     _ = AppendDebugLogAsync($"[OnIsDragSourceChanged] ドラッグソース無効化: {element.GetType().Name}");
                 }
@@ -176,13 +177,44 @@ namespace DocOrganizer.UI.Behaviors
         private static bool _isDragging;
         private static bool _isDropProcessing; // 🎯 V3.0.025: イベント重複防止フラグ
 
-        private static void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        /// <summary>
+        /// ✅ V3.0.133: PreviewMouseLeftButtonDownイベントハンドラー（トンネリングイベント）
+        /// ListBoxItemのクリックのみをドラッグ対象とし、ScrollBar等を完全除外
+        /// </summary>
+        private static void OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            // 🆕 V3.0.120: シンプルなドラッグ開始点記録のみ
-            // ListBoxの標準選択メカニズムに一切干渉しない
+            _ = AppendDebugLogAsync($"[OnPreviewMouseLeftButtonDown] イベント発火 - sender: {sender?.GetType().Name}, OriginalSource: {e.OriginalSource?.GetType().Name}");
+
+            // ✅ V3.0.133: ListBoxItem判定による確実なドラッグ対象識別
+            // ListBoxItem上のクリックのみをドラッグ対象とする（ScrollBar、余白、ヘッダー等は除外）
+            var listBoxItem = FindAncestor<ListBoxItem>(e.OriginalSource as DependencyObject);
+
+            if (listBoxItem == null)
+            {
+                // ListBoxItem以外（ScrollBar、余白、ヘッダー等）はドラッグ無効
+                _isDragging = false;
+                _ = AppendDebugLogAsync("[OnPreviewMouseLeftButtonDown] ListBoxItem以外のクリック - ドラッグ無効化（ScrollBar等）");
+                return;
+            }
+
+            _ = AppendDebugLogAsync($"[OnPreviewMouseLeftButtonDown] ListBoxItemクリック検出 - DataContext: {listBoxItem.DataContext?.GetType().Name}");
+
+            // ✅ V3.0.130: Ctrl/Shift時はドラッグ無効化（複数選択操作を優先）
+            bool isCtrlPressed = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+            bool isShiftPressed = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
+
+            if (isCtrlPressed || isShiftPressed)
+            {
+                // 複数選択モード: ドラッグ無効
+                _isDragging = false;
+                _ = AppendDebugLogAsync("[OnPreviewMouseLeftButtonDown] Ctrl/Shift検出 - ドラッグ無効化（複数選択優先）");
+                return;
+            }
+
+            // ✅ ListBoxItemのドラッグ開始点を記録
             _dragStartPoint = e.GetPosition(null);
             _isDragging = false;
-            _ = AppendDebugLogAsync($"[OnMouseLeftButtonDown] ドラッグ開始点記録 - Position: X={_dragStartPoint.X:F1}, Y={_dragStartPoint.Y:F1}");
+            _ = AppendDebugLogAsync($"[OnPreviewMouseLeftButtonDown] ListBoxItemドラッグ開始点記録 - Position: X={_dragStartPoint.X:F1}, Y={_dragStartPoint.Y:F1}");
         }
 
 
@@ -190,8 +222,26 @@ namespace DocOrganizer.UI.Behaviors
         {
             if (e.LeftButton == MouseButtonState.Pressed && !_isDragging)
             {
+                // ✅ V3.0.133: ドラッグ開始点が記録されていない場合はスキップ
+                // OnPreviewMouseLeftButtonDownでListBoxItem以外の場合、_dragStartPointは記録されない
+                if (_dragStartPoint == default(Point))
+                {
+                    await AppendDebugLogAsync("[OnMouseMove] ドラッグ開始点未設定 - スキップ（ScrollBar等のクリック）");
+                    return;
+                }
+
+                // ✅ V3.0.130: Ctrl/Shift時はドラッグ判定スキップ（複数選択優先）
+                bool isCtrlPressed = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+                bool isShiftPressed = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
+
+                if (isCtrlPressed || isShiftPressed)
+                {
+                    await AppendDebugLogAsync("[OnMouseMove] Ctrl/Shift検出 - ドラッグ判定スキップ（複数選択優先）");
+                    return;  // 複数選択モード中はドラッグ無効
+                }
+
                 await AppendDebugLogAsync($"[OnMouseMove] マウス移動検出 - sender: {sender?.GetType().Name}");
-                
+
                 var currentPosition = e.GetPosition(null);
                 var diff = _dragStartPoint - currentPosition;
 
@@ -737,5 +787,6 @@ namespace DocOrganizer.UI.Behaviors
         }
 
         #endregion
-    }
+
+        }
 }

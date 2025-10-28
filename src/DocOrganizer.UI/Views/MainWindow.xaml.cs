@@ -592,10 +592,29 @@ namespace DocOrganizer.UI.Views
                 if (sender is ListBox listBox)
                 {
                     System.Diagnostics.Debug.WriteLine($"[PageListBox_SelectionChanged] ListBox found, SelectedItems.Count: {listBox.SelectedItems.Count}");
-                    
+
+                    // ✅ V3.0.130: Ctrl/Shiftなしの単独クリック時は他の選択を解除
+                    // これにより全選択後の単独クリックで期待通りの動作を実現
+                    bool isCtrlPressed = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+                    bool isShiftPressed = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
+
+                    if (!isCtrlPressed && !isShiftPressed && listBox.SelectedItems.Count == 1)
+                    {
+                        // 単独クリック: 他の選択を解除
+                        var selectedItem = listBox.SelectedItem as V3PageViewModel;
+                        if (selectedItem != null && V3ViewModel?.PageOperation?.Pages != null)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[PageListBox_SelectionChanged] 単独クリック検出 - 他の選択を解除");
+                            foreach (var page in V3ViewModel.PageOperation.Pages)
+                            {
+                                page.IsSelected = (page == selectedItem);
+                            }
+                        }
+                    }
+
                     // 🎯 V3.0.121: 二重バインディング防止 - 手動同期ループを完全削除
                     // TwoWayBindingが既に同期を保証しているため、手動同期は不要かつ有害
-                    
+
                     // ✅ 選択状態の変更を通知（ボタン有効化等のUI更新用）
                     if (V3ViewModel?.PageOperation != null)
                     {
@@ -713,6 +732,17 @@ namespace DocOrganizer.UI.Views
                 }
                 
                 System.Diagnostics.Debug.WriteLine($"[SyncSelectionFromViewModel] ListBox選択同期完了: {PageListBox.SelectedItems.Count}ページ");
+            }
+        }
+
+        // ✅ V3.0.130: 全選択時にListBoxに直接全選択を指示するヘルパーメソッド
+        // ListBoxの仮想化により、ViewModelのIsSelectedだけでは可視領域のみ選択される問題を解決
+        public void ForceListBoxFullSelection()
+        {
+            if (PageListBox != null && V3ViewModel?.PageOperation?.Pages != null)
+            {
+                PageListBox.SelectAll();  // ✅ ListBoxに直接全選択を指示
+                System.Diagnostics.Debug.WriteLine($"[ForceListBoxFullSelection] ListBox.SelectAll()実行 - SelectedItems.Count: {PageListBox.SelectedItems.Count}");
             }
         }
 

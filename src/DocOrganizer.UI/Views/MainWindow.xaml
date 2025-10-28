@@ -330,7 +330,8 @@
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
                                             <Setter Property="Foreground" Value="#0078D4"/>
-                                            <Setter Property="Text" Value="{Binding PageOperation.SelectedPagesCount, StringFormat='{}{0}ページ選択'}"/>
+                                            <!-- ✅ V3.0.132: SelectedPagesCountTextに変更（ListBox仮想化に依存しない正確な表示） -->
+                                            <Setter Property="Text" Value="{Binding PageOperation.SelectedPagesCountText}"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding PageOperation.IsAllPagesSelected}" Value="True">
                                                     <Setter Property="Foreground" Value="White"/>
@@ -347,7 +348,8 @@
                     </Border>
 
                     <!-- サムネイルリスト -->
-                    <ListBox Grid.Row="1" 
+                    <!-- ✅ V3.0.134: IsDragSourceをListBoxItemに移動（ScrollBarとの完全分離） -->
+                    <ListBox Grid.Row="1"
                              x:Name="PageListBox"
                              ItemsSource="{Binding Pages}"
                              Background="White"
@@ -356,9 +358,7 @@
                              SelectionMode="Extended"
                              AllowDrop="True"
                              SelectionChanged="PageListBox_SelectionChanged"
-                             behaviors:V3AdvancedDragDropBehavior.IsDragSource="True"
                              behaviors:V3AdvancedDragDropBehavior.IsDropTarget="True"
-                             behaviors:V3AdvancedDragDropBehavior.DragHandler="{Binding DragDropHandler}"
                              behaviors:V3AdvancedDragDropBehavior.DropHandler="{Binding DragDropHandler}">
                         
                         <ListBox.ItemContainerStyle>
@@ -370,7 +370,11 @@
                                 <Setter Property="Padding" Value="4"/>
                                 <!-- IsSelectedバインディングでViewModelと同期 -->
                                 <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
-                                
+
+                                <!-- ✅ V3.0.134: IsDragSourceをListBoxItemレベルに移動（ScrollBarとの完全分離） -->
+                                <Setter Property="behaviors:V3AdvancedDragDropBehavior.IsDragSource" Value="True"/>
+                                <Setter Property="behaviors:V3AdvancedDragDropBehavior.DragHandler" Value="{Binding DataContext.DragDropHandler, RelativeSource={RelativeSource AncestorType=ListBox}}"/>
+
                                 <Style.Triggers>
                                     <!-- 選択状態の強調表示 -->
                                     <Trigger Property="IsSelected" Value="True">
