@@ -349,12 +349,15 @@
 
                     <!-- サムネイルリスト -->
                     <!-- ✅ V3.0.134: IsDragSourceをListBoxItemに移動（ScrollBarとの完全分離） -->
+                    <!-- ✅ V3.0.140: 仮想化無効化 - 全選択表示数問題の最終解決 -->
+                    <!-- 10回の試行錯誤の結果、仮想化無効化が唯一の確実な解決策と判明 -->
                     <ListBox Grid.Row="1"
                              x:Name="PageListBox"
                              ItemsSource="{Binding Pages}"
                              Background="White"
                              BorderThickness="0"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             VirtualizingStackPanel.IsVirtualizing="False"
                              SelectionMode="Extended"
                              AllowDrop="True"
                              SelectionChanged="PageListBox_SelectionChanged"

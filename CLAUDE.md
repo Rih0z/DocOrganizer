@@ -5,7 +5,7 @@ ai_coding_principles:
   version: "3.0"
   last_updated: "2025-10-27"
   project: "DocOrganizer - CubePDF Utility互換 汎用PDF編集ツール"
-  current_version: "3.0.134"
+  current_version: "3.0.140"
 ```
 
 ## ⚠️ 必須宣言事項

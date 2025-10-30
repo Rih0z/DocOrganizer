@@ -177,12 +177,21 @@ namespace DocOrganizer.UI.Behaviors
         private static bool _isDragging;
         private static bool _isDropProcessing; // 🎯 V3.0.025: イベント重複防止フラグ
 
+        // ✅ V3.0.136: 複数選択ドラッグ&ドロップ対応
+        private static bool _isMultiSelectMode = false;  // Ctrl/Shift押下中フラグ
+        private static DateTime _mouseDownTime;  // マウスダウン時刻記録
+        private const int MultiSelectDragDelayMs = 200;  // 複数選択時のドラッグ判定遅延（200ms）
+
         /// <summary>
         /// ✅ V3.0.133: PreviewMouseLeftButtonDownイベントハンドラー（トンネリングイベント）
+        /// ✅ V3.0.136: 複数選択D&D対応 - 距離判定+時間遅延の二重判定
         /// ListBoxItemのクリックのみをドラッグ対象とし、ScrollBar等を完全除外
         /// </summary>
         private static void OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            // ✅ V3.0.136: マウスダウン時刻を記録（時間遅延判定用）
+            _mouseDownTime = DateTime.Now;
+
             _ = AppendDebugLogAsync($"[OnPreviewMouseLeftButtonDown] イベント発火 - sender: {sender?.GetType().Name}, OriginalSource: {e.OriginalSource?.GetType().Name}");
 
             // ✅ V3.0.133: ListBoxItem判定による確実なドラッグ対象識別
@@ -193,28 +202,24 @@ namespace DocOrganizer.UI.Behaviors
             {
                 // ListBoxItem以外（ScrollBar、余白、ヘッダー等）はドラッグ無効
                 _isDragging = false;
+                _isMultiSelectMode = false;
                 _ = AppendDebugLogAsync("[OnPreviewMouseLeftButtonDown] ListBoxItem以外のクリック - ドラッグ無効化（ScrollBar等）");
                 return;
             }
 
             _ = AppendDebugLogAsync($"[OnPreviewMouseLeftButtonDown] ListBoxItemクリック検出 - DataContext: {listBoxItem.DataContext?.GetType().Name}");
 
-            // ✅ V3.0.130: Ctrl/Shift時はドラッグ無効化（複数選択操作を優先）
+            // ✅ V3.0.136: Ctrl/Shift判定してフラグ設定（ドラッグは後で判定）
             bool isCtrlPressed = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
             bool isShiftPressed = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
 
-            if (isCtrlPressed || isShiftPressed)
-            {
-                // 複数選択モード: ドラッグ無効
-                _isDragging = false;
-                _ = AppendDebugLogAsync("[OnPreviewMouseLeftButtonDown] Ctrl/Shift検出 - ドラッグ無効化（複数選択優先）");
-                return;
-            }
-
-            // ✅ ListBoxItemのドラッグ開始点を記録
+            // ✅ V3.0.136: Ctrl/Shift時もドラッグ開始点を記録（フラグで区別）
+            // 距離判定+時間遅延の二重判定で、クリックとドラッグを区別
             _dragStartPoint = e.GetPosition(null);
             _isDragging = false;
-            _ = AppendDebugLogAsync($"[OnPreviewMouseLeftButtonDown] ListBoxItemドラッグ開始点記録 - Position: X={_dragStartPoint.X:F1}, Y={_dragStartPoint.Y:F1}");
+            _isMultiSelectMode = isCtrlPressed || isShiftPressed;
+
+            _ = AppendDebugLogAsync($"[OnPreviewMouseLeftButtonDown] ドラッグ開始点記録 - Position: X={_dragStartPoint.X:F1}, Y={_dragStartPoint.Y:F1}, MultiSelectMode: {_isMultiSelectMode}");
         }
 
 
@@ -230,25 +235,32 @@ namespace DocOrganizer.UI.Behaviors
                     return;
                 }
 
-                // ✅ V3.0.130: Ctrl/Shift時はドラッグ判定スキップ（複数選択優先）
-                bool isCtrlPressed = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
-                bool isShiftPressed = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
-
-                if (isCtrlPressed || isShiftPressed)
+                // ✅ V3.0.136: MultiSelectMode時は時間遅延を追加
+                // Ctrl+クリック（即座）とCtrl+ドラッグ（長押し）を区別
+                if (_isMultiSelectMode)
                 {
-                    await AppendDebugLogAsync("[OnMouseMove] Ctrl/Shift検出 - ドラッグ判定スキップ（複数選択優先）");
-                    return;  // 複数選択モード中はドラッグ無効
+                    var elapsed = (DateTime.Now - _mouseDownTime).TotalMilliseconds;
+                    if (elapsed < MultiSelectDragDelayMs)
+                    {
+                        await AppendDebugLogAsync($"[OnMouseMove] MultiSelectMode時間遅延中 - {elapsed:F0}ms < {MultiSelectDragDelayMs}ms");
+                        return;  // まだドラッグと判定しない
+                    }
                 }
 
-                await AppendDebugLogAsync($"[OnMouseMove] マウス移動検出 - sender: {sender?.GetType().Name}");
+                await AppendDebugLogAsync($"[OnMouseMove] マウス移動検出 - sender: {sender?.GetType().Name}, MultiSelectMode: {_isMultiSelectMode}");
 
                 var currentPosition = e.GetPosition(null);
                 var diff = _dragStartPoint - currentPosition;
 
-                if (Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance ||
-                    Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance)
+                // ✅ V3.0.136: MultiSelectMode時は距離閾値を3倍に
+                // Ctrl+小移動（選択）とCtrl+大移動（ドラッグ）を区別
+                double thresholdMultiplier = _isMultiSelectMode ? 3.0 : 1.0;
+                double thresholdH = SystemParameters.MinimumHorizontalDragDistance * thresholdMultiplier;
+                double thresholdV = SystemParameters.MinimumVerticalDragDistance * thresholdMultiplier;
+
+                if (Math.Abs(diff.X) > thresholdH || Math.Abs(diff.Y) > thresholdV)
                 {
-                    await AppendDebugLogAsync($"[OnMouseMove] ドラッグ距離閾値越え - 距離: X={Math.Abs(diff.X):F1}, Y={Math.Abs(diff.Y):F1}");
+                    await AppendDebugLogAsync($"[OnMouseMove] ドラッグ距離閾値越え - MultiSelectMode: {_isMultiSelectMode}, 距離: X={Math.Abs(diff.X):F1}, Y={Math.Abs(diff.Y):F1}, 閾値: {thresholdH:F1}px");
                     _isDragging = true;
                     await StartDragAsync(sender as FrameworkElement, e);
                 }

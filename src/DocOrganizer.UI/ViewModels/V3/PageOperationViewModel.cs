@@ -28,6 +28,7 @@ namespace DocOrganizer.UI.ViewModels.V3
         private readonly IUndoRedoService _undoRedoService;
         private readonly IThumbnailGeneratorService _thumbnailService;
         private bool _isMovingPage = false;  // 再入防止フラグ
+        private bool _isSelectAllRunning = false;  // ✅ V3.0.139: SelectAll実行中フラグ（IsAllPagesSelected保護用）
         private Action? _syncSelectionToView;  // V3.0.115: View選択状態同期用コールバック
         private Action? _disableSelectionEvents;  // V3.0.115: SelectionChangedイベント無効化用
         private Action? _enableSelectionEvents;   // V3.0.115: SelectionChangedイベント再有効化用
@@ -108,24 +109,50 @@ namespace DocOrganizer.UI.ViewModels.V3
             if (Pages == null || Pages.Count == 0) return;
 
             System.Diagnostics.Debug.WriteLine($"[SelectAll] 全選択開始: {Pages.Count}ページ");
+            DebugLogger.Log($"[SelectAll] 開始 - Pages.Count={Pages.Count}");
 
+            // ✅ V3.0.139: SelectAll実行中フラグON
+            // PageListBox_SelectionChanged → NotifyPageSelectionChanged() → UpdateSelectionState()
+            // による IsAllPagesSelected 上書きを防ぐ
+            _isSelectAllRunning = true;
+
+            // 全ページのIsSelectedをtrueに設定
             foreach (var page in Pages)
             {
                 page.IsSelected = true;
             }
 
-            UpdateSelectionState();
+            // ✅ V3.0.138: UpdateSelectionState()を呼ばず、直接設定（仮想化の影響を完全回避）
+            // Pages.Count(p => p.IsSelected)に依存せず、Pages.Countを使用
+            // これにより仮想化によるカウントミスを防ぎ、確実に「全選択中」を表示
+            HasSelectedPages = true;
+            SelectedPagesCount = Pages.Count;  // 実際のカウントではなくPages.Count
+            IsAllPagesSelected = true;  // 強制的にtrue → DataTriggerで「全選択中」表示
+
+            // 全選択時は移動不可（論理的に正しい）
+            CanMoveUp = false;
+            CanMoveDown = false;
+
+            // プロパティ変更通知
+            OnPropertyChanged(nameof(HasSelectedPages));
+            OnPropertyChanged(nameof(SelectedPagesCount));
+            OnPropertyChanged(nameof(IsAllPagesSelected));  // ← 「全選択中」表示トリガー
+            OnPropertyChanged(nameof(SelectedPagesCountText));
+            OnPropertyChanged(nameof(CanMoveUp));
+            OnPropertyChanged(nameof(CanMoveDown));
+
             StatusMessage = $"全てのページ ({Pages.Count}ページ) を選択しました";
 
-            // ✅ V3.0.130: MainWindowに全選択を通知（ListBoxの仮想化対策）
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-            {
-                var mainWindow = System.Windows.Application.Current.MainWindow as MainWindow;
-                mainWindow?.ForceListBoxFullSelection();
-            });
+            DebugLogger.Log($"[SelectAll] IsAllPagesSelected=True設定完了, _isSelectAllRunning=true");
 
-            // 選択状態変更を通知
-            NotifyPageSelectionChanged();
+            // ✅ V3.0.139: フラグOFF（遅延実行、Background優先度）
+            // Dispatcher優先度により、SelectionChangedイベント処理後に実行されることを保証
+            // これによりIsAllPagesSelected=trueが確実に保護される
+            System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
+            {
+                _isSelectAllRunning = false;
+                DebugLogger.Log("[SelectAll] _isSelectAllRunning=false（フラグ解除）");
+            }, System.Windows.Threading.DispatcherPriority.Background);
 
             // ポップアップは表示しない（ステータスメッセージのみ）
         }
@@ -877,10 +904,17 @@ F11: フルスクリーン
         private void UpdateSelectionState()
         {
             var selectedCount = Pages.Count(p => p.IsSelected);
+
+            // ✅ V3.0.135: 詳細デバッグログ
+            DebugLogger.Log($"[UpdateSelectionState] 開始 - Pages.Count={Pages.Count}, selectedCount={selectedCount}");
+
             HasSelectedPages = selectedCount > 0;
             SelectedPagesCount = selectedCount;
             IsAllPagesSelected = Pages.Count > 0 && selectedCount == Pages.Count;
-            
+
+            // ✅ V3.0.135: 計算結果をログ出力
+            DebugLogger.Log($"[UpdateSelectionState] 計算完了 - SelectedPagesCount={SelectedPagesCount}, IsAllPagesSelected={IsAllPagesSelected}");
+
             System.Diagnostics.Debug.WriteLine($"[UpdateSelectionState] SelectedCount: {selectedCount}, HasSelectedPages: {HasSelectedPages}, IsAllPagesSelected: {IsAllPagesSelected}");
 
             // 🎯 V3.0.122: 複数選択時も上下移動ボタン有効化
@@ -1128,6 +1162,16 @@ F11: フルスクリーン
 
         public void NotifyPageSelectionChanged()
         {
+            // ✅ V3.0.139: SelectAll実行中はUpdateSelectionState()をスキップ
+            // SelectAll()で設定したIsAllPagesSelected=trueを保護
+            // PageListBox_SelectionChangedからの呼び出しによる上書きを防ぐ
+            if (_isSelectAllRunning)
+            {
+                System.Diagnostics.Debug.WriteLine("[NotifyPageSelectionChanged] SelectAll実行中のためスキップ");
+                DebugLogger.Log("[NotifyPageSelectionChanged] SelectAll実行中のためスキップ - IsAllPagesSelected保護");
+                return;
+            }
+
             System.Diagnostics.Debug.WriteLine("[NotifyPageSelectionChanged] Called");
             UpdateSelectionState();
         }
