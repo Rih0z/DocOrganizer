@@ -360,6 +360,7 @@
                              VirtualizingStackPanel.IsVirtualizing="False"
                              SelectionMode="Extended"
                              AllowDrop="True"
+                             PreviewMouseLeftButtonDown="PageListBox_PreviewMouseLeftButtonDown"
                              SelectionChanged="PageListBox_SelectionChanged"
                              behaviors:V3AdvancedDragDropBehavior.IsDropTarget="True"
                              behaviors:V3AdvancedDragDropBehavior.DropHandler="{Binding DragDropHandler}">

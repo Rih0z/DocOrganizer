@@ -255,6 +255,216 @@ namespace DocOrganizer.Infrastructure.Services.V3
 
         // Private helper methods
         
+
+        /// <summary>
+        /// 🚀 V3.0.143: キャッシュされたSKBitmapをメモリ上で回転
+        /// ディスクI/O不要で超高速（GPU不要、全環境で同じ速度）
+        /// </summary>
+        /// <param name="source">元のSKBitmap</param>
+        /// <param name="degrees">回転角度（90, 180, 270）</param>
+        /// <returns>回転済みSKBitmap、失敗時はnull</returns>
+        public SkiaSharp.SKBitmap? RotateCachedBitmap(SkiaSharp.SKBitmap source, int degrees)
+        {
+            if (source == null)
+            {
+                _logger?.LogWarning("[RotateCachedBitmap] source is null");
+                return null;
+            }
+
+            try
+            {
+                // 回転角度を正規化（0-359）
+                degrees = (degrees % 360 + 360) % 360;
+
+                // 回転不要の場合は元のBitmapをそのまま返す（コピーなし）
+                if (degrees == 0)
+                {
+                    return source;
+                }
+
+                // 新しいサイズを計算
+                int newWidth = (degrees == 90 || degrees == 270) ? source.Height : source.Width;
+                int newHeight = (degrees == 90 || degrees == 270) ? source.Width : source.Height;
+
+                // メモリ不足チェック（500MB制限）
+                long estimatedBytes = (long)newWidth * newHeight * 4;  // RGBA = 4 bytes/pixel
+                if (estimatedBytes > 500 * 1024 * 1024)
+                {
+                    _logger?.LogWarning("[RotateCachedBitmap] 画像が大きすぎます: {Size}MB - フォールバック",
+                        estimatedBytes / 1024 / 1024);
+                    return null;  // フォールバックに委譲
+                }
+
+                // 回転済みBitmapを作成
+                var rotated = new SkiaSharp.SKBitmap(newWidth, newHeight, source.ColorType, source.AlphaType);
+                if (rotated == null)
+                {
+                    _logger?.LogError("[RotateCachedBitmap] SKBitmap作成失敗");
+                    return null;
+                }
+
+                // Canvas作成と回転描画
+                using (var canvas = new SkiaSharp.SKCanvas(rotated))
+                {
+                    if (canvas == null)
+                    {
+                        rotated.Dispose();
+                        _logger?.LogError("[RotateCachedBitmap] SKCanvas作成失敗");
+                        return null;
+                    }
+
+                    // 回転の中心を画像中央に設定
+                    canvas.Translate(newWidth / 2f, newHeight / 2f);
+                    canvas.RotateDegrees(degrees);
+                    canvas.Translate(-source.Width / 2f, -source.Height / 2f);
+                    canvas.DrawBitmap(source, 0, 0);
+                }
+
+                _logger?.LogDebug("[RotateCachedBitmap] 成功: {Width}x{Height}, {Degrees}度",
+                    newWidth, newHeight, degrees);
+
+                return rotated;
+            }
+            catch (OutOfMemoryException ex)
+            {
+                _logger?.LogError(ex, "[RotateCachedBitmap] メモリ不足");
+                return null;  // フォールバックに委譲
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "[RotateCachedBitmap] 予期しないエラー");
+                return null;  // フォールバックに委譲
+            }
+        }
+
+        /// <summary>
+        /// 🚀 V3.0.143: キャッシュされたSKBitmapから回転済みBitmapSourceを生成
+        /// rotatedBitmapをout引数で返し、呼び出し側でPdfPage.SetThumbnailImageに設定
+        /// </summary>
+        /// <param name="cachedBitmap">キャッシュされたSKBitmap</param>
+        /// <param name="rotation">回転角度</param>
+        /// <param name="rotatedBitmap">回転済みSKBitmap（呼び出し側がSetThumbnailImageで設定）</param>
+        /// <returns>表示用BitmapSource、失敗時はnull</returns>
+        public BitmapSource? GenerateBitmapSourceFromCache(SkiaSharp.SKBitmap cachedBitmap, int rotation, out SkiaSharp.SKBitmap? rotatedBitmap)
+        {
+            rotatedBitmap = null;
+
+            if (cachedBitmap == null)
+            {
+                _logger?.LogWarning("[GenerateBitmapSourceFromCache] cachedBitmap is null");
+                return null;
+            }
+
+            try
+            {
+                // キャッシュを回転
+                rotatedBitmap = RotateCachedBitmap(cachedBitmap, rotation);
+                if (rotatedBitmap == null)
+                {
+                    _logger?.LogWarning("[GenerateBitmapSourceFromCache] 回転失敗 - フォールバック必要");
+                    return null;
+                }
+
+                // BitmapSourceに変換
+                var bitmapSource = ConvertSKBitmapToBitmapSource(rotatedBitmap);
+
+                if (bitmapSource == null)
+                {
+                    _logger?.LogWarning("[GenerateBitmapSourceFromCache] BitmapSource変換失敗");
+
+                    // 変換失敗時はrotatedBitmapをDispose（メモリリーク防止）
+                    if (rotatedBitmap != cachedBitmap)
+                    {
+                        rotatedBitmap.Dispose();
+                        rotatedBitmap = null;
+                    }
+
+                    return null;
+                }
+
+                // Freeze処理（UI最適化）
+                if (bitmapSource.CanFreeze && !bitmapSource.IsFrozen)
+                {
+                    bitmapSource.Freeze();
+                }
+
+                _logger?.LogDebug("[GenerateBitmapSourceFromCache] 成功: {Width}x{Height}",
+                    bitmapSource.PixelWidth, bitmapSource.PixelHeight);
+
+                return bitmapSource;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "[GenerateBitmapSourceFromCache] 予期しないエラー");
+
+                // エラー時はrotatedBitmapをDispose
+                if (rotatedBitmap != null && rotatedBitmap != cachedBitmap)
+                {
+                    rotatedBitmap.Dispose();
+                    rotatedBitmap = null;
+                }
+
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 🚀 V3.0.143: SKBitmapをBitmapSourceに変換
+        /// </summary>
+        private BitmapSource? ConvertSKBitmapToBitmapSource(SkiaSharp.SKBitmap skBitmap)
+        {
+            try
+            {
+                if (skBitmap == null) return null;
+
+                var width = skBitmap.Width;
+                var height = skBitmap.Height;
+                var dpi = 96.0;
+
+                // SKBitmapのピクセルデータを取得
+                var pixels = skBitmap.Pixels;
+                var stride = width * 4; // BGRA32形式
+                var pixelData = new byte[height * stride];
+
+                // SKColorからBGRA形式に変換
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    {
+                        var skColor = pixels[y * width + x];
+                        var index = (y * width + x) * 4;
+
+                        pixelData[index] = skColor.Blue;      // B
+                        pixelData[index + 1] = skColor.Green;  // G
+                        pixelData[index + 2] = skColor.Red;    // R
+                        pixelData[index + 3] = skColor.Alpha;  // A
+                    }
+                }
+
+                // BitmapSourceを作成
+                var bitmap = BitmapSource.Create(
+                    width, height,
+                    dpi, dpi,
+                    System.Windows.Media.PixelFormats.Bgra32,
+                    null,
+                    pixelData,
+                    stride);
+
+                // Freezeして不変にする
+                if (bitmap.CanFreeze && !bitmap.IsFrozen)
+                {
+                    bitmap.Freeze();
+                }
+
+                return bitmap;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "[ConvertSKBitmapToBitmapSource] 変換エラー");
+                return null;
+            }
+        }
+
         private string ExtractPdfPageAsImage(string pdfFilePath, int pageIndex)
         {
             // 🎯 実装例: PDF ページを画像として抽出

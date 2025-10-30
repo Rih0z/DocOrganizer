@@ -31,42 +31,13 @@ namespace DocOrganizer.UI
 
         public App()
         {
-            // 🚨 EMERGENCY CONSTRUCTOR DIAGNOSTIC: コンストラクタ実行確認
             try
             {
-                var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                var constructorDiagnosticPath = Path.Combine(baseDir, "constructor_diagnostic.txt");
-                var message = $"App() constructor called at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n";
-                message += $"BaseDirectory: {baseDir}\n";
-                File.WriteAllText(constructorDiagnosticPath, message);
-            }
-            catch (Exception ex)
-            {
-                // 緊急診断ファイル作成失敗時はテンプフォルダに
-                try
-                {
-                    var tempPath = Path.GetTempPath();
-                    var fallbackPath = Path.Combine(tempPath, "app_constructor_fallback.txt");
-                    File.WriteAllText(fallbackPath, $"App constructor diagnostic failed: {ex.Message}\n");
-                }
-                catch { /* 完全無視 */ }
-            }
-            
-            try
-            {
-                // 🚨 STEP 1 DIAGNOSTIC: Task.Run前の診断
-                var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                var step1Path = Path.Combine(baseDir, "constructor_step1.txt");
-                File.WriteAllText(step1Path, $"Before Task.Run at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n");
-
                 // 起動高速化: 非同期で重い初期化処理を実行
                 System.Threading.Tasks.Task.Run(() =>
                 {
                     try
                     {
-                        var taskDiagnosticPath = Path.Combine(baseDir, "constructor_task_diagnostic.txt");
-                        File.WriteAllText(taskDiagnosticPath, $"Task.Run started at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n");
-
                         // pdfium.dll初期化（単一EXE対応）- バックグラウンドで実行
                         NativeDllExtractor.InitializePdfium();
                         

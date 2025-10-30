@@ -30,6 +30,25 @@ namespace DocOrganizer.Application.Interfaces.V3
         Task<ImageSource> GenerateRightPreviewImageAsync(string filePath, int rotation = 0, int maxWidth = 1920, int maxHeight = 1080, bool enableAutoCrop = false);
 
         /// <summary>
+        /// 🚀 V3.0.143: キャッシュされたSKBitmapをメモリ上で回転
+        /// ディスクI/O不要で超高速（GPU不要、全環境で同じ速度）
+        /// </summary>
+        /// <param name="source">元のSKBitmap</param>
+        /// <param name="degrees">回転角度（90, 180, 270）</param>
+        /// <returns>回転済みSKBitmap、失敗時はnull</returns>
+        SkiaSharp.SKBitmap? RotateCachedBitmap(SkiaSharp.SKBitmap source, int degrees);
+
+        /// <summary>
+        /// 🚀 V3.0.143: キャッシュされたSKBitmapから回転済みBitmapSourceを生成
+        /// rotatedBitmapをout引数で返し、呼び出し側でPdfPage.SetThumbnailImageに設定
+        /// </summary>
+        /// <param name="cachedBitmap">キャッシュされたSKBitmap</param>
+        /// <param name="rotation">回転角度</param>
+        /// <param name="rotatedBitmap">回転済みSKBitmap（呼び出し側がSetThumbnailImageで設定）</param>
+        /// <returns>表示用BitmapSource、失敗時はnull</returns>
+        System.Windows.Media.Imaging.BitmapSource? GenerateBitmapSourceFromCache(SkiaSharp.SKBitmap cachedBitmap, int rotation, out SkiaSharp.SKBitmap? rotatedBitmap);
+
+        /// <summary>
         /// PDFページからサムネイル生成
         /// </summary>
         /// <param name="pdfFilePath">PDFファイルパス</param>

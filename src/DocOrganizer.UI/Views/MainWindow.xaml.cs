@@ -19,9 +19,13 @@ namespace DocOrganizer.UI.Views
         private Point _startPoint;
         private bool _isDragging;
         private readonly ILogger<MainWindow>? _logger;
-        
+
         // ドラッグ&ドロップ重複処理防止フラグ
         private bool _isProcessingDrop = false;
+
+        // ✅ V3.0.141: クリックとD&D開始を区別するための時刻記録
+        private DateTime _lastMouseDownTime;
+        private const int ClickThresholdMs = 200;  // 200ms以下はクリック、以上はD&D
 
         public MainWindow(ILogger<MainWindow>? logger = null)
         {
@@ -36,35 +40,28 @@ namespace DocOrganizer.UI.Views
             this.Loaded += MainWindow_Loaded;
             
             // 🚨 緊急F1パッチ - 確実にF1キーを動作させる
-            System.Diagnostics.Debug.WriteLine("[F1_DEBUG] KeyDownイベントハンドラー登録開始");
             this.KeyDown += (s, e) =>
             {
-                System.Diagnostics.Debug.WriteLine($"[F1_DEBUG] KeyDown発火: Key={e.Key}");
-                if (e.Key == Key.F1)
+                    if (e.Key == Key.F1)
                 {
-                    System.Diagnostics.Debug.WriteLine("[F1_EMERGENCY] ★★★ F1キー検出 ★★★");
-                    DebugLogger.Log("[F1_EMERGENCY] F1キー検出 - 緊急パッチ実行");
+                            DebugLogger.Log("[F1_EMERGENCY] F1キー検出 - 緊急パッチ実行");
                     
                     var vm = DataContext as MainCompositeViewModel;
                     if (vm?.PageOperation?.ShowHelpCommand != null)
                     {
                         vm.PageOperation.ShowHelpCommand.Execute(null);
-                        System.Diagnostics.Debug.WriteLine("[F1_EMERGENCY] ShowHelpCommand実行完了");
-                        DebugLogger.Log("[F1_EMERGENCY] ShowHelpCommand実行完了");
+                                    DebugLogger.Log("[F1_EMERGENCY] ShowHelpCommand実行完了");
                     }
                     else
                     {
-                        System.Diagnostics.Debug.WriteLine("[F1_EMERGENCY] ShowHelpCommand取得失敗");
-                        DebugLogger.Log("[F1_EMERGENCY] ShowHelpCommand取得失敗");
+                                    DebugLogger.Log("[F1_EMERGENCY] ShowHelpCommand取得失敗");
                     }
                     e.Handled = true;
                 }
             };
-            System.Diagnostics.Debug.WriteLine("[F1_DEBUG] KeyDownイベントハンドラー登録完了");
             
             // キーボードショートカット対応 - 明示的にイベント登録
             this.PreviewKeyDown += Window_PreviewKeyDown;
-            System.Diagnostics.Debug.WriteLine("[MainWindow] PreviewKeyDown event handler registered in constructor");
             
             // ウィンドウ終了時のクリーンアップ
             this.Closing += MainWindow_Closing;
@@ -78,38 +75,28 @@ namespace DocOrganizer.UI.Views
         
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine("=== F1キーバインディング完全デバッグ開始 ===");
             
             // DataContext存在確認
             if (DataContext == null)
             {
-                System.Diagnostics.Debug.WriteLine("[CRITICAL] DataContext is NULL!");
-                return;
+                    return;
             }
             
             if (!(DataContext is MainCompositeViewModel vm))
             {
-                System.Diagnostics.Debug.WriteLine($"[CRITICAL] DataContext型が不正: {DataContext.GetType().Name}");
                 return;
             }
-            
-            System.Diagnostics.Debug.WriteLine($"[F1_FIX] DataContext確認OK: {vm.GetType().Name}");
             
             if (vm.PageOperation == null)
             {
-                System.Diagnostics.Debug.WriteLine("[CRITICAL] PageOperation is NULL!");
-                return;
+                    return;
             }
-            
-            System.Diagnostics.Debug.WriteLine($"[F1_FIX] PageOperation確認OK: {vm.PageOperation.GetType().Name}");
             
             if (vm.PageOperation.ShowHelpCommand == null)
             {
-                System.Diagnostics.Debug.WriteLine("[CRITICAL] ShowHelpCommand is NULL!");
-                return;
+                    return;
             }
             
-            System.Diagnostics.Debug.WriteLine($"[F1_FIX] ShowHelpCommand確認OK: {vm.PageOperation.ShowHelpCommand}");
             
             // 全てのF1関連バインディングを完全クリア
             var allF1Bindings = this.InputBindings
@@ -120,8 +107,7 @@ namespace DocOrganizer.UI.Views
             foreach (var binding in allF1Bindings)
             {
                 this.InputBindings.Remove(binding);
-                System.Diagnostics.Debug.WriteLine("[F1_FIX] 既存F1バインディング削除");
-            }
+                }
             
             // 確実なF1動的バインディング追加
             var f1Binding = new KeyBinding
@@ -132,12 +118,10 @@ namespace DocOrganizer.UI.Views
             };
             
             this.InputBindings.Add(f1Binding);
-            System.Diagnostics.Debug.WriteLine($"[F1_FIX] F1バインディング追加完了 - Command: {f1Binding.Command}");
             
             // Ctrl+A の動的バインディングは削除（XAMLで定義済み）
             // XAMLでの定義を優先し、重複を避ける
             // <KeyBinding Key="A" Modifiers="Ctrl" Command="{Binding PageOperation.SelectAllCommand}"/>
-            System.Diagnostics.Debug.WriteLine("[F1_FIX] Ctrl+A はXAML定義を使用");
             
             // PreviewKeyDownからF1処理を除去
             this.PreviewKeyDown -= Window_PreviewKeyDown;
@@ -145,13 +129,11 @@ namespace DocOrganizer.UI.Views
             {
                 if (evt.Key == Key.F1)
                 {
-                    System.Diagnostics.Debug.WriteLine("[F1_FIX] PreviewKeyDownでF1検出 - InputBindingに委譲");
-                    return; // InputBindingに処理を委譲
+                            return; // InputBindingに処理を委譲
                 }
                 Window_PreviewKeyDown(s, evt); // その他のキー処理
             };
             
-            System.Diagnostics.Debug.WriteLine("=== F1キーバインディング完全デバッグ終了 ===");
             
             // Force command refresh
             CommandManager.InvalidateRequerySuggested();
@@ -182,49 +164,37 @@ namespace DocOrganizer.UI.Views
                         if (PageListBox != null)
                         {
                             PageListBox.SelectionChanged -= PageListBox_SelectionChanged;
-                            System.Diagnostics.Debug.WriteLine("[MainWindow] SelectionChanged event DISABLED");
-                        }
+                                        }
                     },
                     enableEvents: () => 
                     {
                         if (PageListBox != null)
                         {
                             PageListBox.SelectionChanged += PageListBox_SelectionChanged;
-                            System.Diagnostics.Debug.WriteLine("[MainWindow] SelectionChanged event ENABLED");
-                        }
+                                        }
                     }
                 );
-                System.Diagnostics.Debug.WriteLine("[MainWindow] SyncSelectionAction registered with event control");
-            }
+                }
             
             if (PageListBox != null)
             {
-                System.Diagnostics.Debug.WriteLine("[MainWindow] PageListBox found and configured");
-            }
+                }
             else
             {
-                System.Diagnostics.Debug.WriteLine("[MainWindow] PageListBox not found");
-            }
+                }
             
             // ツールバーのボタンのコマンドバインディングを確認
             var toolbar = this.FindName("MainToolBar") as ToolBar;
             if (toolbar != null)
             {
-                System.Diagnostics.Debug.WriteLine($"[MainWindow] ToolBar DataContext: {toolbar.DataContext?.GetType().Name}");
-                
                 int buttonIndex = 0;
                 foreach (var item in toolbar.Items)
                 {
                     if (item is Button button)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[MainWindow] Button[{buttonIndex}]: ToolTip='{button.ToolTip}', Command={button.Command?.GetType().Name ?? "NULL"}, CommandParameter={button.CommandParameter ?? "NULL"}");
-                        
                         // 上下移動ボタンを特定して詳細チェック
                         if (button.ToolTip?.ToString() == "上に移動" || button.ToolTip?.ToString() == "下に移動")
                         {
-                            System.Diagnostics.Debug.WriteLine($"  [詳細] DataContext={button.DataContext?.GetType().Name ?? "NULL"}");
-                            System.Diagnostics.Debug.WriteLine($"  [詳細] IsEnabled={button.IsEnabled}");
-                            
                             // ViewModelから直接コマンドを取得して確認
                             // V3.0.050: 手動Clickハンドラーを削除（二重実行の原因）
                             // CommandバインディングがXAMLで設定されているため、手動ハンドラーは不要
@@ -370,13 +340,11 @@ namespace DocOrganizer.UI.Views
             // ⭐重複処理防止チェック
             if (_isProcessingDrop)
             {
-                System.Diagnostics.Debug.WriteLine("[WARNING] PreviewArea_Drop: Already processing, skipping duplicate event");
-                e.Handled = true;
+                    e.Handled = true;
                 return;
             }
             
             _isProcessingDrop = true;
-            System.Diagnostics.Debug.WriteLine("[DEBUG] PreviewArea_Drop: Started processing");
             
             try
             {
@@ -430,13 +398,11 @@ namespace DocOrganizer.UI.Views
                 {
                     V3ViewModel.StatusManagement.ShowError($"ファイル処理エラー: {ex.Message}", ex);
                 }
-                System.Diagnostics.Debug.WriteLine($"[CRITICAL ERROR] PreviewArea_Drop failed: {ex.Message}");
-            }
+                }
             finally
             {
                 _isProcessingDrop = false;
-                System.Diagnostics.Debug.WriteLine("[DEBUG] PreviewArea_Drop: Processing completed, flag reset");
-            }
+                }
             
             e.Handled = true;
         }
@@ -512,13 +478,11 @@ namespace DocOrganizer.UI.Views
             // ⭐重複処理防止チェック
             if (_isProcessingDrop)
             {
-                System.Diagnostics.Debug.WriteLine("[WARNING] Window_Drop: Already processing, skipping duplicate event");
-                e.Handled = true;
+                    e.Handled = true;
                 return;
             }
             
             _isProcessingDrop = true;
-            System.Diagnostics.Debug.WriteLine("[DEBUG] Window_Drop: Started processing");
             
             try
             {
@@ -568,13 +532,11 @@ namespace DocOrganizer.UI.Views
                 {
                     V3ViewModel.StatusManagement.ShowError($"ファイル処理エラー: {ex.Message}", ex);
                 }
-                System.Diagnostics.Debug.WriteLine($"[CRITICAL ERROR] Window_Drop failed: {ex.Message}");
-            }
+                }
             finally
             {
                 _isProcessingDrop = false;
-                System.Diagnostics.Debug.WriteLine("[DEBUG] Window_Drop: Processing completed, flag reset");
-            }
+                }
             
             e.Handled = true;
         }
@@ -591,25 +553,33 @@ namespace DocOrganizer.UI.Views
                 
                 if (sender is ListBox listBox)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[PageListBox_SelectionChanged] ListBox found, SelectedItems.Count: {listBox.SelectedItems.Count}");
-
+        
                     // ✅ V3.0.130: Ctrl/Shiftなしの単独クリック時は他の選択を解除
-                    // これにより全選択後の単独クリックで期待通りの動作を実現
+                    // ✅ V3.0.141: 時間判定でクリックとD&D開始を区別（複数選択D&D対応）
                     bool isCtrlPressed = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
                     bool isShiftPressed = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
 
                     if (!isCtrlPressed && !isShiftPressed && listBox.SelectedItems.Count == 1)
                     {
-                        // 単独クリック: 他の選択を解除
-                        var selectedItem = listBox.SelectedItem as V3PageViewModel;
-                        if (selectedItem != null && V3ViewModel?.PageOperation?.Pages != null)
+                        // ✅ V3.0.141: 時間判定でクリックとD&D開始を区別
+                        var elapsed = (DateTime.Now - _lastMouseDownTime).TotalMilliseconds;
+
+                        if (elapsed < ClickThresholdMs)  // 200ms以下 = クリック
                         {
-                            System.Diagnostics.Debug.WriteLine($"[PageListBox_SelectionChanged] 単独クリック検出 - 他の選択を解除");
-                            foreach (var page in V3ViewModel.PageOperation.Pages)
+                            // 短時間クリック: 他の選択を解除（バグ4対策）
+                            var selectedItem = listBox.SelectedItem as V3PageViewModel;
+                            if (selectedItem != null && V3ViewModel?.PageOperation?.Pages != null)
                             {
-                                page.IsSelected = (page == selectedItem);
+                                                    foreach (var page in V3ViewModel.PageOperation.Pages)
+                                {
+                                    page.IsSelected = (page == selectedItem);
+                                }
                             }
                         }
+                        else
+                        {
+                            // 長押し（D&D開始）: 選択解除しない（複数選択D&D対応）
+                                        }
                     }
 
                     // 🎯 V3.0.121: 二重バインディング防止 - 手動同期ループを完全削除
@@ -619,8 +589,7 @@ namespace DocOrganizer.UI.Views
                     if (V3ViewModel?.PageOperation != null)
                     {
                         V3ViewModel.PageOperation.NotifyPageSelectionChanged();
-                        System.Diagnostics.Debug.WriteLine($"[PageListBox_SelectionChanged] 選択ページ数: {listBox.SelectedItems.Count}");
-                    }
+                                }
                     
                     // 単一選択時のプレビュー更新（最初の選択ページ）
                     if (listBox.SelectedItem is V3PageViewModel selectedPage && V3ViewModel != null)
@@ -631,20 +600,8 @@ namespace DocOrganizer.UI.Views
                         V3ViewModel.SelectedPage = selectedPage;
                         
                         // 🚨 新規デバッグ: 詳細ログ出力
-                        System.Diagnostics.Debug.WriteLine($"[右側プレビューデバッグ] SelectedPage設定完了: PageNumber={selectedPage.PageNumber}");
-                        System.Diagnostics.Debug.WriteLine($"[右側プレビューデバッグ] V3ViewModel.PreviewManagement={V3ViewModel.PreviewManagement != null}");
-                        System.Diagnostics.Debug.WriteLine($"[右側プレビューデバッグ] V3ViewModel.PreviewManagement.CurrentPageImage={V3ViewModel.PreviewManagement?.CurrentPageImage != null}");
-                        
-                        // 🚨 新規デバッグ: SourceImagePath確認
-                        if (selectedPage.Page?.SourceImagePath != null)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"[右側プレビューデバッグ] SourceImagePath='{selectedPage.Page.SourceImagePath}'");
-                            System.Diagnostics.Debug.WriteLine($"[右側プレビューデバッグ] ファイル存在確認={System.IO.File.Exists(selectedPage.Page.SourceImagePath)}");
-                        }
-                        else
-                        {
-                            System.Diagnostics.Debug.WriteLine("[右側プレビューデバッグ] SourceImagePathがNULL");
-                        }
+                                                            
+
                         
                         // V3.0.102: 複数選択対応 - 単一選択の強制を削除
                         // 以下のコードは複数選択を破壊するためコメントアウト
@@ -661,15 +618,10 @@ namespace DocOrganizer.UI.Views
                             V3ViewModel.PageOperation.NotifyPageSelectionChanged();
                         }
                     }
-                    else
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[PageListBox_SelectionChanged] SelectedItem is not V3PageViewModel: {listBox.SelectedItem?.GetType().Name}");
-                    }
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine("[PageListBox_SelectionChanged] Sender is not ListBox");
-                }
+                        }
             }
             catch (Exception ex)
             {
@@ -684,12 +636,10 @@ namespace DocOrganizer.UI.Views
         // PreviewKeyDownイベントハンドラー（ショートカットキー対応）
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine($"[Window_PreviewKeyDown] ★★★ EVENT FIRED ★★★ Key pressed: {e.Key}, Modifiers: {Keyboard.Modifiers}");
             
             if (V3ViewModel == null)
             {
-                System.Diagnostics.Debug.WriteLine("[Window_PreviewKeyDown] V3ViewModel is null!");
-                return;
+                    return;
             }
             
             // F1キーの処理はInputBindingに任せる（二重実装を避けるため削除）
@@ -703,13 +653,7 @@ namespace DocOrganizer.UI.Views
         // デバッグ: DataContextとコマンドの確認
         private void DebugDataContext()
         {
-            System.Diagnostics.Debug.WriteLine($"[DebugDataContext] DataContext: {DataContext?.GetType().Name}");
-            if (DataContext is MainCompositeViewModel vm)
-            {
-                System.Diagnostics.Debug.WriteLine($"[DebugDataContext] PageOperation: {vm.PageOperation}");
-                System.Diagnostics.Debug.WriteLine($"[DebugDataContext] SelectAllCommand: {vm.PageOperation?.SelectAllCommand}");
-                System.Diagnostics.Debug.WriteLine($"[DebugDataContext] ShowHelpCommand: {vm.ShowHelpCommand}");
-            }
+            // デバッグログ削除済み
         }
         
         #endregion
@@ -731,8 +675,7 @@ namespace DocOrganizer.UI.Views
                     PageListBox.SelectedItems.Add(page);
                 }
                 
-                System.Diagnostics.Debug.WriteLine($"[SyncSelectionFromViewModel] ListBox選択同期完了: {PageListBox.SelectedItems.Count}ページ");
-            }
+                }
         }
 
         // ✅ V3.0.130: 全選択時にListBoxに直接全選択を指示するヘルパーメソッド
@@ -742,7 +685,6 @@ namespace DocOrganizer.UI.Views
             if (PageListBox != null && V3ViewModel?.PageOperation?.Pages != null)
             {
                 PageListBox.SelectAll();  // ✅ ListBoxに直接全選択を指示
-                System.Diagnostics.Debug.WriteLine($"[ForceListBoxFullSelection] ListBox.SelectAll()実行 - SelectedItems.Count: {PageListBox.SelectedItems.Count}");
             }
         }
 
@@ -757,8 +699,17 @@ namespace DocOrganizer.UI.Views
                 current = System.Windows.Media.VisualTreeHelper.GetParent(current);
             }
             while (current != null);
-            
+
             return null;
+        }
+
+        /// <summary>
+        /// ✅ V3.0.141: PageListBoxのマウスダウン時刻を記録
+        /// クリックとD&D開始を区別するための時刻記録
+        /// </summary>
+        private void PageListBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            _lastMouseDownTime = DateTime.Now;
         }
 
         private bool IsSupportedFileType(string filePath)

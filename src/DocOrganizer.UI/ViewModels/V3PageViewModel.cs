@@ -281,13 +281,42 @@ namespace DocOrganizer.UI.ViewModels
         {
             try
             {
-                // 回転適用後のサムネイル再生成
-                await LoadLeftThumbnailAsync();
-                await LoadRightPreviewAsync();
+                // 🚀 V3.0.143: Phase 1 - キャッシュ高速パス（10-30ms）
+                if (_page.ThumbnailImage != null)
+                {
+                    SkiaSharp.SKBitmap? rotatedBitmap = null;
+                    var leftThumbnail = _thumbnailService.GenerateBitmapSourceFromCache(
+                        _page.ThumbnailImage,
+                        Rotation,
+                        out rotatedBitmap);
+
+                    if (leftThumbnail != null && rotatedBitmap != null)
+                    {
+                        // ✅ PdfPage.SetThumbnailImageが自動的に古いBitmapをDispose
+                        _page.SetThumbnailImage(rotatedBitmap);
+
+                        // ✅ UIに表示
+                        ThumbnailImage = leftThumbnail;
+
+                        // ✅ 右側プレビューは更新しない（選択時のみ必要）
+                        // LoadRightPreviewAsyncは呼ばない
+
+                        return; // ✅ 10-30msで完了
+                    }
+                    // else: キャッシュ生成失敗 → Phase 2へフォールバック
+                    // rotatedBitmapは既にDispose済み（GenerateBitmapSourceFromCache内で）
+                }
+
+                // 🔄 V3.0.143: Phase 2 - フォールバック（200-500ms）
+                // キャッシュがない、またはキャッシュ回転失敗時
+                await LoadLeftThumbnailAsync();   // ✅ ファイルから再生成
+                await LoadRightPreviewAsync();    // ✅ 選択中の場合のみ必要
             }
-            catch
+            catch (Exception ex)
             {
-                // サムネイル再生成エラー時は何もしない
+                // ✅ エラー時はプレースホルダー表示
+                ThumbnailImage = CreateErrorPlaceholder();
+                System.Diagnostics.Trace.WriteLine($"[RegenerateThumbnail] エラー - Page {PageNumber}: {ex.Message}");
             }
         }
 

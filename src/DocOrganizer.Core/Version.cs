@@ -28,7 +28,7 @@ namespace DocOrganizer.Core
         /// 【重要】このバージョン番号が全システムの基準となる
         /// ビルド時はこの値を基に他の全ファイルが自動更新される
         /// </summary>
-        public const string Version = "3.0.140";
+        public const string Version = "3.0.143";
         
         /// <summary>
         /// .NET AssemblyVersionで使用する4桁形式

@@ -654,7 +654,8 @@ namespace DocOrganizer.UI.ViewModels.V3
         /// </summary>
         private async Task AppendDebugLogAsync(string message)
         {
-            await DocOrganizer.Core.Logging.DebugLogger.LogAsync(message, "PreviewManagement");
+            // デバッグログ削除済み
+            await Task.CompletedTask;
         }
 
         // Events for coordination

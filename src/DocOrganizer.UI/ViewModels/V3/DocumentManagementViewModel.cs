@@ -697,13 +697,8 @@ namespace DocOrganizer.UI.ViewModels.V3
         /// </summary>
         private async Task AppendDebugLogAsync(string message)
         {
-            try
-            {
-                var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}";
-                await DocOrganizer.Core.Logging.DebugLogger.LogAsync(message, "DocumentManagement");
-                System.Diagnostics.Debug.WriteLine($"[DEBUG] {message}");
-            }
-            catch { /* ログ出力エラーは無視 */ }
+            // デバッグログ削除済み
+            await Task.CompletedTask;
         }
 
         protected virtual void OnDocumentSaved(string filePath)

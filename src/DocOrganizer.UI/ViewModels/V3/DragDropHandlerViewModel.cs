@@ -853,16 +853,8 @@ namespace DocOrganizer.UI.ViewModels.V3
         /// </summary>
         private async Task AppendDebugLogAsync(string message)
         {
-            try
-            {
-                var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}";
-                await DocOrganizer.Core.Logging.DebugLogger.LogAsync(message, "DragDropHandler");
-                System.Diagnostics.Debug.WriteLine($"[DRAGDROP_DEBUG] {message}");
-            }
-            catch
-            {
-                // ログ出力エラーは無視
-            }
+            // デバッグログ削除済み
+            await Task.CompletedTask;
         }
 
         // Events for coordination with other ViewModels

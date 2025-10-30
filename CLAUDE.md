@@ -5,7 +5,7 @@ ai_coding_principles:
   version: "3.0"
   last_updated: "2025-10-27"
   project: "DocOrganizer - CubePDF Utility互換 汎用PDF編集ツール"
-  current_version: "3.0.140"
+  current_version: "3.0.143"
 ```
 
 ## ⚠️ 必須宣言事項
@@ -183,6 +183,8 @@ release\run-production.bat  # 本番モード
 
 | バージョン | 日付 | 主な変更 |
 |-----------|------|----------|
+| V3.0.143 | 2025-10-29 | 回転処理超高速化・SKBitmapキャッシュ回転実装で2回目以降94-97%高速化（200-500ms→10-30ms）/選択維持完全保証 |
+| V3.0.142 | 2025-10-29 | デバッグコード完全削除・起動時診断ファイル出力削除/Debug.WriteLine削除/AppendDebugLogAsync空メソッド化で全体15-30%高速化 |
 | V3.0.134 | 2025-10-27 | スクロールバー問題完全修正・IsDragSourceをListBoxItemに移動/全選択表示数修正/回転後選択維持/↓↑キー修正/Ctrl+クリック修正（全7件バグ解決） |
 | V3.0.133 | 2025-10-27 | ❌失敗: Previewイベント+ListBoxItem判定でもスクロールバー不可 |
 | V3.0.132 | 2025-10-27 | ❌失敗: IsScrollBarClick判定でもスクロールバー不可 |

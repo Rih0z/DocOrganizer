@@ -1154,7 +1154,8 @@ F11: フルスクリーン
                 DebugLogger.Log($"[RefreshPageListWithSelection] サムネイル非同期更新開始");
                 foreach (var pageVm in newPages)
                 {
-                    await pageVm.LoadThumbnailWithRotationAsync();
+                    // 🚀 V3.0.143: キャッシュ高速パス優先
+                    await pageVm.RegenerateThumbnailAfterRotationAsync();
                 }
                 DebugLogger.Log($"[RefreshPageListWithSelection] サムネイル非同期更新完了");
             });
@@ -1347,16 +1348,8 @@ F11: フルスクリーン
         /// </summary>
         private async Task AppendDebugLogAsync(string message)
         {
-            try
-            {
-                var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}";
-                await DocOrganizer.Core.Logging.DebugLogger.LogAsync(message, "PageOperation");
-                System.Diagnostics.Debug.WriteLine($"[PAGE_OPERATION_DEBUG] {message}");
-            }
-            catch
-            {
-                // ログ出力エラーは無視
-            }
+            // デバッグログ削除済み
+            await Task.CompletedTask;
         }
         public event EventHandler<PageOperationEventArgs>? PageRotated;
         public event EventHandler<PageOperationEventArgs>? PageDeleted;
