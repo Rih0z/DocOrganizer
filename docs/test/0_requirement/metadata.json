@@ -1,0 +1,319 @@
+{
+  "phase": "要件定義",
+  "timestamp": "2025-11-12 23:45:00",
+  "version": "2.0",
+  "status": "completed",
+  "review_score": 92,
+  "next_phase": "基本設計",
+  "key_decisions": [
+    "テストは段階的に実装（Phase 1: 必須 → Phase 2: 推奨 → Phase 3: オプション）",
+    "Phase 1で70%カバレッジ達成（7時間、57テストケース）",
+    "Phase 2で+20%カバレッジ追加（2.5時間、12テストケース）",
+    "Phase 3で+10%カバレッジ追加（4時間、8テストケース）",
+    "CI/CD統合を前提とし、GitHub Actionsで自動実行（5分以内）",
+    "テストフレームワークはxUnitを仮選定（基本設計で最終決定）",
+    "GUI統合テストはPhase 3（オプション）として優先度を下げる",
+    "テストデータはリポジトリ管理（小容量）とオンデマンド生成（大容量）のハイブリッド方式"
+  ],
+  "open_issues": [
+    "テストフレームワークの最終選定（xUnit vs MSTest vs NUnit）",
+    "GUI統合テストツールの選定（FlaUI vs TestStack.White）",
+    "パフォーマンステストのベースライン閾値の微調整",
+    "CI/CD環境でのGPU利用可否の確認"
+  ],
+  "scope": {
+    "in_scope": [
+      "V3.0.153の23箇所のデバッグフラグ統一検証",
+      "V3.0.145-152の回帰テスト（選択維持バグ再発防止）",
+      "DocOrganizer核心機能5つのテスト（PDF読込・回転・Undo/Redo・保存・D&D）",
+      "コンパイル時テスト（ILコード解析）",
+      "静的解析テスト（Roslynアナライザー）",
+      "パフォーマンステスト（BenchmarkDotNet）",
+      "ユニットテスト（重要クラス・メソッド）",
+      "CI/CD統合（GitHub Actions）"
+    ],
+    "out_of_scope": [
+      "既存機能の網羅的ユニットテスト（全クラス・全メソッド）",
+      "GUI統合テストの完全自動化（Phase 3でオプション実装）",
+      "エンドツーエンドテスト（E2E）",
+      "過去バージョンとの互換性テスト",
+      "マルチプラットフォームテスト（Windowsのみ対象）",
+      "負荷テスト・ストレステスト"
+    ]
+  },
+  "requirements": {
+    "functional": {
+      "v3_0_153_verification": {
+        "priority": 1,
+        "count": 23,
+        "coverage_contribution": "30%",
+        "traceability_ids": "V153-001 to V153-024"
+      },
+      "v3_0_145_152_regression": {
+        "priority": 1,
+        "count": 4,
+        "coverage_contribution": "10%",
+        "traceability_ids": "REG-001 to REG-004"
+      },
+      "core_functionality": {
+        "priority": 1,
+        "count": 25,
+        "coverage_contribution": "30%",
+        "traceability_ids": "CORE-001 to CORE-025"
+      },
+      "compile_time_tests": {
+        "priority": 2,
+        "count": 3,
+        "coverage_contribution": "10%"
+      },
+      "static_analysis_tests": {
+        "priority": 2,
+        "count": 2,
+        "coverage_contribution": "10%"
+      },
+      "performance_tests": {
+        "priority": 2,
+        "count": 5,
+        "coverage_contribution": "10%"
+      },
+      "unit_tests_additional": {
+        "priority": 3,
+        "count": 7,
+        "coverage_contribution": "5%"
+      },
+      "integration_tests": {
+        "priority": 4,
+        "count": 8,
+        "coverage_contribution": "10%"
+      }
+    },
+    "non_functional": {
+      "performance": {
+        "priority": 2,
+        "thresholds": {
+          "rotation_operation": "50ms以内",
+          "drag_drop_operation": "5ms以内",
+          "pdf_load_1000pages": "3秒以内",
+          "memory_leak": "10MB/時間未満"
+        }
+      },
+      "maintainability": {
+        "priority": 3,
+        "metrics": {
+          "code_coverage": "80%以上",
+          "test_execution_time": "5分以内",
+          "test_success_rate": "95%以上"
+        }
+      },
+      "extensibility": {
+        "priority": 2,
+        "requirements": [
+          "新規テストケース追加が容易",
+          "テストデータの管理が明確",
+          "CI/CD統合が完全"
+        ]
+      },
+      "compatibility": {
+        "priority": 2,
+        "requirements": [
+          ".NET 8.0互換",
+          "Visual Studio 2022統合",
+          "GitHub Actions互換"
+        ]
+      }
+    }
+  },
+  "risks": [
+    {
+      "id": "RISK-01",
+      "description": "Phase 1実装に予定以上の時間がかかる",
+      "probability": "中",
+      "impact": "中",
+      "mitigation": "優先度に基づく段階的実装。Phase 1内でも必須テストケースを優先"
+    },
+    {
+      "id": "RISK-02",
+      "description": "GUI統合テストが不安定（Flaky Tests）",
+      "probability": "高",
+      "impact": "低",
+      "mitigation": "統合テストはPhase 3（オプション）とし、必須カバレッジに含めない"
+    },
+    {
+      "id": "RISK-03",
+      "description": "パフォーマンステストの閾値設定が困難",
+      "probability": "中",
+      "impact": "中",
+      "mitigation": "複数回測定して平均を取る。基本設計フェーズで詳細決定"
+    },
+    {
+      "id": "RISK-04",
+      "description": "テストデータのリポジトリ容量増加",
+      "probability": "低",
+      "impact": "低",
+      "mitigation": "Git LFSで管理。大容量データはオンデマンド生成"
+    },
+    {
+      "id": "RISK-05",
+      "description": "CI/CD環境でのテスト実行時間超過（5分制限）",
+      "probability": "中",
+      "impact": "高",
+      "mitigation": "Phase 1-2のみCI/CD実行。Phase 3は手動実行"
+    }
+  ],
+  "success_criteria": {
+    "quantitative": {
+      "test_coverage_phase1": "70%以上",
+      "test_coverage_phase2": "90%以上",
+      "test_coverage_phase3": "100%",
+      "test_execution_time_ci": "5分以内",
+      "test_execution_time_full": "15分以内",
+      "test_success_rate": "95%以上",
+      "ci_cd_integration": "100%",
+      "v3_0_153_verification": "23箇所全て検証",
+      "regression_prevention": "V3.0.145-152の3箇所の修正が保証されている"
+    },
+    "qualitative": [
+      "開発者が安心してリファクタリングできる",
+      "バグが早期に発見される（リリース前に発見率90%以上）",
+      "新規機能追加が容易（テスト追加時間が実装時間の20%以内）",
+      "品質保証の自動化（手動テスト時間を80%削減）",
+      "チーム全体でテストの重要性が理解されている"
+    ]
+  },
+  "traceability": {
+    "v3_0_153_locations": {
+      "total": 23,
+      "by_file": {
+        "V3DragDropInfo.cs": 17,
+        "PdfPerformanceMonitor.cs": 1,
+        "SimpleDebugTest.cs": 2,
+        "App.xaml.cs": 3
+      },
+      "test_requirement": "FR-V153-01 to FR-V153-05",
+      "phase": "Phase 1"
+    },
+    "v3_0_145_152_fixes": {
+      "total": 3,
+      "locations": [
+        "PageOperationViewModel.cs: RefreshPageListWithSelection (Pages.Clear()削除)",
+        "MainWindow.xaml.cs: OnPageListSelectionChanged (SelectedItems.Clear()削除)",
+        "MainCompositeViewModel.cs: MovePage (Pages[pageIndex]直接代入削除)"
+      ],
+      "test_requirement": "FR-REG-01 to FR-REG-04",
+      "phase": "Phase 1"
+    },
+    "core_functionalities": {
+      "total": 5,
+      "list": [
+        "PDF読み込み（FR-CORE-01、CORE-001～005）",
+        "ページ回転（FR-CORE-02、CORE-006～010）",
+        "Undo/Redo（FR-CORE-03、CORE-011～015）",
+        "PDF保存（FR-CORE-04、CORE-016～020）",
+        "ドラッグ&ドロップ（FR-CORE-05、CORE-021～025）"
+      ],
+      "test_requirement": "FR-CORE-01 to FR-CORE-05",
+      "phase": "Phase 1"
+    }
+  },
+  "phases": {
+    "phase_1": {
+      "name": "必須",
+      "implementation_time_hours": 7,
+      "test_case_count": 57,
+      "coverage_contribution": "70%",
+      "priority": 1,
+      "ci_cd_required": true,
+      "requirements": [
+        "FR-V153-01 to FR-V153-05 (V3.0.153検証、23テストケース)",
+        "FR-REG-01 to FR-REG-04 (回帰防止、7テストケース)",
+        "FR-CORE-01 to FR-CORE-05 (核心機能、25テストケース)",
+        "FR-SA-01 to FR-SA-02 (静的解析、2テストケース)"
+      ]
+    },
+    "phase_2": {
+      "name": "推奨",
+      "implementation_time_hours": 2.5,
+      "test_case_count": 12,
+      "coverage_contribution": "20%",
+      "priority": 2,
+      "ci_cd_required": true,
+      "requirements": [
+        "FR-PERF-01 to FR-PERF-05 (パフォーマンス、5テストケース)",
+        "FR-UNIT-01 to FR-UNIT-07 (追加ユニット、7テストケース)"
+      ]
+    },
+    "phase_3": {
+      "name": "オプション",
+      "implementation_time_hours": 4,
+      "test_case_count": 8,
+      "coverage_contribution": "10%",
+      "priority": 3,
+      "ci_cd_required": false,
+      "requirements": [
+        "FR-INT-01 to FR-INT-08 (GUI統合、8テストケース)"
+      ]
+    }
+  },
+  "test_data_management": {
+    "repository_managed": {
+      "location": "tests/TestData/",
+      "git_lfs_enabled": true,
+      "max_file_size": "5MB",
+      "files": [
+        "Pdfs/sample_10pages.pdf (500KB)",
+        "Pdfs/sample_empty.pdf (1KB)",
+        "Pdfs/sample_corrupted.pdf (100KB)",
+        "Pdfs/sample_rotated.pdf (800KB)",
+        "Images/sample_page1.png (200KB)",
+        "Images/sample_page2.png (200KB)"
+      ]
+    },
+    "dynamically_generated": {
+      "use_cases": [
+        "1000ページPDF（パフォーマンステスト用）",
+        "破損PDFバリエーション（エラーハンドリングテスト用）",
+        "大容量画像（メモリリークテスト用）"
+      ],
+      "generation_library": "iTextSharp / PDFsharp",
+      "cache_during_test_run": true
+    }
+  },
+  "tools_and_frameworks": {
+    "test_framework": {
+      "primary": "xUnit",
+      "status": "仮選定",
+      "finalization_phase": "基本設計"
+    },
+    "static_analysis": {
+      "primary": "Roslyn Analyzer",
+      "custom_rules": true
+    },
+    "performance_testing": {
+      "primary": "BenchmarkDotNet",
+      "reporting": "Markdown + GitHub Pages"
+    },
+    "gui_automation": {
+      "candidates": ["FlaUI", "TestStack.White"],
+      "status": "未選定",
+      "finalization_phase": "基本設計"
+    },
+    "ci_cd": {
+      "primary": "GitHub Actions",
+      "timeout": "5分",
+      "phases_included": ["Phase 1", "Phase 2"]
+    }
+  },
+  "documentation": {
+    "created": [
+      "要件定義_20251112_234500/document.md",
+      "要件定義_20251112_234500/metadata.json",
+      "要件定義_20251112_234500/message.txt"
+    ],
+    "review_location": ".tmp/要件定義_20251112_234500_review/",
+    "traceability_matrices": [
+      "V3.0.153の23箇所 → テストケース対応表",
+      "V3.0.145-152の3箇所 → 回帰テスト対応表",
+      "核心機能5つ → テストケース対応表"
+    ]
+  }
+}
