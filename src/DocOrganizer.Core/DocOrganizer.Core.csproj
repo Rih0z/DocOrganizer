@@ -4,6 +4,9 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
+
+    <!-- ⭐ デバッグログ設定（リリース版では無効化） -->
+    <!-- <DefineConstants>ENABLE_LOGGING</DefineConstants> -->
   </PropertyGroup>
 
   <ItemGroup>

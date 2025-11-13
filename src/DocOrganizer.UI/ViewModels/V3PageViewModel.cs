@@ -383,6 +383,14 @@ namespace DocOrganizer.UI.ViewModels
         }
 
         /// <summary>
+        /// 🚨 V3.0.150: IsSelected変更時のデバッグログ
+        /// </summary>
+        partial void OnIsSelectedChanged(bool value)
+        {
+            DocOrganizer.Core.Logging.DebugLogger.Log($"[V3PageViewModel] IsSelected変更: PageId={Id}, PageNumber={PageNumber}, IsSelected={value}, StackTrace={Environment.StackTrace}");
+        }
+
+        /// <summary>
         /// リソース解放
         /// </summary>
         public void Dispose()

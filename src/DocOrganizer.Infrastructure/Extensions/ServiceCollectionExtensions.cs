@@ -21,16 +21,8 @@ namespace DocOrganizer.Infrastructure.Extensions
         /// </summary>
         public static IServiceCollection AddImageProcessingProviders(this IServiceCollection services)
         {
-            // 🎯 V3.0.009 統合ログ設定：最小限のログ（App.xaml.csで本格ログ設定済み）
-            var extensionLogger = LoggerFactory.Create(builder => 
-            {
-                builder.SetMinimumLevel(LogLevel.Warning);
-            }).CreateLogger("ServiceCollectionExtensions");
-            
             try
             {
-                extensionLogger.LogInformation("[V3_DI] 🏗️ プロバイダー自動発見開始...");
-                
                 // 属性ベースプロバイダー自動発見
                 var providerTypes = Assembly.GetExecutingAssembly()
                     .GetTypes()
@@ -39,15 +31,10 @@ namespace DocOrganizer.Infrastructure.Extensions
                     .Where(t => typeof(IImageProcessingProvider).IsAssignableFrom(t))
                     .ToArray();
 
-                extensionLogger.LogInformation("[V3_DI] 発見されたプロバイダー数: {Count}", providerTypes.Length);
-                
                 foreach (var providerType in providerTypes)
                 {
                     var attribute = providerType.GetCustomAttribute<ImageProcessingProviderAttribute>();
                     services.AddScoped(typeof(IImageProcessingProvider), providerType);
-                    
-                    extensionLogger.LogDebug("[V3_DI] プロバイダー登録: {Provider} (優先度: {Priority})", 
-                        attribute?.Name ?? providerType.Name, attribute?.Priority ?? 50);
                 }
 
                 // マネージャー登録
@@ -83,13 +70,11 @@ namespace DocOrganizer.Infrastructure.Extensions
                 // 🎯 画像余白自動削除サービス（V3.0.111 - 余白は絶対に必要なし）
                 services.AddScoped<IAutoCropService, AutoCropService>();
 
-                extensionLogger.LogInformation("[V3_DI] ✅ 究極拡張可能アーキテクチャ統合完了!");
-                
                 return services;
             }
             catch (Exception ex)
             {
-                extensionLogger.LogError(ex, "[V3_DI] ❌ プロバイダー登録エラー");
+                // プロバイダー登録エラーは再スロー（起動継続不可）
                 throw;
             }
         }
