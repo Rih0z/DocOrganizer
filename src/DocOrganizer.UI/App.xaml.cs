@@ -31,6 +31,7 @@ namespace DocOrganizer.UI
 
         public App()
         {
+            // V3.0.152: 診断コード削除（リリース版高速化）
             try
             {
                 // 起動高速化: 非同期で重い初期化処理を実行
@@ -43,29 +44,18 @@ namespace DocOrganizer.UI
                         
                         // OCR機能初期化 - バックグラウンドで実行
                         OcrConfig.Initialize();
-                        
-                        File.AppendAllText(taskDiagnosticPath, $"Task.Run completed at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n");
                     }
                     catch (Exception taskEx)
                     {
-                        var taskErrorPath = Path.Combine(baseDir, "constructor_task_error.txt");
-                        File.WriteAllText(taskErrorPath, $"Task.Run error: {taskEx.Message}\n{taskEx.StackTrace}\n");
+                        // バックグラウンド初期化エラーは無視（起動はブロックしない）
                     }
                 });
 
-                // 🚨 STEP 2 DIAGNOSTIC: Host作成前の診断
-                var step2Path = Path.Combine(baseDir, "constructor_step2.txt");
-                File.WriteAllText(step2Path, $"Before Host.CreateDefaultBuilder at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n");
-                
                 _host = Host.CreateDefaultBuilder()
                     .ConfigureServices((context, services) =>
                     {
                         try
                         {
-                            // 🚨 SERVICES CONFIG DIAGNOSTIC: サービス設定開始診断
-                            var servicesDiagnosticPath = Path.Combine(baseDir, "constructor_services_diagnostic.txt");
-                            File.WriteAllText(servicesDiagnosticPath, $"ConfigureServices started at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n");
-
                             // ⭐修正: Serilog完全除去 - .NET標準ログのみ使用
                             try
                             {
@@ -75,15 +65,14 @@ namespace DocOrganizer.UI
                                     loggingBuilder.AddDebug();
                                     loggingBuilder.SetMinimumLevel(LogLevel.Warning);
                                 });
-                                
-                                File.AppendAllText(servicesDiagnosticPath, "Logging configuration succeeded\n");
                             }
                             catch (Exception logEx)
                             {
                                 // ログ設定失敗時は完全無効化
+                                #if DEBUG
                                 System.Diagnostics.Debug.WriteLine($"Logging setup failed: {logEx.Message}");
+                                #endif
                                 services.AddLogging(); // 最小限のログ設定
-                                File.AppendAllText(servicesDiagnosticPath, $"Logging configuration failed: {logEx.Message}\n");
                             }
 
                             // 既存サービスの登録
@@ -103,12 +92,8 @@ namespace DocOrganizer.UI
                                 services.AddSingleton<ITextOrientationService, NoOpTextOrientationService>();
                             }
                             
-                            File.AppendAllText(servicesDiagnosticPath, "Basic services registration completed\n");
-                            
                             // 🏗️ V3.0.009 究極拡張可能アーキテクチャ統合 - 全プロバイダー自動登録
                             services.AddImageProcessingProviders(); // 🚀 統一プロバイダーアーキテクチャによる全画像処理サービス統合
-                            
-                            File.AppendAllText(servicesDiagnosticPath, "Image processing providers registration completed\n");
                             
                             // V3.0.009 で統合された従来サービス（プロバイダー経由で自動提供）:
                             // - IImageLoaderService → プロバイダーアーキテクチャ
@@ -129,8 +114,6 @@ namespace DocOrganizer.UI
                             // アップデートサービスの登録
                             services.AddHttpClient<IUpdateService, GitHubUpdateService>();
 
-                            File.AppendAllText(servicesDiagnosticPath, "Specialized services registration completed\n");
-
                             // V3アーキテクチャ: 既存MainViewModelは不要（V3 MainCompositeViewModelを使用）
                             
                             // 🎯 V3 ViewModels登録
@@ -143,115 +126,46 @@ namespace DocOrganizer.UI
 
                             // Viewの登録
                             services.AddSingleton<MainWindow>();
-                            
-                            File.AppendAllText(servicesDiagnosticPath, $"ConfigureServices completed at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n");
                         }
                         catch (Exception servicesEx)
                         {
-                            var serviceErrorPath = Path.Combine(baseDir, "constructor_services_error.txt");
-                            File.WriteAllText(serviceErrorPath, $"ConfigureServices error: {servicesEx.Message}\n{servicesEx.StackTrace}\n");
+                            // サービス設定エラーは再スロー（起動継続不可）
                             throw; // サービス設定エラーは再スロー
                         }
                     })
                     .Build();
-                
-                // 🚨 STEP 3 DIAGNOSTIC: Host構築完了診断
-                var step3Path = Path.Combine(baseDir, "constructor_step3.txt");
-                File.WriteAllText(step3Path, $"Host.Build completed at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n");
-                
-                // 🚨 FINAL DIAGNOSTIC: コンストラクタ完了診断
-                var finalPath = Path.Combine(baseDir, "constructor_completed.txt");
-                File.WriteAllText(finalPath, $"App() constructor completed successfully at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n");
-                
             }
             catch (Exception constructorEx)
             {
-                // 🚨 CONSTRUCTOR ERROR DIAGNOSTIC: コンストラクタエラー診断
-                try
-                {
-                    var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                    var errorPath = Path.Combine(baseDir, "constructor_error.txt");
-                    var errorMessage = $"App() constructor error at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n";
-                    errorMessage += $"Error: {constructorEx.Message}\n";
-                    errorMessage += $"StackTrace: {constructorEx.StackTrace}\n";
-                    if (constructorEx.InnerException != null)
-                    {
-                        errorMessage += $"InnerException: {constructorEx.InnerException.Message}\n";
-                    }
-                    File.WriteAllText(errorPath, errorMessage);
-                }
-                catch { /* エラー診断失敗は無視 */ }
-                
+                // コンストラクタエラーは再スロー（起動継続不可）
                 throw; // コンストラクタエラーは再スロー
             }
         }
 
         protected override async void OnStartup(StartupEventArgs e)
         {
-            // 🚨 EMERGENCY DEBUG TEST: 最もシンプルなファイル書き込みテスト
-            DocOrganizer.Core.Logging.SimpleDebugTest.WriteTestFile();
-            
-            // DebugLoggerを使用してログ出力を統一
-            
             try
             {
-                // 🚨 開発用ログ制御: リリース版では削除される部分
-                #if DEBUG
-                Environment.SetEnvironmentVariable("DOCORGANIZER_DEBUG", "true");
-                #endif
-                
-                // バットファイルまたは環境変数で制御可能
-                // run-debug.bat: set DOCORGANIZER_DEBUG=true でログ有効化
-                // run-production.bat: set DOCORGANIZER_DEBUG=false でログ無効化
-                
-                // 🚨 緊急ログテスト: ログファイル作成確認
-                await DocOrganizer.Core.Logging.DebugLogger.LogAsync("=== V3.0.092 DEBUG LOG TEST START ===");
-                await DocOrganizer.Core.Logging.DebugLogger.LogAsync($"Application started at: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
-                await DocOrganizer.Core.Logging.DebugLogger.LogAsync($"IsDebugEnabled: {DocOrganizer.Core.Logging.DebugLogger.IsDebugEnabled}");
-                await DocOrganizer.Core.Logging.DebugLogger.LogAsync($"LogPath: {DocOrganizer.Core.Logging.DebugLogger.LogPath}");
-                
-                // 🎯 V3起動ログ: 起動プロセス詳細記録
-                DocOrganizer.Core.Logging.DebugLogger.LogStartup("V3 Startup開始");
-                
                 // AppSettings.jsonから動的にボタンサイズ設定を読み込み
                 LoadButtonSizeSettings();
-                
-                DocOrganizer.Core.Logging.DebugLogger.LogStartup("Host.StartAsync開始");
-                await _host.StartAsync();
-                DocOrganizer.Core.Logging.DebugLogger.LogStartup("Host.StartAsync成功");
 
-                DocOrganizer.Core.Logging.DebugLogger.LogStartup("MainWindow取得開始");
+                await _host.StartAsync();
+
                 var mainWindow = _host.Services.GetRequiredService<MainWindow>();
-                DocOrganizer.Core.Logging.DebugLogger.LogStartup("MainWindow取得成功");
-                
-                DocOrganizer.Core.Logging.DebugLogger.LogStartup("MainCompositeViewModel取得開始");
                 var v3ViewModel = _host.Services.GetRequiredService<MainCompositeViewModel>();
-                DocOrganizer.Core.Logging.DebugLogger.LogStartup("MainCompositeViewModel取得成功");
                 
-                DocOrganizer.Core.Logging.DebugLogger.LogStartup("DataContext設定開始");
                 mainWindow.DataContext = v3ViewModel;
-                DocOrganizer.Core.Logging.DebugLogger.LogStartup("DataContext設定成功");
-                
-                System.Diagnostics.Debug.WriteLine("🚀 V3 OSS標準: MainCompositeViewModel常時使用");
-                
-                DocOrganizer.Core.Logging.DebugLogger.LogStartup("MainWindow.Show開始");
                 mainWindow.Show();
-                DocOrganizer.Core.Logging.DebugLogger.LogStartup("MainWindow.Show成功");
                 
                 base.OnStartup(e);
-                DocOrganizer.Core.Logging.DebugLogger.LogStartup("V3 Startup完了");
             }
             catch (Exception ex)
             {
-                var errorMsg = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] STARTUP ERROR: {ex.Message}\nStackTrace: {ex.StackTrace}\nInnerException: {ex.InnerException?.Message}\n";
-                DocOrganizer.Core.Logging.DebugLogger.LogError("STARTUP ERROR", ex);
-                
                 MessageBox.Show($"Application startup failed: {ex.Message}\n\nDetails: {ex.StackTrace}", 
                     "DocOrganizer - Startup Error", 
                     MessageBoxButton.OK, 
                     MessageBoxImage.Error);
                 
-                System.Diagnostics.Debug.WriteLine($"Application startup failed: {ex}");
                 Shutdown(1);
             }
         }
@@ -273,8 +187,6 @@ namespace DocOrganizer.UI
         {
             try
             {
-                DocOrganizer.Core.Logging.DebugLogger.LogStartup("AppSettings.json\u304b\u3089\u30dc\u30bf\u30f3\u30b5\u30a4\u30ba\u8a2d\u5b9a\u8aad\u307f\u8fbc\u307f\u958b\u59cb");
-
                 string jsonContent = null;
 
                 // \u307e\u305a\u57cb\u3081\u8fbc\u307f\u30ea\u30bd\u30fc\u30b9\u304b\u3089\u8aad\u307f\u8fbc\u307f\u3092\u8a66\u307f\u308b
@@ -288,7 +200,6 @@ namespace DocOrganizer.UI
                         using (var reader = new System.IO.StreamReader(stream))
                         {
                             jsonContent = reader.ReadToEnd();
-                            DocOrganizer.Core.Logging.DebugLogger.LogStartup("\u57cb\u3081\u8fbc\u307f\u30ea\u30bd\u30fc\u30b9\u304b\u3089AppSettings.json\u8aad\u307f\u8fbc\u307f\u6210\u529f");
                         }
                     }
                 }
@@ -307,13 +218,11 @@ namespace DocOrganizer.UI
                     if (File.Exists(configPath))
                     {
                         jsonContent = File.ReadAllText(configPath);
-                        DocOrganizer.Core.Logging.DebugLogger.LogStartup("\u5916\u90e8\u30d5\u30a1\u30a4\u30eb\u304b\u3089AppSettings.json\u8aad\u307f\u8fbc\u307f\u6210\u529f");
                     }
                 }
 
                 if (jsonContent == null)
                 {
-                    DocOrganizer.Core.Logging.DebugLogger.LogStartup("AppSettings.json\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093 - \u30c7\u30d5\u30a9\u30eb\u30c8\u5024\u4f7f\u7528");
                     return;
                 }
 
@@ -335,21 +244,19 @@ namespace DocOrganizer.UI
                         int iconFontSize = buttonSettings.GetProperty("CalculatedIconFontSize").GetInt32();
                         int buttonFontSize = buttonSettings.GetProperty("CalculatedButtonFontSize").GetInt32();
 
-                        DocOrganizer.Core.Logging.DebugLogger.LogStartup($"AppSettings.json\u304b\u3089\u8a2d\u5b9a\u8aad\u307f\u8fbc\u307f\u6210\u529f: ButtonSize={buttonSize}, FontSize={buttonFontSize}");
+                        // ボタンサイズ設定読み込み完了
 
                         // WPF\u30b9\u30bf\u30a4\u30eb\u3092\u66f4\u65b0
                         UpdateButtonStyles(buttonSize, buttonPadding, buttonMargin, toolBarHeight, iconFontSize, buttonFontSize);
                     }
-                    else
-                    {
-                        DocOrganizer.Core.Logging.DebugLogger.LogStartup("AppSettings.json\u306bButtonSizeSettings\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093");
-                    }
+                    // ButtonSizeSettings が見つからない場合はデフォルト値使用
                 }
             }
             catch (Exception ex)
             {
-                DocOrganizer.Core.Logging.DebugLogger.LogError("AppSettings.json\u8aad\u307f\u8fbc\u307f\u30a8\u30e9\u30fc", ex);
+                #if DEBUG
                 System.Diagnostics.Debug.WriteLine($"LoadButtonSizeSettings\u30a8\u30e9\u30fc: {ex.Message}");
+                #endif
                 // \u30a8\u30e9\u30fc\u6642\u306f\u30c7\u30d5\u30a9\u30eb\u30c8\u5024\u3092\u4f7f\u7528
             }
         }
@@ -358,8 +265,6 @@ namespace DocOrganizer.UI
         {
             try
             {
-                DocOrganizer.Core.Logging.DebugLogger.LogStartup($"WPFスタイル更新開始: ButtonSize={buttonSize}");
-
                 // スタイルが既に使用されている場合は、新しいスタイルを作成して置き換える
                 
                 // ToolBarButtonStyleの更新
@@ -406,13 +311,12 @@ namespace DocOrganizer.UI
                 toolbarIconStyle.Setters.Add(new Setter(TextBlock.HorizontalAlignmentProperty, HorizontalAlignment.Center));
                 toolbarIconStyle.Setters.Add(new Setter(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center));
                 Resources["ToolbarIconStyle"] = toolbarIconStyle;
-
-                DocOrganizer.Core.Logging.DebugLogger.LogStartup("WPFスタイル更新完了");
             }
             catch (Exception ex)
             {
-                DocOrganizer.Core.Logging.DebugLogger.LogError("WPFスタイル更新エラー", ex);
+                #if DEBUG
                 System.Diagnostics.Debug.WriteLine($"UpdateButtonStylesエラー: {ex.Message}");
+                #endif
             }
         }
     }

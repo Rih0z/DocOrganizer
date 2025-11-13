@@ -137,6 +137,7 @@ namespace DocOrganizer.Infrastructure.Services.V3
         /// </summary>
         public async Task GenerateMonthlyReportAsync()
         {
+            #if ENABLE_LOGGING
             try
             {
                 if (!File.Exists(_logFilePath))
@@ -144,43 +145,46 @@ namespace DocOrganizer.Infrastructure.Services.V3
                     _logger.LogWarning("[PDF_MONITOR] パフォーマンスログファイルが存在しません");
                     return;
                 }
-                
+
                 var logContent = await File.ReadAllTextAsync(_logFilePath);
                 var lines = logContent.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-                
-                var reportPath = Path.Combine(Path.GetDirectoryName(_logFilePath), 
+
+                var reportPath = Path.Combine(Path.GetDirectoryName(_logFilePath),
                     $"PDF_PERFORMANCE_REPORT_{DateTime.Now:yyyyMM}.txt");
-                
+
                 var report = $"# PDF Performance Monthly Report - {DateTime.Now:yyyy年MM月}\n\n";
                 report += $"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n";
                 report += $"Total Log Entries: {lines.Length}\n\n";
-                
+
                 // 統計情報の生成（簡易版）
                 var thumbnailCount = 0;
                 var alertCount = 0;
-                
+
                 foreach (var line in lines)
                 {
                     if (line.Contains("Thumbnail")) thumbnailCount++;
                     if (line.Contains("ALERT")) alertCount++;
                 }
-                
+
                 report += $"Thumbnail Operations: {thumbnailCount}\n";
                 report += $"Performance Alerts: {alertCount}\n";
                 report += $"Alert Rate: {(thumbnailCount > 0 ? (double)alertCount / thumbnailCount * 100 : 0):F2}%\n\n";
-                
+
                 report += "## Performance Threshold Status\n";
                 report += $"- Time Threshold: {ThumbnailGenerationTimeoutMs}ms\n";
                 report += $"- Memory Threshold: {MaxMemoryUsageMb}MB\n\n";
-                
+
                 await File.WriteAllTextAsync(reportPath, report);
-                
+
                 _logger.LogInformation("[PDF_MONITOR] 月次レポート生成完了: {ReportPath}", reportPath);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[PDF_MONITOR] 月次レポート生成エラー");
             }
+            #else
+            await Task.CompletedTask;
+            #endif
         }
         
         protected virtual void Dispose(bool disposing)

@@ -14,28 +14,10 @@ namespace DocOrganizer.Core.Logging
         private static bool? _isEnabled = null;
         private static string _logPath = null;
         
-        // 🚨 静的コンストラクタによる絶対診断
+        // V3.0.152: 診断コード削除（リリース版でファイル生成を防止）
         static DebugLogger()
         {
-            try
-            {
-                var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                var staticDiagnosticPath = Path.Combine(baseDir, "static_constructor_diagnostic.txt");
-                var message = $"DebugLogger static constructor called at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n";
-                message += $"BaseDirectory: {baseDir}\n";
-                File.WriteAllText(staticDiagnosticPath, message);
-            }
-            catch (Exception ex)
-            {
-                // 緊急対応: ファイル書き込み失敗時は別の方法で記録
-                try
-                {
-                    var tempPath = Path.GetTempPath();
-                    var fallbackPath = Path.Combine(tempPath, "debuglogger_fallback.txt");
-                    File.WriteAllText(fallbackPath, $"DebugLogger constructor failed: {ex.Message}\n");
-                }
-                catch { /* 完全無視 */ }
-            }
+            // 何もしない（ENABLE_LOGGINGが無効の場合、すべての処理をスキップ）
         }
         
         /// <summary>
@@ -45,19 +27,11 @@ namespace DocOrganizer.Core.Logging
         {
             get
             {
-                // 🚨 絶対診断: LogPath呼び出し確認
-                try
-                {
-                    var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                    var diagnosticPath = Path.Combine(baseDir, "logpath_diagnostic.txt");
-                    File.WriteAllText(diagnosticPath, $"LogPath called at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n");
-                }
-                catch { /* 診断エラーは無視 */ }
-                
+                #if ENABLE_LOGGING
                 if (_logPath == null)
                 {
                     _logPath = GetLogPath();
-                    
+
                     // ディレクトリが存在しない場合は作成
                     var dir = Path.GetDirectoryName(_logPath);
                     if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
@@ -70,6 +44,9 @@ namespace DocOrganizer.Core.Logging
                     }
                 }
                 return _logPath;
+                #else
+                return string.Empty;  // リリース版では空文字列
+                #endif
             }
         }
         
@@ -80,20 +57,15 @@ namespace DocOrganizer.Core.Logging
         {
             get
             {
-                // 🚨 絶対診断: IsDebugEnabled呼び出し確認
-                try
-                {
-                    var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                    var diagnosticPath = Path.Combine(baseDir, "isdebugenabled_diagnostic.txt");
-                    File.WriteAllText(diagnosticPath, $"IsDebugEnabled called at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n");
-                }
-                catch { /* 診断エラーは無視 */ }
-                
+                #if ENABLE_LOGGING
                 if (!_isEnabled.HasValue)
                 {
                     _isEnabled = GetIsDebugEnabled();
                 }
                 return _isEnabled.Value;
+                #else
+                return false;  // リリース版では常にfalse
+                #endif
             }
         }
 
@@ -102,53 +74,20 @@ namespace DocOrganizer.Core.Logging
         /// </summary>
         private static bool GetIsDebugEnabled()
         {
-            var envValue = Environment.GetEnvironmentVariable("DOCORGANIZER_DEBUG");
-            
-            // 🚨 強制診断ファイル出力（デバッガ不要）
-            try
-            {
-                var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                var diagnosticPath = Path.Combine(baseDir, "debug_diagnostic.txt");
-                var diagnostics = $"=== DebugLogger 強制診断 [{DateTime.Now:yyyy-MM-dd HH:mm:ss}] ===\n";
-                diagnostics += $"環境変数 DOCORGANIZER_DEBUG = '{envValue ?? "null"}'\n";
-                
-                #if ENABLE_LOGGING
-                diagnostics += "ENABLE_LOGGING フラグ: 有効\n";
-                #else
-                diagnostics += "ENABLE_LOGGING フラグ: 無効\n";
-                #endif
-                
-                File.WriteAllText(diagnosticPath, diagnostics);
-            }
-            catch { /* 診断ファイル出力エラーは無視 */ }
-            
-            // System.Diagnostics.Debug.WriteLine も併用
-            System.Diagnostics.Debug.WriteLine($"=== DebugLogger診断 ===");
-            System.Diagnostics.Debug.WriteLine($"環境変数 DOCORGANIZER_DEBUG = '{envValue}'");
-            
             #if ENABLE_LOGGING
-            System.Diagnostics.Debug.WriteLine("ENABLE_LOGGING フラグ: 有効");
-            #else
-            System.Diagnostics.Debug.WriteLine("ENABLE_LOGGING フラグ: 無効");
-            #endif
+            var envValue = Environment.GetEnvironmentVariable("DOCORGANIZER_DEBUG");
 
             // 環境変数から読み込み（最優先）
             if (!string.IsNullOrEmpty(envValue))
             {
-                bool result = envValue.ToLower() == "true";
-                System.Diagnostics.Debug.WriteLine($"環境変数により決定: {result}");
-                return result;
+                return envValue.ToLower() == "true";
             }
 
-            // コンパイル時デフォルト値
-            // - ログなし版（release）: false
-            // - ログあり版（release-debug）: true
-            #if ENABLE_LOGGING
-            System.Diagnostics.Debug.WriteLine("コンパイル時フラグによりtrue");
-            return true;  // ログあり版のデフォルト
+            // コンパイル時デフォルト値: ログあり版のデフォルト
+            return true;
             #else
-            System.Diagnostics.Debug.WriteLine("コンパイル時フラグによりfalse");
-            return false; // ログなし版のデフォルト
+            // リリース版では常にfalse
+            return false;
             #endif
         }
         
@@ -157,8 +96,9 @@ namespace DocOrganizer.Core.Logging
         /// </summary>
         private static string GetLogPath()
         {
-            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            
+            #if ENABLE_LOGGING
+            var baseDir = Environment.CurrentDirectory;
+
             // 環境変数から読み込み（最優先）
             var envPath = Environment.GetEnvironmentVariable("DOCORGANIZER_LOG_PATH");
             if (!string.IsNullOrEmpty(envPath))
@@ -170,11 +110,14 @@ namespace DocOrganizer.Core.Logging
                 }
                 return Path.Combine(baseDir, envPath);
             }
-            
+
             // デフォルトパス
             var defaultLogDir = ".logs";
             var defaultLogFile = "debug.log";
             return Path.Combine(baseDir, defaultLogDir, defaultLogFile);
+            #else
+            return string.Empty;  // リリース版では空文字列
+            #endif
         }
 
         /// <summary>
@@ -188,51 +131,37 @@ namespace DocOrganizer.Core.Logging
             [System.Runtime.CompilerServices.CallerFilePath] string sourceFile = null,
             [System.Runtime.CompilerServices.CallerLineNumber] int lineNumber = 0)
         {
-            // 🚨 デバッグ: ログ出力の詳細診断
-            System.Diagnostics.Debug.WriteLine($"LogAsync呼び出し: IsDebugEnabled={IsDebugEnabled}, LogPath='{LogPath}', Message='{message}'");
-            
-            if (!IsDebugEnabled || string.IsNullOrEmpty(LogPath)) 
+            #if ENABLE_LOGGING
+            if (!IsDebugEnabled || string.IsNullOrEmpty(LogPath))
             {
-                System.Diagnostics.Debug.WriteLine($"ログスキップ: IsDebugEnabled={IsDebugEnabled}, LogPath='{LogPath}'");
                 return;
             }
-            
+
             try
             {
                 // ログディレクトリが存在しない場合は作成
                 var logDir = Path.GetDirectoryName(LogPath);
-                System.Diagnostics.Debug.WriteLine($"ログディレクトリ: '{logDir}'");
-                
+
                 if (!string.IsNullOrEmpty(logDir) && !Directory.Exists(logDir))
                 {
-                    System.Diagnostics.Debug.WriteLine($"ログディレクトリ作成: '{logDir}'");
                     Directory.CreateDirectory(logDir);
-                    System.Diagnostics.Debug.WriteLine($"ログディレクトリ作成完了: '{logDir}'");
                 }
-                
+
                 var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
                 var fileName = Path.GetFileName(sourceFile ?? "Unknown");
                 var categoryStr = string.IsNullOrEmpty(category) ? "" : $"[{category}] ";
-                
+
                 var logMessage = $"[{timestamp}] {categoryStr}{message} ({fileName}:{lineNumber})";
-                System.Diagnostics.Debug.WriteLine($"ログファイル書き込み準備: '{LogPath}'");
-                
+
                 await File.AppendAllTextAsync(LogPath, logMessage + Environment.NewLine);
-                System.Diagnostics.Debug.WriteLine($"ログファイル書き込み成功: '{LogPath}'");
-                
-                // コンソール出力（開発時）
-                #if DEBUG
-                System.Diagnostics.Debug.WriteLine($"📝 {logMessage}");
-                #endif
             }
-            catch (Exception ex)
+            catch
             {
-                // 🚨 デバッグ: ログ出力エラーの詳細を診断
-                System.Diagnostics.Debug.WriteLine($"ログ出力エラー: {ex.GetType().Name}: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"ログパス: '{LogPath}'");
-                System.Diagnostics.Debug.WriteLine($"スタックトレース: {ex.StackTrace}");
                 // ログ出力エラーは無視
             }
+            #else
+            await Task.CompletedTask;  // リリース版では何もしない
+            #endif
         }
         
         /// <summary>
@@ -242,31 +171,24 @@ namespace DocOrganizer.Core.Logging
             [System.Runtime.CompilerServices.CallerFilePath] string sourceFile = null,
             [System.Runtime.CompilerServices.CallerLineNumber] int lineNumber = 0)
         {
+            #if ENABLE_LOGGING
             if (!IsDebugEnabled || string.IsNullOrEmpty(LogPath)) return;
-            
+
             try
             {
                 var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
                 var fileName = Path.GetFileName(sourceFile ?? "Unknown");
                 var categoryStr = string.IsNullOrEmpty(category) ? "" : $"[{category}] ";
-                
+
                 var logMessage = $"[{timestamp}] {categoryStr}{message} ({fileName}:{lineNumber})";
-                
+
                 File.AppendAllText(LogPath, logMessage + Environment.NewLine);
-                
-                // コンソール出力（開発時）
-                #if DEBUG
-                System.Diagnostics.Debug.WriteLine($"📝 {logMessage}");
-                #endif
             }
-            catch (Exception ex)
+            catch
             {
-                // 🚨 デバッグ: ログ出力エラーの詳細を診断
-                System.Diagnostics.Debug.WriteLine($"ログ出力エラー: {ex.GetType().Name}: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"ログパス: '{LogPath}'");
-                System.Diagnostics.Debug.WriteLine($"スタックトレース: {ex.StackTrace}");
                 // ログ出力エラーは無視
             }
+            #endif
         }
         
         /// <summary>
@@ -274,62 +196,63 @@ namespace DocOrganizer.Core.Logging
         /// </summary>
         public static void LogStartup(string message)
         {
-            // ログが無効な場合は何もしない
+            #if ENABLE_LOGGING
             if (!IsDebugEnabled) return;
-            
+
             try
             {
                 var startupLogPath = Path.Combine(
                     Path.GetDirectoryName(LogPath) ?? ".logs",
                     "startup.log"
                 );
-                
+
                 var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 var logMessage = $"[{timestamp}] {message}";
-                
+
                 File.AppendAllText(startupLogPath, logMessage + Environment.NewLine);
             }
             catch { }
+            #endif
         }
-        
+
         /// <summary>
         /// エラーログを記録
         /// </summary>
         public static void LogError(string message, Exception ex = null)
         {
-            // エラーログも IsDebugEnabled のチェックを追加
-            if (!IsDebugEnabled)
-            {
-                return;
-            }
-            
+            #if ENABLE_LOGGING
+            if (!IsDebugEnabled) return;
+
             try
             {
                 var errorLogPath = Path.Combine(
                     Path.GetDirectoryName(LogPath) ?? ".logs",
                     "error.log"
                 );
-                
+
                 var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 var errorMessage = $"[{timestamp}] ERROR: {message}";
-                
+
                 if (ex != null)
                 {
                     errorMessage += $"\n    Exception: {ex.GetType().Name}: {ex.Message}\n    StackTrace: {ex.StackTrace}";
                 }
-                
+
                 File.AppendAllText(errorLogPath, errorMessage + Environment.NewLine);
             }
             catch { }
+            #endif
         }
-        
+
         /// <summary>
         /// ログ設定をリセット（主にテスト用）
         /// </summary>
         public static void Reset()
         {
+            #if ENABLE_LOGGING
             _isEnabled = null;
             _logPath = null;
+            #endif
         }
     }
 }

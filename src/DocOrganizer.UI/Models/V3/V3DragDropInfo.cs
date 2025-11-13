@@ -104,29 +104,39 @@ namespace DocOrganizer.UI.Models.V3
         {
             try
             {
+                #if DEBUG
                 System.Diagnostics.Debug.WriteLine($"[CalculateInsertIndex] 開始 - targetElement: {targetElement?.GetType().Name}, dropPosition: {dropPosition}");
-                
+                #endif
+
                 // 🎯 V3.0.025: より堅牢なListBox検索
                 var listBox = FindParentListBox(targetElement);
                 if (listBox == null)
                 {
+                    #if DEBUG
                     System.Diagnostics.Debug.WriteLine("[CalculateInsertIndex] ListBoxが見つからないため -1 を返します");
+                    #endif
                     return -1;
                 }
-                
+
+                #if DEBUG
                 System.Diagnostics.Debug.WriteLine($"[CalculateInsertIndex] ListBox発見: {listBox.Items.Count}個のアイテム");
+                #endif
 
                 // ドロップ位置での アイテムインデックス計算
                 var itemsCount = listBox.Items.Count;
                 if (itemsCount == 0)
                 {
+                    #if DEBUG
                     System.Diagnostics.Debug.WriteLine("[CalculateInsertIndex] 空のリストのため 0 を返します");
+                    #endif
                     return 0;
                 }
 
                 // 🎯 V3.0.025: ListBoxを基準とした座標系に変換
                 var listBoxRelativePosition = targetElement.TranslatePoint(dropPosition, listBox);
+                #if DEBUG
                 System.Diagnostics.Debug.WriteLine($"[CalculateInsertIndex] ListBox相対位置: {listBoxRelativePosition}");
+                #endif
 
                 // 各ListBoxItemの位置をチェック
                 for (int i = 0; i < itemsCount; i++)
@@ -134,35 +144,47 @@ namespace DocOrganizer.UI.Models.V3
                     var container = listBox.ItemContainerGenerator.ContainerFromIndex(i) as ListBoxItem;
                     if (container == null)
                     {
+                        #if DEBUG
                         System.Diagnostics.Debug.WriteLine($"[CalculateInsertIndex] インデックス {i} のコンテナが null - スキップ");
+                        #endif
                         continue;
                     }
 
                     // 🎯 V3.0.025: ListBox基準での位置計算
                     var itemPositionInListBox = container.TranslatePoint(new Point(0, 0), listBox);
                     var itemBounds = new Rect(itemPositionInListBox, container.RenderSize);
-                    
+
+                    #if DEBUG
                     System.Diagnostics.Debug.WriteLine($"[CalculateInsertIndex] アイテム{i}: 位置={itemPositionInListBox}, サイズ={container.RenderSize}, 境界={itemBounds}");
+                    #endif
 
                     // ドロップ位置がアイテムの上半分にある場合、そのアイテムの前に挿入
                     var itemMiddleY = itemBounds.Top + (itemBounds.Height / 2);
+                    #if DEBUG
                     System.Diagnostics.Debug.WriteLine($"[CalculateInsertIndex] アイテム{i}中点Y: {itemMiddleY}, ドロップY: {listBoxRelativePosition.Y}");
-                    
+                    #endif
+
                     if (listBoxRelativePosition.Y <= itemMiddleY)
                     {
+                        #if DEBUG
                         System.Diagnostics.Debug.WriteLine($"[CalculateInsertIndex] アイテム{i}の前に挿入 - インデックス {i} を返します");
+                        #endif
                         return i;
                     }
                 }
 
                 // 最後のアイテムより下にドロップした場合、末尾に挿入
+                #if DEBUG
                 System.Diagnostics.Debug.WriteLine($"[CalculateInsertIndex] 末尾に挿入 - インデックス {itemsCount} を返します");
+                #endif
                 return itemsCount;
             }
             catch (Exception ex)
             {
+                #if DEBUG
                 System.Diagnostics.Debug.WriteLine($"[CalculateInsertIndex] 例外発生: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"[CalculateInsertIndex] スタックトレース: {ex.StackTrace}");
+                #endif
                 return -1;
             }
         }
@@ -172,21 +194,27 @@ namespace DocOrganizer.UI.Models.V3
         /// </summary>
         private ListBox FindParentListBox(DependencyObject child)
         {
+            #if DEBUG
             System.Diagnostics.Debug.WriteLine($"[FindParentListBox] 開始 - child: {child?.GetType().Name}");
-            
+            #endif
+
             var current = child;
             var depth = 0;
-            
+
             while (current != null && depth < 20) // 🎯 V3.0.025: 無限ループ防止
             {
+                #if DEBUG
                 System.Diagnostics.Debug.WriteLine($"[FindParentListBox] 深度{depth}: {current.GetType().Name}");
-                
+                #endif
+
                 if (current is ListBox listBox)
                 {
+                    #if DEBUG
                     System.Diagnostics.Debug.WriteLine($"[FindParentListBox] ListBox発見! 深度{depth}で発見");
+                    #endif
                     return listBox;
                 }
-                
+
                 // 🎯 V3.0.025: より広範囲の親要素検索
                 var parent = VisualTreeHelper.GetParent(current);
                 if (parent == null)
@@ -195,15 +223,19 @@ namespace DocOrganizer.UI.Models.V3
                     if (current is FrameworkElement frameworkElement)
                     {
                         parent = frameworkElement.Parent;
+                        #if DEBUG
                         System.Diagnostics.Debug.WriteLine($"[FindParentListBox] LogicalTree経由で親要素検索: {parent?.GetType().Name}");
+                        #endif
                     }
                 }
-                
+
                 current = parent;
                 depth++;
             }
-            
+
+            #if DEBUG
             System.Diagnostics.Debug.WriteLine($"[FindParentListBox] ListBoxが見つかりませんでした (最大深度: {depth})");
+            #endif
             return null;
         }
 

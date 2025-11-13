@@ -3,6 +3,7 @@ using System.IO;
 
 namespace DocOrganizer.Core.Logging
 {
+#if ENABLE_LOGGING
     /// <summary>
     /// DebugLoggerの問題を特定するためのシンプルなテストクラス
     /// </summary>
@@ -20,13 +21,8 @@ namespace DocOrganizer.Core.Logging
                 var content = $"SimpleDebugTest executed at {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}\n";
                 content += $"BaseDirectory: {baseDir}\n";
                 content += $"Environment Variable DOCORGANIZER_DEBUG: '{Environment.GetEnvironmentVariable("DOCORGANIZER_DEBUG")}'\n";
-                
-                #if ENABLE_LOGGING
                 content += "ENABLE_LOGGING flag: ENABLED\n";
-                #else
-                content += "ENABLE_LOGGING flag: DISABLED\n";
-                #endif
-                
+
                 File.WriteAllText(testPath, content);
             }
             catch (Exception ex)
@@ -42,4 +38,5 @@ namespace DocOrganizer.Core.Logging
             }
         }
     }
+#endif
 }
