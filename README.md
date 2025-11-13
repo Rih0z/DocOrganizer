@@ -1,11 +1,11 @@
 # DocOrganizer
 
-[![Version](https://img.shields.io/badge/version-3.0.129-blue.svg)](https://github.com/Rih0z/DocOrganizer/releases)
+[![Version](https://img.shields.io/badge/version-3.0.152-blue.svg)](https://github.com/Rih0z/DocOrganizer/releases)
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**CubePDF Utility互換のモダンなPDF編集・文書管理ツール**（最終更新: 2025-10-14 / Serena MCP分析済み）
+**CubePDF Utility互換のモダンなPDF編集・文書管理ツール**（最終更新: 2025-11-12 / V3.0.145-152 回転後選択維持バグ完全修正）
 
 ## ⚡ 主な機能
 
@@ -24,7 +24,22 @@
 2. **▶️ 起動**: エクスプローラーからダブルクリック（⚠️ **管理者権限厳禁**）
 3. **🎯 操作**: ファイルをドラッグ&ドロップ → 整理 → PDF保存
 
-## 📦 V3.0.129 最新の改善
+## 📦 V3.0.152 最新の改善
+
+### 🔧 回転後選択維持バグ完全修正 (V3.0.145-152) ⭐NEW
+- **8箇所の問題をすべて修正** - 100%解決を達成
+- **統一的パターンの発見**: TwoWayバインディング + コレクション操作 = 選択クリア
+- **段階的修正アプローチ**:
+  - V3.0.145: WPF仮想化対策（ScrollIntoView+UpdateLayout+try-catch）
+  - V3.0.146: _syncSelectionToView非同期再実行
+  - V3.0.147: 3層防御システム（即座+非同期+リトライ）
+  - V3.0.148: RefreshPageListWithSelection呼び出し追加
+  - V3.0.149: Ctrl+R重複バインディング削除
+  - V3.0.150: NextPage/PreviousPage選択同期
+  - V3.0.151: PageListBox.SelectedItems.Clear削除
+  - V3.0.152: Pages[pageIndex] = e.Page削除
+- **ユーザーフィードバック**: 「この修正でバグが無くなった」
+- **詳細レポート**: [`docs/reports/v3.0.152/`](docs/reports/v3.0.152/)
 
 ### 🎨 UI簡素化・ミニマルデザイン (V3.0.128-129)
 - **メニューバーをPDF編集・ヘルプのみに簡素化**
@@ -121,9 +136,10 @@
 | **🔢 バージョン管理手順** | [`docs/rule/version_management.md`](docs/rule/version_management.md) |
 | **🐛 デバッグログシステム** | [`docs/rule/debug_logging_system.md`](docs/rule/debug_logging_system.md) |
 
-### 最新レポート（V3.0.127-129）
+### 最新レポート（V3.0.145-152）
 | 内容 | 参照先 |
 |------|--------|
+| **🔧 回転後選択維持バグ完全修正** ⭐NEW | [`docs/reports/v3.0.152/`](docs/reports/v3.0.152/) |
 | **🎨 表示メニュー削除** | [`docs/reports/v3.0.129/`](docs/reports/v3.0.129/) |
 | **🎨 UI簡素化実装** | [`docs/reports/v3.0.128/`](docs/reports/v3.0.128/) |
 | **🧭 回転後キーボードナビゲーション修正** | [`docs/reports/v3.0.127/`](docs/reports/v3.0.127/) |
@@ -168,7 +184,7 @@ dotnet publish src/DocOrganizer.UI/DocOrganizer.UI.csproj -c Release -r win-x64 
 
 ---
 
-**DocOrganizer V3.0.129** - プロフェッショナルな文書整理を簡単に・高速に
+**DocOrganizer V3.0.152** - プロフェッショナルな文書整理を簡単に・高速に
 
 ---
 
@@ -176,4 +192,5 @@ dotnet publish src/DocOrganizer.UI/DocOrganizer.UI.csproj -c Release -r win-x64 
 - ViewModelクラス: **6つ・合計4731行**
 - Provider実装: **6クラス**（HEIC/GIF/WebP/Standard/PDF/PSD）
 - キーボードショートカット: **50+完全実装**
-- **127バージョン**の継続的改善を経て、エンタープライズグレードの成熟したアーキテクチャを実現
+- バグ修正: **V3.0.145-152で8箇所の選択維持問題を完全解決**
+- **152バージョン**の継続的改善を経て、エンタープライズグレードの成熟したアーキテクチャを実現
