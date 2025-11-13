@@ -84,7 +84,8 @@
         
         <!-- その他の操作 -->
         <KeyBinding Key="F5" Command="{Binding RefreshCommand}"/>
-        <KeyBinding Key="R" Modifiers="Ctrl" Command="{Binding RefreshCommand}"/>
+        <!-- ⭐ V3.0.149: Ctrl+R重複バインディング削除（RotateRightCommandと競合） -->
+        <!-- <KeyBinding Key="R" Modifiers="Ctrl" Command="{Binding RefreshCommand}"/> -->
         <KeyBinding Key="P" Modifiers="Ctrl" Command="{Binding PrintCommand}"/>
         <KeyBinding Key="E" Modifiers="Ctrl" Command="{Binding ExportCommand}"/>
         <KeyBinding Key="F" Modifiers="Ctrl" Command="{Binding FindCommand}"/>

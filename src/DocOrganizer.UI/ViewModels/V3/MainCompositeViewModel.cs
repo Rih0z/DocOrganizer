@@ -258,9 +258,13 @@ namespace DocOrganizer.UI.ViewModels.V3
                 
                 if (pageIndex >= 0)
                 {
-                    // ページコレクション更新
-                    Pages[pageIndex] = e.Page;
-                    
+                    // ⭐ V3.0.152: Pages更新をスキップ（RefreshPageListWithSelectionで更新済み）
+                    // Pages[pageIndex] = e.Page; はObservableCollection.OnCollectionChangedを発火し、
+                    // Selector.OnItemsChangedを呼び出し、TwoWayバインディングでIsSelected=falseにする
+                    // RefreshPageListWithSelectionがすでに全VMを正しく更新しているため、ここでの更新は不要かつ有害
+                    // Pages[pageIndex] = e.Page;
+
+                    // ⭐ V3.0.152: プレビュー更新のみ実行
                     // 選択ページが回転対象の場合、プレビュー更新
                     if (SelectedPage?.Id == e.Page.Id)
                     {

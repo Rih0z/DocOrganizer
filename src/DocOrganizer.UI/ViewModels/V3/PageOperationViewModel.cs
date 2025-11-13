@@ -72,6 +72,8 @@ namespace DocOrganizer.UI.ViewModels.V3
 
         private PdfDocument? _currentDocument;
 
+        // V3.0.146: 修正1により選択が外れなくなったため、V3.0.145の復元ロジックは不要（削除）
+
         // コマンドプロパティ（明示的定義）
         public IRelayCommand SelectAllCommand { get; private set; }
         public IRelayCommand ShowHelpCommand { get; private set; }
@@ -292,16 +294,18 @@ F11: フルスクリーン
             {
                 return;
             }
-            
+
             // V3.0.108: 選択状態を保存
             var selectedPageIds = Pages.Where(p => p.IsSelected)
                                       .Select(p => p.Id)
                                       .ToHashSet();
-            
+
+            // V3.0.146: 修正1により選択が外れなくなったため、V3.0.145の記録ロジックは不要（削除）
+
             var selectedPages = Pages.Where(p => p.IsSelected)
                 .Select(vm => vm.Page)
                 .ToList();
-            
+
             var selectedViewModels = Pages.Where(p => p.IsSelected).ToList();
             
             var command = new RotatePagesCommand(
@@ -339,16 +343,18 @@ F11: フルスクリーン
             {
                 return;
             }
-            
+
             // V3.0.108: 選択状態を保存
             var selectedPageIds = Pages.Where(p => p.IsSelected)
                                       .Select(p => p.Id)
                                       .ToHashSet();
-            
+
+            // V3.0.146: 修正1により選択が外れなくなったため、V3.0.145の記録ロジックは不要（削除）
+
             var selectedPages = Pages.Where(p => p.IsSelected)
                 .Select(vm => vm.Page)
                 .ToList();
-            
+
             var selectedViewModels = Pages.Where(p => p.IsSelected).ToList();
             
             var command = new RotatePagesCommand(
@@ -711,7 +717,11 @@ F11: フルスクリーン
                 }
 
                 StatusMessage = $"{selectedPages.Count} ページを{Math.Abs(degrees)}度回転しました";
-                
+
+                // ⭐ V3.0.148: 選択状態を保持してリフレッシュ（MovePageUp/Downと同じパターン）
+                var selectedPageIds = selectedPages.Select(p => p.Id).ToHashSet();
+                RefreshPageListWithSelection(selectedPageIds);
+
                 // イベント通知
                 PagesChanged?.Invoke(this, EventArgs.Empty);
             }
@@ -1112,40 +1122,89 @@ F11: フルスクリーン
                     // 回転状態をViewModelに同期
                     pageVm.UpdateRotationSync();
                 }
-                
-                // 選択状態を保持/復元
+
+                // ⭐ V3.0.150: 選択状態はPages更新後に復元（TwoWayバインディング問題対策）
+                // Pages.Clear()時にListBoxItemが削除され、TwoWayバインディングでIsSelectedがfalseになるのを防ぐ
+
+                newPages.Add(pageVm);
+            }
+
+            // ⭐ V3.0.150 抜本的解決: Pages.Clear()を使わず、既存要素を直接更新
+            // Clear()はWPFの大量の内部イベントを発火し、選択をクリアする
+            // 代わりに、既存のコレクションを直接更新することでイベント発火を最小化
+
+            DebugLogger.Log($"[RefreshPageListWithSelection] Pages更新開始: 既存={Pages.Count}, 新規={newPages.Count}");
+
+            // 既存の要素を更新・追加
+            for (int i = 0; i < newPages.Count; i++)
+            {
+                if (i < Pages.Count)
+                {
+                    // 既存の位置に異なるVMがある場合のみ置き換え
+                    if (Pages[i] != newPages[i])
+                    {
+                        Pages[i] = newPages[i];
+                        DebugLogger.Log($"[RefreshPageListWithSelection] Pages[{i}]を置き換え");
+                    }
+                }
+                else
+                {
+                    // 不足分を追加
+                    Pages.Add(newPages[i]);
+                    DebugLogger.Log($"[RefreshPageListWithSelection] Pages[{i}]を追加");
+                }
+            }
+
+            // 余分な要素を削除
+            while (Pages.Count > newPages.Count)
+            {
+                int removeIndex = Pages.Count - 1;
+                Pages.RemoveAt(removeIndex);
+                DebugLogger.Log($"[RefreshPageListWithSelection] Pages[{removeIndex}]を削除");
+            }
+
+            DebugLogger.Log($"[RefreshPageListWithSelection] Pages更新完了: 最終={Pages.Count}");
+
+            // ⭐ V3.0.150: Pages更新完了後に選択状態を復元
+            foreach (var pageVm in Pages)
+            {
                 if (selectedIds != null && selectedIds.Contains(pageVm.Id))
                 {
                     pageVm.IsSelected = true;
                     DebugLogger.Log($"[RefreshPageListWithSelection] 選択状態復元: PageId={pageVm.Id}");
                 }
-                
-                newPages.Add(pageVm);
             }
-            
-            // Pagesコレクションを更新
-            Pages.Clear();
-            foreach (var pageVm in newPages)
-            {
-                Pages.Add(pageVm);
-            }
-            
-            UpdatePageNumbers();
-            UpdateSelectionState();
-            
-            // ✅ V3.0.131: V3.0.115〜V3.0.129の実証済み方式に復帰
-            // 選択同期は即座に実行（選択が外れたように見える問題を解決）
-            // イベント再有効化のみを遅延実行（遅延SelectionChangedイベントを防止）
-            _syncSelectionToView?.Invoke();
-            DebugLogger.Log("[RefreshPageListWithSelection] ListBox選択同期完了（即座実行）");
 
-            // イベント再有効化のみをDispatcher遅延実行
-            // WPFのDispatcher経由で次のUIサイクルまで待機し、遅延SelectionChangedを防ぐ
+            UpdatePageNumbers();
+
+            // ⭐ V3.0.150: UpdateSelectionState()を後で実行（WPFの選択クリアを防ぐ）
+            // UpdateSelectionState()はPropertyChangedを発火し、WPFが選択をクリアする原因となる
+
+            // ⭐ V3.0.147 第1層: Pages更新直後に即座選択同期（タイミング問題解消）
+            // イベント無効化中だが、ListBoxのSelectedItemsは直接操作可能
+            _syncSelectionToView?.Invoke();
+            DebugLogger.Log("[RefreshPageListWithSelection] 第1層: ListBox選択同期完了（即座実行・Pages更新直後）");
+
+            // ⭐ V3.0.150 第2層: Dispatcher非同期処理
+            // イベントを無効化したまま選択同期を実行し、最後にイベント再有効化
             System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
             {
+                // Dispatcher内でもイベント無効化を確保（念のため）
+                _disableSelectionEvents?.Invoke();
+                DebugLogger.Log("[RefreshPageListWithSelection] 第2層: イベント無効化確認");
+
+                // 選択同期を実行
+                _syncSelectionToView?.Invoke();
+                DebugLogger.Log("[RefreshPageListWithSelection] 第2層: 選択再同期完了");
+
+                // UpdateSelectionState()を最後に実行（選択確定後）
+                UpdateSelectionState();
+                DebugLogger.Log("[RefreshPageListWithSelection] UpdateSelectionState完了");
+
+                // 最後にイベント再有効化
                 _enableSelectionEvents?.Invoke();
                 DebugLogger.Log("[RefreshPageListWithSelection] イベント再有効化完了（Dispatcher経由）");
-            }, System.Windows.Threading.DispatcherPriority.Loaded);
+            }, System.Windows.Threading.DispatcherPriority.DataBind);
             
             DebugLogger.Log($"[RefreshPageListWithSelection] 完了: 最終VM数={Pages.Count}, 選択数={Pages.Count(p => p.IsSelected)}");
             
@@ -1275,20 +1334,35 @@ F11: フルスクリーン
 
             // ✅ V3.0.131: 単一選択のみを対象とする（複数選択時のFirstOrDefault問題を回避）
             var selectedPages = Pages.Where(p => p.IsSelected).ToList();
+
+            // V3.0.146: 修正1により選択が外れなくなったため、V3.0.145の復元ロジックは不要
             if (selectedPages.Count != 1)
             {
-                // 複数選択または未選択時はキーボードナビゲーション無効
+                DebugLogger.Log($"[PreviousPage] 選択なしでreturn - selectedPages.Count={selectedPages.Count}");
                 return;
             }
 
             var selectedPage = selectedPages[0];
             var currentIndex = Pages.IndexOf(selectedPage);
+
+            DebugLogger.Log($"[PreviousPage] 実行: 現在={currentIndex + 1}ページ目");
+
             if (currentIndex > 0)
             {
                 selectedPage.IsSelected = false;
                 Pages[currentIndex - 1].IsSelected = true;
                 UpdateSelectionState();
+
+                // ⭐ V3.0.150: ViewModelからListBoxへ選択状態を同期（キーボード操作時の必須処理）
+                _syncSelectionToView?.Invoke();
+
                 StatusMessage = $"ページ {currentIndex} に移動しました";
+
+                DebugLogger.Log($"[PreviousPage] 完了: 移動先={currentIndex}ページ目");
+            }
+            else
+            {
+                DebugLogger.Log($"[PreviousPage] 最初のページのため移動なし");
             }
         }
         
@@ -1298,20 +1372,35 @@ F11: フルスクリーン
 
             // ✅ V3.0.131: 単一選択のみを対象とする（複数選択時のFirstOrDefault問題を回避）
             var selectedPages = Pages.Where(p => p.IsSelected).ToList();
+
+            // V3.0.146: 修正1により選択が外れなくなったため、V3.0.145の復元ロジックは不要
             if (selectedPages.Count != 1)
             {
-                // 複数選択または未選択時はキーボードナビゲーション無効
+                DebugLogger.Log($"[NextPage] 選択なしでreturn - selectedPages.Count={selectedPages.Count}");
                 return;
             }
 
             var selectedPage = selectedPages[0];
             var currentIndex = Pages.IndexOf(selectedPage);
+
+            DebugLogger.Log($"[NextPage] 実行: 現在={currentIndex + 1}ページ目 (PageId={selectedPage.Id})");
+
             if (currentIndex < Pages.Count - 1)
             {
                 selectedPage.IsSelected = false;
                 Pages[currentIndex + 1].IsSelected = true;
                 UpdateSelectionState();
+
+                // ⭐ V3.0.150: ViewModelからListBoxへ選択状態を同期（キーボード操作時の必須処理）
+                _syncSelectionToView?.Invoke();
+
                 StatusMessage = $"ページ {currentIndex + 2} に移動しました";
+
+                DebugLogger.Log($"[NextPage] 完了: 移動先={currentIndex + 2}ページ目");
+            }
+            else
+            {
+                DebugLogger.Log($"[NextPage] 最後のページのため移動なし");
             }
         }
         

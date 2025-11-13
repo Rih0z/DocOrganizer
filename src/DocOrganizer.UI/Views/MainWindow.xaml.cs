@@ -666,16 +666,91 @@ namespace DocOrganizer.UI.Views
         {
             if (PageListBox != null && V3ViewModel?.PageOperation?.Pages != null)
             {
-                // V3.0.115: イベント制御は呼び出し側（RefreshPageListWithSelection）で実施
-                // ここではイベント制御を行わず、純粋に選択同期のみ実行
-                
-                PageListBox.SelectedItems.Clear();
-                foreach (var page in V3ViewModel.PageOperation.Pages.Where(p => p.IsSelected))
+                try
                 {
-                    PageListBox.SelectedItems.Add(page);
+                    // V3.0.115: イベント制御は呼び出し側（RefreshPageListWithSelection）で実施
+                    // ここではイベント制御を行わず、純粋に選択同期のみ実行
+
+                    // ⭐ V3.0.151: Clear()を使わず、差分更新（Pages.Clear()と同じ問題を回避）
+                    // Clear()はTwoWayバインディングでViewModel側のIsSelectedをfalseにしてしまう
+                    var selectedPages = V3ViewModel.PageOperation.Pages.Where(p => p.IsSelected).ToList();
+
+                    // 不要な選択を削除
+                    var toRemove = PageListBox.SelectedItems.Cast<V3PageViewModel>()
+                        .Where(p => !selectedPages.Contains(p))
+                        .ToList();
+
+                    DocOrganizer.Core.Logging.DebugLogger.Log($"[SyncSelectionFromViewModel] 差分更新: 削除={toRemove.Count}, 追加予定={selectedPages.Count}");
+
+                    foreach (var page in toRemove)
+                    {
+                        PageListBox.SelectedItems.Remove(page);
+                    }
+
+                    // 不足している選択を追加
+                    foreach (var page in selectedPages)
+                    {
+                        if (!PageListBox.SelectedItems.Contains(page))
+                        {
+                            // ✅ V3.0.145: 仮想化対策 - 対象ページを可視化してから選択
+                            // ScrollIntoView()により、可視範囲外のページを仮想化解除し、確実に選択可能にする
+                            PageListBox.ScrollIntoView(page);
+                            PageListBox.SelectedItems.Add(page);
+                        }
+                    }
+
+                    // ✅ V3.0.145: 最初の選択ページにフォーカスを移動し、UI更新を強制
+                    if (selectedPages.Any())
+                    {
+                        var firstSelected = selectedPages[0];
+
+                        // 最初の選択ページを可視化（複数選択時も最初のページを基準に）
+                        PageListBox.ScrollIntoView(firstSelected);
+
+                        // ✅ レイアウト更新を強制（Dispatcher待機せず、即座にUI反映）
+                        PageListBox.UpdateLayout();
+
+                        // ⭐ V3.0.147 第3層: UpdateLayout後に選択状態を再確認・再設定（100%保証）
+                        Dispatcher.Invoke(() =>
+                        {
+                            // 選択が反映されていない場合、自動リトライ
+                            if (PageListBox.SelectedItems.Count == 0 && selectedPages.Any())
+                            {
+                                DebugLogger.Log("[SyncSelectionFromViewModel] 第3層: 選択未反映検出、再試行");
+                                foreach (var page in selectedPages)
+                                {
+                                    if (!PageListBox.SelectedItems.Contains(page))
+                                    {
+                                        PageListBox.SelectedItems.Add(page);
+                                    }
+                                }
+                                PageListBox.UpdateLayout();
+                            }
+
+                            DebugLogger.Log($"[SyncSelectionFromViewModel] 選択同期完了: {PageListBox.SelectedItems.Count}ページ選択済み, 先頭PageNumber={firstSelected.PageNumber}");
+                        }, System.Windows.Threading.DispatcherPriority.DataBind);
+                    }
+                    else
+                    {
+                        DebugLogger.Log("[SyncSelectionFromViewModel] 選択同期完了: 選択ページなし");
+                    }
                 }
-                
+                catch (Exception ex)
+                {
+                    // ❌ 選択同期失敗時も処理を継続（致命的ではない）
+                    // ScrollIntoView()は仮想化されたアイテムに対して稀に例外をスローする
+                    // UpdateLayout()はレイアウトサイクル中に呼ばれると例外をスローする可能性
+                    DebugLogger.Log($"[SyncSelectionFromViewModel] 例外発生: {ex.Message}");
+
+                    // スタックトレースも記録（デバッグ用）
+                    if (ex.StackTrace != null)
+                    {
+                        DebugLogger.Log($"[SyncSelectionFromViewModel] StackTrace: {ex.StackTrace}");
+                    }
+
+                    // 例外が発生しても処理を継続（選択同期は次の機会に再試行される）
                 }
+            }
         }
 
         // ✅ V3.0.130: 全選択時にListBoxに直接全選択を指示するヘルパーメソッド
