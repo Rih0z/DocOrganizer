@@ -248,7 +248,19 @@ release/output/
 
 # Exclude temporary files and debug analysis
 tmp/
+.tmp/
 .serena/cache/
+
+# Exclude test directories and files
+test-normal/
+test-normal-build/
+test-v*/
+test-*.bat
+test-*.cs
+test-*.ps1
+
+# Exclude nul file (Windows特殊ファイル)
+nul
 
 # Debug logs and tools
 DEBUG_LOG.txt
