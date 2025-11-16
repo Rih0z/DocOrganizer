@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using DocOrganizer.Application.Interfaces;
 using DocOrganizer.Infrastructure.Services;
 using DocOrganizer.UI.ViewModels.V3;
@@ -34,6 +35,9 @@ public class IntegrationTestFixture : IDisposable
         }
 
         var services = new ServiceCollection();
+
+        // ロギングを追加
+        services.AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Debug));
 
         // 実際のサービスを登録（統合テストでは実サービス使用が原則）
         services.AddSingleton<IPdfService, PdfService>();
