@@ -6,13 +6,25 @@
 
 **現在のバージョン**: V3.0.153
 **最終更新**: 2025-11-15
-**実施フェーズ**: Week 3 Priority 1 - 統合テストスイート構築
+**実施フェーズ**: Week 3 Priority 2 - 統合テストスイート拡充
 
 ---
 
 ## 📊 全体進捗状況
 
-### Week 3 Priority 1 - 統合テストスイート構築
+### 統合テスト実装全体サマリー
+
+**総テスト数**: 26テスト（100%成功率）
+
+| Priority | テスト数 | 実施時間 | 状態 |
+|---------|---------|---------|------|
+| **Week 3 Priority 1** | 17テスト | 8時間 | ✅ **完了** |
+| **Week 3 Priority 2** | 9テスト | 進行中 | 🚀 **進行中** |
+| **合計** | **26テスト** | **8時間+** | 🚀 **進行中** |
+
+---
+
+### Week 3 Priority 1 - 統合テストスイート構築 ✅ **完了**
 
 **目標**: 17テストケースの統合テスト実装（3日間・8時間）
 
@@ -34,6 +46,22 @@
 - ✅ **2025-11-15 Day 1**: IT-001実装完了（PDF読み込み統合テスト）
 - ✅ **2025-11-15 Day 2**: IT-002/003実装完了（ページ操作・PDF保存統合テスト）
 - ✅ **2025-11-15**: Week 3 Priority 1完了
+
+---
+
+### Week 3 Priority 2 - 統合テストスイート拡充 🚀 **進行中**
+
+**目標**: 追加統合テストの実装
+
+**実装済みテスト**:
+- ✅ **IT-004**: ページ削除統合テスト（3テスト）
+- ✅ **IT-009**: Undo/Redo統合テスト（6テスト）
+- ✅ **IT-010**: エラーハンドリング統合テスト（3テスト）
+
+**実績サマリー**:
+- ✅ **9テスト追加実装**（IT-004: 3テスト, IT-009: 6テスト, IT-010: 3テスト）
+- ✅ **テスト成功率100%**（9/9 Passed）
+- ✅ **累計26テスト**（Week 3 Priority 1: 17 + Week 3 Priority 2: 9）
 
 ---
 
@@ -74,6 +102,48 @@
 | 2 | 実装者向けメッセージ | `docs/test/best_practices/implementer_message.md` | ✅ 完了 |
 | 3 | よくある失敗パターン集 | `docs/test/best_practices/common_failures.md` | ✅ 完了 |
 | 4 | 技術的発見事項一覧 | `docs/test/best_practices/technical_discoveries.md` | ✅ 完了 |
+
+---
+
+## 🎯 Week 3 Priority 2実装成果
+
+### 📦 追加実装テスト
+
+#### IT-004: ページ削除統合テスト（3テスト）
+
+| # | 成果物 | 場所 | 状態 |
+|---|--------|------|------|
+| 1 | IT-004テスト（3テスト） | `tests/DocOrganizer.IntegrationTests/Tests/IT004_PageDeletion_Integration_Test.cs` | ✅ 3/3 Passed |
+
+**テスト内容**:
+- 先頭ページ削除
+- 中間ページ削除
+- 最終ページ削除
+
+#### IT-009: Undo/Redo統合テスト（6テスト）
+
+| # | 成果物 | 場所 | 状態 |
+|---|--------|------|------|
+| 1 | IT-009テスト（6テスト） | `tests/DocOrganizer.IntegrationTests/Tests/IT009_UndoRedo_Integration_Test.cs` | ✅ 6/6 Passed |
+
+**テスト内容**:
+- Undo基本動作（ページ削除の取り消し）
+- Redo基本動作（Undoの再実行）
+- 複数回Undo/Redo
+- Undo/Redoスタック管理
+
+#### IT-010: エラーハンドリング統合テスト（3テスト）
+
+| # | 成果物 | 場所 | 状態 |
+|---|--------|------|------|
+| 1 | IT-010テスト（3テスト） | `tests/DocOrganizer.IntegrationTests/Tests/IT010_ErrorHandling_Integration_Test.cs` | ✅ 3/3 Passed |
+
+**テスト内容**:
+- 存在しないファイルの読み込みエラー
+- 破損PDFファイルの読み込みエラー
+- 無効なファイルパスの処理
+
+---
 
 ### ✅ 技術的検証完了
 
@@ -268,32 +338,40 @@ dotnet test --filter "FullyQualifiedName~IT001"
 
 ---
 
-## 🚀 Day 1準備状況
+## 📊 実装済みテスト一覧
 
-### Day 1実装予定（2025-11-18）
+### 統合テスト（26テスト、100%成功率）
 
-| 時間 | タスク | 状態 |
-|------|--------|------|
-| 09:00-11:30 | IT-001: PDF読み込み統合テスト | ✅ 準備完了 |
-| 11:30-14:00 | IT-002: ページ移動統合テスト | ✅ 準備完了 |
-| 14:00-16:00 | IT-003: ページ回転統合テスト（前半） | ✅ 準備完了 |
+| テストID | テスト名 | テスト数 | 状態 | 実装日 |
+|---------|---------|---------|------|--------|
+| **IT-001** | PDF読み込み統合テスト | 5 | ✅ 完了 | 2025-11-15 |
+| **IT-002** | ページ操作統合テスト | 8 | ✅ 完了 | 2025-11-15 |
+| **IT-003** | PDF保存統合テスト | 4 | ✅ 完了 | 2025-11-15 |
+| **IT-004** | ページ削除統合テスト | 3 | ✅ 完了 | 2025-11-15 |
+| **IT-009** | Undo/Redo統合テスト | 6 | ✅ 完了 | 2025-11-15 |
+| **IT-010** | エラーハンドリング統合テスト | 3 | ✅ 完了 | 2025-11-15 |
+| **合計** | - | **26** | **100%** | - |
 
-### 準備完了インフラ
+### テスト実行方法
 
-✅ **STAスレッド実行環境** - Xunit.StaFact 1.1.11
-✅ **UIスレッド同期機構** - Dispatcher統合IntegrationTestFixture
-✅ **DI ServiceProvider** - 実サービス注入可能
-✅ **CI/CD自動化** - GitHub Actions
-✅ **ローカル実行環境** - PowerShellスクリプト
-✅ **テストデータ管理** - 動的生成戦略確定
+**ローカル環境**:
+```powershell
+# 全統合テスト実行
+cd tests/DocOrganizer.IntegrationTests
+.\run-integration-tests.ps1
 
-### Day 1開始コマンド
-
-```bash
-cd C:\Users\217216X721451\github\DocOrganizer
-git pull origin main
-cat tmp/week3_priority1_day1_detailed_plan_20251115.md
+# 個別テスト実行
+dotnet test --filter "FullyQualifiedName~IT001"  # IT-001のみ
+dotnet test --filter "FullyQualifiedName~IT004"  # IT-004のみ
+dotnet test --filter "FullyQualifiedName~IT009"  # IT-009のみ
+dotnet test --filter "FullyQualifiedName~IT010"  # IT-010のみ
 ```
+
+**CI/CD環境**:
+- GitHub Actions: プッシュ・PR時に自動実行
+- Windows環境: `windows-latest`
+- .NET 8.0
+- カバレッジレポート自動生成
 
 ---
 
