@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using DocOrganizer.Application.Interfaces;
 using DocOrganizer.Application.Interfaces.V3;
+using DocOrganizer.Core.Services;
 using DocOrganizer.Infrastructure.Services;
 using DocOrganizer.Infrastructure.Services.V3;
 using DocOrganizer.UI.ViewModels.V3;
@@ -42,6 +43,7 @@ public class IntegrationTestFixture : IDisposable
         services.AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Debug));
 
         // 実際のサービスを登録（統合テストでは実サービス使用が原則）
+        services.AddSingleton<IUndoRedoService, UndoRedoService>();
         services.AddSingleton<IPdfService, PdfService>();
         services.AddSingleton<IImageProcessingService, ImageProcessingService>();
         services.AddSingleton<IPdfEditorService, PdfEditorService>();

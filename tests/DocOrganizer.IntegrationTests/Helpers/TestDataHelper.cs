@@ -74,6 +74,20 @@ public static class TestDataHelper
     }
 
     /// <summary>
+    /// 破損したPDFファイルを生成（エラーハンドリングテスト用）
+    /// </summary>
+    /// <returns>生成された破損PDFファイルの一時パス</returns>
+    public static string GenerateCorruptedPdf()
+    {
+        var tempPath = Path.Combine(Path.GetTempPath(), $"corrupted_{Guid.NewGuid()}.pdf");
+
+        // 破損PDFを生成（PDFヘッダーのみで不完全なファイル）
+        File.WriteAllText(tempPath, "%PDF-1.4\n%%EOF");
+
+        return tempPath;
+    }
+
+    /// <summary>
     /// テスト終了後の一時ファイルクリーンアップ
     /// </summary>
     /// <param name="filePath">削除する一時ファイルパス</param>
