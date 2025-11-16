@@ -1,5 +1,7 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
+using DocOrganizer.UI.ViewModels.V3;
 using DocOrganizer.IntegrationTests.Fixtures;
 using DocOrganizer.IntegrationTests.Helpers;
 using DocOrganizer.Application.Interfaces;
@@ -119,6 +121,83 @@ public class IT001_PdfLoad_Integration_Test
                 document.Should().NotBeNull();
                 document.Pages.Should().HaveCount(50, "50ページのPDFを読み込んだため");
                 document.Pages.All(p => p.Width > 0 && p.Height > 0).Should().BeTrue("大量ページでも全ページ正常読み込み");
+            });
+        }
+        finally
+        {
+            TestDataHelper.CleanupTempFile(testPdfPath);
+        }
+    }
+
+    /// <summary>
+    /// IT-001B: EditorService統合テスト
+    /// IPdfEditorService.OpenPdfAsync()の動作を検証
+    /// </summary>
+    [StaFact]
+    [Trait("Category", "Integration")]
+    [Trait("Priority", "High")]
+    public async Task IT001B_OpenPdf_EditorService_ShouldLoadDocument()
+    {
+        // Arrange
+        var fixture = new IntegrationTestFixture();
+        var pdfEditorService = fixture.GetService<IPdfEditorService>();
+        var testPdfPath = TestDataHelper.GenerateSamplePdf(10); // 10ページPDF生成
+
+        try
+        {
+            await fixture.InvokeAsync(async () =>
+            {
+                // Act: PDF読み込み
+                var document = await pdfEditorService.OpenPdfAsync(testPdfPath);
+
+                // Assert: Document取得成功
+                document.Should().NotBeNull("IPdfEditorServiceがPdfDocumentを返すこと");
+                document.Pages.Should().HaveCount(10, "10ページのPDFが読み込まれること");
+
+                // Assert: ページプロパティ正常
+                document.Pages.All(p => p.Width > 0).Should().BeTrue("全ページにWidth設定があること");
+                document.Pages.All(p => p.Height > 0).Should().BeTrue("全ページにHeight設定があること");
+
+                // Assert: ページ順序正常
+                for (int i = 0; i < document.Pages.Count; i++)
+                {
+                    document.Pages[i].PageNumber.Should().Be(i + 1, $"ページ{i + 1}のPageNumberが正しいこと");
+                }
+            });
+        }
+        finally
+        {
+            // Cleanup: 一時ファイル削除
+            TestDataHelper.CleanupTempFile(testPdfPath);
+        }
+    }
+
+    /// <summary>
+    /// IT-001B: EditorService統合テスト（1ページPDF）
+    /// 最小ケースでの動作を検証
+    /// </summary>
+    [StaFact]
+    [Trait("Category", "Integration")]
+    [Trait("Priority", "Medium")]
+    public async Task IT001B_OpenPdf_EditorService_ShouldHandleSinglePagePdf()
+    {
+        // Arrange
+        var fixture = new IntegrationTestFixture();
+        var pdfEditorService = fixture.GetService<IPdfEditorService>();
+        var testPdfPath = TestDataHelper.GenerateSamplePdf(1); // 1ページPDF生成
+
+        try
+        {
+            await fixture.InvokeAsync(async () =>
+            {
+                // Act
+                var document = await pdfEditorService.OpenPdfAsync(testPdfPath);
+
+                // Assert
+                document.Should().NotBeNull();
+                document.Pages.Should().HaveCount(1, "1ページのPDFが読み込まれること");
+                document.Pages[0].Width.Should().BeGreaterThan(0);
+                document.Pages[0].Height.Should().BeGreaterThan(0);
             });
         }
         finally

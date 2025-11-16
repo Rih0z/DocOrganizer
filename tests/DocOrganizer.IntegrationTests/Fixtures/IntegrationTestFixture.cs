@@ -5,7 +5,9 @@ using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using DocOrganizer.Application.Interfaces;
+using DocOrganizer.Application.Interfaces.V3;
 using DocOrganizer.Infrastructure.Services;
+using DocOrganizer.Infrastructure.Services.V3;
 using DocOrganizer.UI.ViewModels.V3;
 using WpfApplication = System.Windows.Application;
 
@@ -43,12 +45,17 @@ public class IntegrationTestFixture : IDisposable
         services.AddSingleton<IPdfService, PdfService>();
         services.AddSingleton<IImageProcessingService, ImageProcessingService>();
         services.AddSingleton<IPdfEditorService, PdfEditorService>();
+        services.AddSingleton<IThumbnailGeneratorService, ThumbnailGeneratorService>();
+        services.AddSingleton<ITextOrientationService, NoOpTextOrientationService>();
+        services.AddSingleton<IPdfExportService, PdfExportService>();
 
-        // ViewModelを登録（UIスレッドで生成）
-        // 注意: ViewModelの実際の依存関係を確認後、必要に応じて追加サービスを登録
-        // services.AddTransient<MainCompositeViewModel>();
-        // services.AddTransient<PageOperationViewModel>();
-        // services.AddTransient<DocumentManagementViewModel>();
+        // ViewModelを登録
+        services.AddTransient<DocumentManagementViewModel>();
+        services.AddTransient<PageOperationViewModel>();
+        services.AddTransient<PreviewManagementViewModel>();
+        services.AddTransient<DragDropHandlerViewModel>();
+        services.AddTransient<StatusManagementViewModel>();
+        services.AddTransient<MainCompositeViewModel>();
 
         _serviceProvider = services.BuildServiceProvider();
     }
